@@ -69,7 +69,7 @@
                 <article class="list-card compact">
                     <h3>{{ $ticket->title }}</h3>
                     <p>{{ $ticket->assignee ? 'ผู้รับผิดชอบ: '.$ticket->assignee->name : 'ยังไม่มีผู้รับผิดชอบ' }}</p>
-                    <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->status }}</span>
+                    <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->statusLabel() }}</span>
                 </article>
             @empty
                 <div class="empty-state">ยังไม่มี Ticket ค้าง</div>

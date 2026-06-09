@@ -16,13 +16,13 @@
         <a class="brand-lockup" href="{{ route('dashboard') }}">
             <span class="brand-mark">WDC</span>
             <span>
-                <strong>Employee Portal</strong>
-                <small>HR, IT Helpdesk, Knowledge</small>
+                <strong>WDC Portal</strong>
+                <small>ข่าวสาร HR IT และคู่มือ</small>
             </span>
         </a>
 
         <nav class="nav flex-column portal-nav">
-            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>Dashboard</span></a>
+            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
             <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
             <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ข่าวสารและประกาศ</span></a>
             <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>ศูนย์ความรู้</span></a>
@@ -37,7 +37,7 @@
 
         <nav class="nav flex-column portal-nav">
             @if($currentUser?->isInDepartment('IT') || $currentUser?->hasRole('admin'))
-                <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>IT Helpdesk Portal</span></a>
+                <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>ศูนย์ IT</span></a>
             @endif
             @if($currentUser?->hasAnyRole(['hr', 'admin']))
                 <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>

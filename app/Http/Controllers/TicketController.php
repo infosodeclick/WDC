@@ -34,7 +34,9 @@ class TicketController extends Controller
             'departments' => Department::orderBy('name')->get(),
             'canManage' => $this->canManageTickets($user),
             'status' => $request->string('status')->toString(),
-            'requestTypes' => $this->requestTypes(),
+            'requestTypes' => Ticket::requestTypeLabels(),
+            'statusLabels' => Ticket::statusLabels(),
+            'urgencyLabels' => Ticket::urgencyLabels(),
             'smartflowHelpdesk' => LegacySystem::where('key', 'smartflow-helpdesk')->first(),
         ]);
     }
@@ -49,7 +51,7 @@ class TicketController extends Controller
             'doneTickets' => Ticket::where('status', 'done')->count(),
             'tickets' => Ticket::with('reporter.employee.department', 'assignee')->latest()->paginate(12),
             'departments' => Department::orderBy('name')->get(),
-            'requestTypes' => $this->requestTypes(),
+            'requestTypes' => Ticket::requestTypeLabels(),
         ]);
     }
 
@@ -57,7 +59,7 @@ class TicketController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'request_type' => ['required', Rule::in(array_keys($this->requestTypes()))],
+            'request_type' => ['required', Rule::in(array_keys(Ticket::requestTypeLabels()))],
             'details' => ['required', 'string', 'max:5000'],
             'urgency' => ['required', 'in:low,normal,high,critical'],
             'legacy_document_ref' => ['nullable', 'string', 'max:80'],
@@ -141,23 +143,6 @@ class TicketController extends Controller
     private function canManageTickets(User $user): bool
     {
         return $user->hasRole('admin') || $user->isInDepartment('IT');
-    }
-
-    /**
-     * Request types mirror the active SmartFlow IT Helpdesk form so migration can be gradual.
-     *
-     * @return array<string, string>
-     */
-    private function requestTypes(): array
-    {
-        return [
-            'general' => 'ปัญหา/รายละเอียดทั่วไป',
-            'cancel_document' => 'แจ้งยกเลิกเอกสาร',
-            'vpn_access' => 'แจ้งขอใช้งาน VPN',
-            'sap_b1' => 'แจ้งปัญหาโปรแกรม SAP B1',
-            'ai_crm' => 'แจ้งปัญหาโปรแกรม AI-CRM',
-            'remote_access' => 'ขอเข้าถึง/แก้ไข database หรือ Remote Access',
-        ];
     }
 
     private function canViewTicket(User $user, Ticket $ticket): bool

@@ -33,10 +33,11 @@
 <div class="system-grid">
     @foreach($systems as $system)
         @php($account = $system->accounts->first())
+        @php($statusLabels = ['primary' => 'ระบบหลัก', 'bridge' => 'เชื่อมต่อเดิม', 'external' => 'ระบบภายนอก', 'active' => 'ใช้งาน'])
         <article class="system-card">
             <div class="meta-row">
                 <span class="tag">{{ $system->category }}</span>
-                <span class="status-pill status-{{ $system->status }}">{{ $system->status }}</span>
+                <span class="status-pill status-{{ $system->status }}">{{ $statusLabels[$system->status] ?? $system->status }}</span>
             </div>
             <h2>{{ $system->name }}</h2>
             <p>{{ $system->summary }}</p>

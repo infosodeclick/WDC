@@ -14,16 +14,16 @@
         <div class="brand-lockup login-brand">
             <span class="brand-mark">WDC</span>
             <span>
-                <strong>Employee Portal</strong>
-                <small>Company news, HR, IT Helpdesk, Knowledge Base</small>
+                <strong>WDC Portal</strong>
+                <small>ข่าวสาร HR IT และคู่มือในเว็บเดียว</small>
             </span>
         </div>
         <h1>ระบบพนักงานกลาง สำหรับบริษัท 200 คน</h1>
         <p>รวมโปรไฟล์ ข่าวสาร คู่มือวิดีโอ Helpdesk เรื่องร้องเรียน และเอกสาร HR ไว้ในเว็บเดียวด้วยสิทธิ์ Employee, Supervisor, HR และ Admin</p>
         <div class="login-metrics">
-            <span><strong>3</strong> Portals</span>
-            <span><strong>4</strong> Roles</span>
-            <span><strong>12+</strong> Tables</span>
+            <span><strong>3</strong> พอร์ทัล</span>
+            <span><strong>4</strong> สิทธิ์</span>
+            <span><strong>12+</strong> ตารางข้อมูล</span>
         </div>
     </section>
 
@@ -54,8 +54,8 @@
 
         <div class="demo-users">
             <div>บัญชีตัวอย่าง</div>
-            <code>EMP00125</code> Employee
-            <code>EMP00200</code> Supervisor / IT
+            <code>EMP00125</code> พนักงาน
+            <code>EMP00200</code> หัวหน้างาน / IT
             <code>EMP01000</code> HR
             <code>EMP09999</code> Admin
             <span>รหัสผ่านทุกบัญชี: <code>password123</code></span>

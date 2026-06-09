@@ -53,8 +53,8 @@
     @foreach($tickets as $ticket)
         <article class="list-card">
             <div class="meta-row">
-                <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->status }}</span>
-                <span>{{ $requestTypes[$ticket->request_type] ?? $ticket->request_type }} · {{ $ticket->urgency }}</span>
+                <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->statusLabel() }}</span>
+                <span>{{ $ticket->requestTypeLabel() }} · {{ $ticket->urgencyLabel() }}</span>
             </div>
             <h3>{{ $ticket->title }}</h3>
             <p>{{ $ticket->details }}</p>

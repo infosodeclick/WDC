@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Notification;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         View::composer('layouts.app', function ($view) {
             $count = auth()->check()
                 ? Notification::where('user_id', auth()->id())->whereNull('read_at')->count()
