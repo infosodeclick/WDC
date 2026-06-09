@@ -20,6 +20,14 @@ WDC is a Laravel 12 internal company portal for about 200 employees. It combines
 - Run `npm.cmd run build` and `php artisan test` after code changes.
 - If a verification error appears, fix only the related error.
 
+## Delivery Workflow
+
+- After an approved WDC change is implemented and verified locally, commit and push it to `infosodeclick/WDC` on GitHub.
+- Let Railway build/deploy the pushed source, or redeploy from source when needed.
+- Use the Railway MySQL database for production data. Create and link the Railway database service when it is missing.
+- Verify the live Railway URL after deployment with a real browser or HTTP workflow, including login when the change touches authenticated pages.
+- Report the Git commit, Railway deployment status, production URL, and verification result.
+
 ## Demo Accounts
 
 All seeded demo accounts use password `password123`.
