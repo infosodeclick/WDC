@@ -7,9 +7,11 @@ Laravel 12 internal company portal for a 200-person organization.
 - Employee-code login with 4 roles: Employee, Supervisor, HR, Admin.
 - Employee dashboard with announcements, pending tickets, and new videos.
 - Employee profile and document downloads.
+- Legacy systems hub for Notion directory, SmartFlow IT Helpdesk, and Payroll links.
 - Announcements with pinned and urgent flags.
 - Knowledge Base with articles and videos.
 - IT Helpdesk ticket workflow.
+- IT ticket request types aligned with the existing SmartFlow IT Helpdesk form.
 - Complaint and suggestion workflow with anonymous option.
 - HR Portal for announcements, employees, and complaints.
 - Admin Portal for users, roles, and activity logs.
@@ -41,3 +43,4 @@ Demo password for seeded users: `password123`.
 - [Deployment](docs/DEPLOYMENT.md)
 - [Security](docs/SECURITY.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Legacy Systems Integration](docs/LEGACY_SYSTEMS.md)

@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\EmployeeDocument;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
+use App\Models\LegacySystem;
 use App\Models\Notification;
 use App\Models\Ticket;
 use Illuminate\Http\RedirectResponse;
@@ -30,13 +31,26 @@ class PortalController extends Controller
             'pinnedAnnouncements' => Announcement::with('department')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
             'tickets' => Ticket::with('assignee')->where('reporter_id', $user->id)->latest()->take(4)->get(),
             'videos' => KnowledgeVideo::latest('published_at')->take(3)->get(),
+            'featuredSystems' => LegacySystem::where('is_featured', true)->orderBy('sort_order')->take(4)->get(),
         ]);
     }
 
     public function profile(Request $request): View
     {
         return view('profile.show', [
-            'user' => $request->user()->load('role', 'employee.department', 'employee.documents'),
+            'user' => $request->user()->load('role', 'employee.department', 'employee.documents', 'externalAccounts.legacySystem'),
+        ]);
+    }
+
+    public function systems(Request $request): View
+    {
+        $user = $request->user()->load('externalAccounts.legacySystem');
+
+        return view('systems.index', [
+            'systems' => LegacySystem::with(['accounts' => fn ($query) => $query->where('user_id', $user->id)])
+                ->orderBy('sort_order')
+                ->get(),
+            'user' => $user,
         ]);
     }
 

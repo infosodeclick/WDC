@@ -35,6 +35,7 @@
     <a class="btn btn-outline-primary" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i> แจ้งปัญหา</a>
     <a class="btn btn-outline-primary" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i> ร้องเรียน</a>
     <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> คู่มือการใช้งาน</a>
+    <a class="btn btn-outline-primary" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i> เข้าระบบเดิม</a>
 </div>
 
 <div class="content-grid">
@@ -76,4 +77,20 @@
         </div>
     </section>
 </div>
+
+<section class="panel">
+    <div class="section-title">
+        <h2>ระบบที่ใช้งานบ่อย</h2>
+        <a href="{{ route('systems.index') }}">ดูศูนย์รวมระบบ</a>
+    </div>
+    <div class="system-mini-grid">
+        @foreach($featuredSystems as $system)
+            <a class="system-mini-card" href="{{ str_starts_with($system->url, '/') ? url($system->url) : $system->url }}" target="{{ str_starts_with($system->url, '/') ? '_self' : '_blank' }}" rel="noopener">
+                <span>{{ $system->category }}</span>
+                <strong>{{ $system->name }}</strong>
+                <small>{{ $system->login_method }}</small>
+            </a>
+        @endforeach
+    </div>
+</section>
 @endsection

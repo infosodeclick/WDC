@@ -16,10 +16,12 @@ class Ticket extends Model
         'assigned_to',
         'department_id',
         'title',
+        'request_type',
         'details',
         'urgency',
         'status',
         'image_path',
+        'legacy_document_ref',
         'completed_at',
     ];
 

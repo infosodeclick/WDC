@@ -14,6 +14,7 @@ Primary web routes:
 - `PATCH /complaints/{complaint}/status`
 - `GET /documents`
 - `GET /documents/{document}/download`
+- `GET /systems`
 - `GET /payroll`
 - `GET /search`
 - `GET /hr`, `POST /hr/announcements`, `PATCH /hr/employees/{user}/status`
@@ -21,3 +22,8 @@ Primary web routes:
 - `GET /admin`, `POST /admin/users`, `PATCH /admin/users/{user}`
 
 V1 uses Blade forms and session authentication rather than a JSON API. Add `routes/api.php` only when a separate frontend or mobile app needs structured API access.
+
+`POST /tickets` accepts SmartFlow-aligned fields:
+
+- `request_type`: `general`, `cancel_document`, `vpn_access`, `sap_b1`, `ai_crm`, or `remote_access`
+- `legacy_document_ref`: optional reference such as an old SmartFlow document number

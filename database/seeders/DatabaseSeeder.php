@@ -9,8 +9,10 @@ use App\Models\Complaint;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
+use App\Models\ExternalSystemAccount;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
+use App\Models\LegacySystem;
 use App\Models\Notification;
 use App\Models\Role;
 use App\Models\Ticket;
@@ -46,41 +48,65 @@ class DatabaseSeeder extends Seeder
             [
                 'employee_code' => 'EMP00125',
                 'name' => 'สมชาย ใจดี',
-                'email' => 'somchai@example.com',
+                'email' => 'somchai@wdc.co.th',
                 'role' => 'employee',
                 'department' => 'SALES',
+                'english_name' => 'Somchai Jaidee',
+                'nickname' => 'ชาย',
                 'position' => 'Sales Executive',
+                'business_unit' => 'Bangkok Project (BU2)',
+                'team' => 'Bangkok Project Team A',
+                'location' => 'Nimitmai',
                 'phone' => '081-234-5678',
+                'extension_number' => '2101',
                 'start_date' => '2023-04-01',
             ],
             [
                 'employee_code' => 'EMP00200',
                 'name' => 'มาลี พัฒนางาน',
-                'email' => 'malee@example.com',
+                'email' => 'malee.it@wdc.co.th',
                 'role' => 'supervisor',
                 'department' => 'IT',
+                'english_name' => 'Malee Pattanangan',
+                'nickname' => 'ลี',
                 'position' => 'IT Supervisor',
+                'business_unit' => 'Information Technology',
+                'team' => 'IT Support',
+                'location' => 'Lumpini',
                 'phone' => '082-111-2200',
+                'extension_number' => '1801',
                 'start_date' => '2021-08-15',
             ],
             [
                 'employee_code' => 'EMP01000',
                 'name' => 'กมลวรรณ HR',
-                'email' => 'hr@example.com',
+                'email' => 'hr@wdc.co.th',
                 'role' => 'hr',
                 'department' => 'HR',
+                'english_name' => 'Kamonwan HR',
+                'nickname' => 'กมล',
                 'position' => 'HR Manager',
+                'business_unit' => 'HR',
+                'team' => 'People Operations',
+                'location' => 'Lumpini',
                 'phone' => '083-222-1000',
+                'extension_number' => '1803',
                 'start_date' => '2020-01-05',
             ],
             [
                 'employee_code' => 'EMP09999',
                 'name' => 'ผู้ดูแลระบบ WDC',
-                'email' => 'admin@example.com',
+                'email' => 'admin@wdc.co.th',
                 'role' => 'admin',
                 'department' => 'IT',
+                'english_name' => 'WDC Administrator',
+                'nickname' => 'แอดมิน',
                 'position' => 'System Administrator',
+                'business_unit' => 'Information Technology',
+                'team' => 'System Admin',
+                'location' => 'Lumpini',
                 'phone' => '084-999-9999',
+                'extension_number' => '1800',
                 'start_date' => '2019-07-20',
             ],
         ])->mapWithKeys(function (array $profile) use ($roles, $departments) {
@@ -96,8 +122,15 @@ class DatabaseSeeder extends Seeder
             Employee::create([
                 'user_id' => $user->id,
                 'department_id' => $departments[$profile['department']]->id,
+                'english_name' => $profile['english_name'],
+                'thai_name' => $profile['name'],
+                'nickname' => $profile['nickname'],
                 'position' => $profile['position'],
+                'business_unit' => $profile['business_unit'],
+                'team' => $profile['team'],
+                'location' => $profile['location'],
                 'phone' => $profile['phone'],
+                'extension_number' => $profile['extension_number'],
                 'start_date' => $profile['start_date'],
                 'address' => 'อาคารสำนักงานใหญ่ WDC',
             ]);
@@ -155,6 +188,42 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
+        $legacySystems = LegacySystem::all()->keyBy('key');
+        $users->each(function (User $user) use ($legacySystems) {
+            $accountRows = [
+                'wdc-portal' => [
+                    'login_identifier' => $user->employee_code,
+                    'credential_note' => 'ใช้รหัสผ่าน WDC Portal',
+                ],
+                'employee-directory' => [
+                    'login_identifier' => $user->email,
+                    'credential_note' => 'เปิดอ่านจากลิงก์เดิม ระหว่างย้าย directory เข้าระบบใหม่',
+                ],
+                'smartflow-helpdesk' => [
+                    'login_identifier' => $user->email,
+                    'credential_note' => 'ใช้รหัสผ่าน SmartFlow เดิม และจะค่อย ๆ ย้ายประเภทคำขอเข้าระบบใหม่',
+                ],
+                'payroll' => [
+                    'login_identifier' => $user->employee_code,
+                    'credential_note' => 'ใช้เลขบัตรประชาชนในระบบเงินเดือนเดิม ไม่เก็บเลขบัตรใน WDC Portal',
+                ],
+            ];
+
+            foreach ($accountRows as $systemKey => $account) {
+                if (! isset($legacySystems[$systemKey])) {
+                    continue;
+                }
+
+                ExternalSystemAccount::create([
+                    'user_id' => $user->id,
+                    'legacy_system_id' => $legacySystems[$systemKey]->id,
+                    ...$account,
+                    'last_verified_at' => now(),
+                    'is_active' => true,
+                ]);
+            }
+        });
+
         AnnouncementFile::create([
             'announcement_id' => $announcements[1]->id,
             'file_name' => 'holiday-calendar.pdf',
@@ -200,9 +269,11 @@ class DatabaseSeeder extends Seeder
             'assigned_to' => $users['EMP00200']->id,
             'department_id' => $departments['IT']->id,
             'title' => 'เข้า ERP ไม่ได้หลังเปลี่ยนรหัสผ่าน',
+            'request_type' => 'sap_b1',
             'details' => 'ระบบแจ้งว่าบัญชีถูกล็อก กรุณาตรวจสอบสิทธิ์เข้าใช้งาน',
             'urgency' => 'high',
             'status' => 'in_progress',
+            'legacy_document_ref' => 'SmartFlow IT Helpdesk demo',
         ]);
 
         TicketComment::create([

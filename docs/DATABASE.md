@@ -6,6 +6,8 @@ Core tables:
 - `departments`: HR, IT, accounting, warehouse, sales.
 - `users`: login account with `employee_code`, password hash, role, active status.
 - `employees`: employee profile linked to user and department.
+- `legacy_systems`: directory, SmartFlow, payroll, and portal links shown in the unified systems hub.
+- `external_system_accounts`: maps a WDC user to legacy login identifiers without storing legacy passwords.
 - `employee_documents`: employee-specific and company-wide documents.
 - `announcements`: company, policy, holiday, activity, department, urgent notices.
 - `announcement_files`: PDF/image attachment metadata.
@@ -25,3 +27,10 @@ Local development database:
 - Host: `127.0.0.1`
 
 Railway should provide database credentials through environment variables instead of committed files.
+
+Important identity rules:
+
+- `users.employee_code` is the primary login for WDC Portal.
+- `users.email` should hold the corporate email used by systems such as SmartFlow.
+- `employees` can store directory fields from the Notion directory: English name, Thai name, nickname, BU, team, location, and extension number.
+- Do not store external-system passwords, national ID numbers, salary data, or payroll details in WDC Portal.

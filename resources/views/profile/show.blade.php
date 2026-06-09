@@ -18,9 +18,14 @@
         <dl class="detail-list">
             <dt>รหัสพนักงาน</dt><dd>{{ $user->employee_code }}</dd>
             <dt>ชื่อ</dt><dd>{{ $user->name }}</dd>
+            <dt>ชื่ออังกฤษ</dt><dd>{{ $user->employee?->english_name ?? '-' }}</dd>
+            <dt>ชื่อเล่น</dt><dd>{{ $user->employee?->nickname ?? '-' }}</dd>
             <dt>แผนก</dt><dd>{{ $user->employee?->department?->name }}</dd>
             <dt>ตำแหน่ง</dt><dd>{{ $user->employee?->position }}</dd>
+            <dt>BU / ทีม</dt><dd>{{ collect([$user->employee?->business_unit, $user->employee?->team])->filter()->join(' · ') ?: '-' }}</dd>
+            <dt>สาขา</dt><dd>{{ $user->employee?->location ?? '-' }}</dd>
             <dt>เบอร์โทร</dt><dd>{{ $user->employee?->phone ?? '-' }}</dd>
+            <dt>เบอร์ต่อ</dt><dd>{{ $user->employee?->extension_number ?? '-' }}</dd>
             <dt>อีเมล</dt><dd>{{ $user->email ?? '-' }}</dd>
             <dt>วันเริ่มงาน</dt><dd>{{ $user->employee?->start_date?->format('d/m/Y') ?? '-' }}</dd>
         </dl>
@@ -41,4 +46,22 @@
         </div>
     </section>
 </div>
+
+<section class="panel">
+    <div class="section-title">
+        <h2>บัญชีระบบที่เกี่ยวข้อง</h2>
+        <a href="{{ route('systems.index') }}">เปิดศูนย์รวมระบบ</a>
+    </div>
+    <div class="account-table">
+        @forelse($user->externalAccounts as $account)
+            <div>
+                <strong>{{ $account->legacySystem->name }}</strong>
+                <span>{{ $account->login_identifier ?? 'ยังไม่ได้ระบุบัญชี' }}</span>
+                <small>{{ $account->credential_note ?? $account->legacySystem->login_method }}</small>
+            </div>
+        @empty
+            <div class="empty-state">ยังไม่ได้ผูกบัญชีระบบเดิม</div>
+        @endforelse
+    </div>
+</section>
 @endsection

@@ -29,6 +29,7 @@
             <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
             <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน / เสนอแนะ</span></a>
             <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>เอกสารดาวน์โหลด</span></a>
+            <a class="nav-link {{ request()->routeIs('systems.*') ? 'active' : '' }}" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
             <a class="nav-link" href="{{ route('payroll') }}"><i class="bi bi-receipt"></i><span>สลิปเงินเดือน</span></a>
         </nav>
 

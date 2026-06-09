@@ -12,19 +12,33 @@
 </div>
 
 <section class="panel">
-    <h2>เปิด Ticket ใหม่</h2>
+    <div class="section-title">
+        <h2>เปิด Ticket ใหม่</h2>
+        @if($smartflowHelpdesk)
+            <a href="{{ $smartflowHelpdesk->url }}" target="_blank" rel="noopener">เปิด SmartFlow เดิม</a>
+        @endif
+    </div>
     <form method="post" action="{{ route('tickets.store') }}" class="form-grid">
         @csrf
-        <label class="span-2"><span>หัวข้อ</span><input class="form-control" name="title" required></label>
-        <label><span>ระดับความเร่งด่วน</span>
-            <select class="form-select" name="urgency">
-                <option value="low">ต่ำ</option>
-                <option value="normal" selected>ปกติ</option>
-                <option value="high">สูง</option>
-                <option value="critical">วิกฤต</option>
+        <label class="span-2"><span>หัวข้อ</span><input class="form-control" name="title" value="{{ old('title') }}" required></label>
+        <label><span>ประเภทคำขอ</span>
+            <select class="form-select" name="request_type">
+                @foreach($requestTypes as $key => $label)
+                    <option value="{{ $key }}" @selected(old('request_type', 'general') === $key)>{{ $label }}</option>
+                @endforeach
             </select>
         </label>
-        <label class="span-3"><span>รายละเอียด</span><textarea class="form-control" name="details" rows="3" required></textarea></label>
+        <label><span>ระดับความเร่งด่วน</span>
+            <select class="form-select" name="urgency">
+                <option value="low" @selected(old('urgency') === 'low')>ต่ำ</option>
+                <option value="normal" @selected(old('urgency', 'normal') === 'normal')>ปกติ</option>
+                <option value="high" @selected(old('urgency') === 'high')>สูง</option>
+                <option value="critical" @selected(old('urgency') === 'critical')>วิกฤต</option>
+            </select>
+        </label>
+        <label><span>เลขอ้างอิงเอกสารเดิม</span><input class="form-control" name="legacy_document_ref" value="{{ old('legacy_document_ref') }}" placeholder="เช่น REF: #2606815"></label>
+        <label class="span-3"><span>รายละเอียด</span><textarea class="form-control" name="details" rows="3" required>{{ old('details') }}</textarea></label>
+        <p class="form-help span-3">ประเภทคำขอนี้อ้างอิงจาก SmartFlow IT Helpdesk เดิม: VPN, SAP B1, AI-CRM, Remote Access และยกเลิกเอกสาร เพื่อให้ย้าย workflow เข้าระบบใหม่ได้ทีละส่วน</p>
         <button class="btn btn-primary" type="submit"><i class="bi bi-plus-circle"></i> เปิด Ticket</button>
     </form>
 </section>
@@ -40,7 +54,7 @@
         <article class="list-card">
             <div class="meta-row">
                 <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->status }}</span>
-                <span>{{ $ticket->urgency }}</span>
+                <span>{{ $requestTypes[$ticket->request_type] ?? $ticket->request_type }} · {{ $ticket->urgency }}</span>
             </div>
             <h3>{{ $ticket->title }}</h3>
             <p>{{ $ticket->details }}</p>
@@ -48,6 +62,9 @@
                 <span>ผู้แจ้ง: {{ $ticket->reporter->name }}</span>
                 <span>{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
             </div>
+            @if($ticket->legacy_document_ref)
+                <div class="legacy-ref"><i class="bi bi-link-45deg"></i> เอกสารเดิม: {{ $ticket->legacy_document_ref }}</div>
+            @endif
 
             @if($canManage)
                 <form class="inline-form" method="post" action="{{ route('tickets.status', $ticket) }}">

@@ -22,7 +22,7 @@
         <article class="list-card">
             <div class="meta-row">
                 <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->status }}</span>
-                <span>{{ $ticket->reporter->employee?->department?->name }}</span>
+                <span>{{ $requestTypes[$ticket->request_type] ?? $ticket->request_type }} · {{ $ticket->reporter->employee?->department?->name }}</span>
             </div>
             <h3>{{ $ticket->title }}</h3>
             <p>{{ $ticket->details }}</p>
@@ -30,6 +30,9 @@
                 <span>ผู้แจ้ง: {{ $ticket->reporter->name }}</span>
                 <span>{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
             </div>
+            @if($ticket->legacy_document_ref)
+                <div class="legacy-ref"><i class="bi bi-link-45deg"></i> เอกสารเดิม: {{ $ticket->legacy_document_ref }}</div>
+            @endif
         </article>
     @endforeach
 </div>
