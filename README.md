@@ -8,6 +8,8 @@ Laravel 12 internal company portal for a 200-person organization.
 - Employee dashboard with announcements, pending tickets, and new videos.
 - Employee profile and document downloads.
 - Legacy systems hub for Notion directory, SmartFlow IT Helpdesk, and Payroll links.
+- Imported employee directory from the old Notion directory with search and filters.
+- SmartFlow-inspired request and approval center for common document workflows.
 - Announcements with pinned and urgent flags.
 - Knowledge Base with articles and videos.
 - IT Helpdesk ticket workflow.

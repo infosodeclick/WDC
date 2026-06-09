@@ -265,7 +265,9 @@ a {
 }
 
 .system-mini-grid,
-.system-grid {
+.system-grid,
+.directory-grid,
+.workflow-template-grid {
     display: grid;
     gap: 14px;
 }
@@ -298,21 +300,49 @@ a {
     margin-bottom: 18px;
 }
 
+.directory-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: 18px;
+}
+
+.workflow-template-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .system-card {
     display: grid;
     gap: 14px;
     padding: 20px;
 }
 
-.system-card h2 {
+.directory-card,
+.workflow-template-card {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.system-card h2,
+.directory-card h2 {
     margin: 0;
     font-size: 1.15rem;
     font-weight: 750;
 }
 
-.system-card p {
+.system-card p,
+.directory-card p,
+.workflow-template-card p {
     margin: 0;
     color: var(--muted);
+}
+
+.workflow-template-card h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 750;
 }
 
 .integration-steps {
@@ -333,7 +363,66 @@ a {
 .integration-steps span,
 .mini-detail-list dd,
 .account-table small,
+.directory-note,
+.pdpa-note,
 .form-help {
+    color: var(--muted);
+}
+
+.pdpa-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    border: 1px solid #b7e4d7;
+    border-radius: 8px;
+    background: #f0fdf8;
+}
+
+.directory-filter {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(3, minmax(150px, .8fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.directory-filter label {
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+    font-weight: 650;
+}
+
+.directory-note {
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: .9rem;
+}
+
+.workflow-steps {
+    display: grid;
+    gap: 6px;
+}
+
+.workflow-steps span {
+    padding: 7px 9px;
+    border-radius: 8px;
+    background: #f5f8fb;
+    color: var(--muted);
+    font-size: .86rem;
+}
+
+.workflow-current-step {
+    display: grid;
+    gap: 3px;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8fbff;
+}
+
+.workflow-current-step small {
     color: var(--muted);
 }
 
@@ -441,6 +530,28 @@ a {
 .status-done {
     color: #067647;
     background: #ecfdf3;
+}
+
+.status-submitted {
+    color: #344054;
+    background: #eef2f7;
+}
+
+.status-in_review {
+    color: var(--warning);
+    background: #fff7e6;
+}
+
+.status-approved,
+.status-completed {
+    color: #067647;
+    background: #ecfdf3;
+}
+
+.status-rejected,
+.status-cancelled {
+    color: var(--danger);
+    background: #fdecec;
 }
 
 .status-primary {
@@ -755,6 +866,8 @@ a {
     .metric-grid,
     .system-mini-grid,
     .system-grid,
+    .directory-grid,
+    .workflow-template-grid,
     .integration-steps,
     .login-screen {
         grid-template-columns: 1fr;
@@ -778,6 +891,7 @@ a {
     }
 
     .portal-nav,
+    .directory-filter,
     .form-grid,
     .metric-grid {
         grid-template-columns: 1fr;

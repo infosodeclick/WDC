@@ -13,6 +13,8 @@
 
 <div class="content-grid">
     <section class="panel"><h2>พนักงาน</h2>@include('search.partials.simple-list', ['items' => $employees, 'titleField' => 'user.name', 'subtitleField' => 'position'])</section>
+    <section class="panel"><h2>สมุดโทรศัพท์</h2>@include('search.partials.simple-list', ['items' => $directoryEntries, 'titleField' => 'display_name', 'subtitleField' => 'department'])</section>
+    <section class="panel"><h2>คำขอ/อนุมัติ</h2>@include('search.partials.simple-list', ['items' => $workflowRequests, 'titleField' => 'title', 'subtitleField' => 'template.name'])</section>
     <section class="panel"><h2>ประกาศ</h2>@include('search.partials.simple-list', ['items' => $announcements, 'titleField' => 'title', 'subtitleField' => 'category'])</section>
     <section class="panel"><h2>คู่มือ</h2>@include('search.partials.simple-list', ['items' => $articles, 'titleField' => 'title', 'subtitleField' => 'category'])</section>
     <section class="panel"><h2>วิดีโอ</h2>@include('search.partials.simple-list', ['items' => $videos, 'titleField' => 'title', 'subtitleField' => 'category'])</section>

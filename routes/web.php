@@ -3,9 +3,11 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\WorkflowController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -18,6 +20,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
+    Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index');
     Route::get('/announcements', [PortalController::class, 'announcements'])->name('announcements.index');
     Route::get('/knowledge', [PortalController::class, 'knowledge'])->name('knowledge.index');
     Route::get('/documents', [PortalController::class, 'documents'])->name('documents.index');
@@ -26,6 +29,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/payroll', [PortalController::class, 'payroll'])->name('payroll');
     Route::get('/search', [PortalController::class, 'search'])->name('search');
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
+
+    Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
+    Route::post('/workflows', [WorkflowController::class, 'store'])->name('workflows.store');
+    Route::patch('/workflows/{workflowRequest}/status', [WorkflowController::class, 'updateStatus'])->name('workflows.status');
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');

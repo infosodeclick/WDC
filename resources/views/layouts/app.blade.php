@@ -24,9 +24,11 @@
         <nav class="nav flex-column portal-nav">
             <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
             <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
+            <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>สมุดโทรศัพท์</span></a>
             <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ข่าวสารและประกาศ</span></a>
             <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>ศูนย์ความรู้</span></a>
             <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
+            <a class="nav-link {{ request()->routeIs('workflows.*') ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
             <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน / เสนอแนะ</span></a>
             <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>เอกสารดาวน์โหลด</span></a>
             <a class="nav-link {{ request()->routeIs('systems.*') ? 'active' : '' }}" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>

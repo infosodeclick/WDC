@@ -10,6 +10,7 @@ WDC Portal should become the single starting point for employees, while legacy s
 - Purpose: employee telephone directory and internal contact lookup.
 - Visible fields: Thai name, English name, nickname, business unit/team, position, location, phone extension, email groups.
 - Migration direction: move directory fields into `employees` and manage updates from HR Portal later.
+- Current WDC implementation: imported visible directory records into `employee_directory_entries` and exposed them through `GET /directory`.
 
 ### SmartFlow
 
@@ -19,6 +20,7 @@ WDC Portal should become the single starting point for employees, while legacy s
 - IT Helpdesk fields observed: title, cancel document request, VPN request, SAP B1 issue, AI-CRM issue, database/Remote Access request, details, attachments 1-4.
 - IT Helpdesk workflow observed: manager approval for cancel document, IT accept/resolve case, AI-CRM accept/resolve case, SoftpowerIT accept/resolve case for SAP B1.
 - Migration direction: WDC tickets now store `request_type` and `legacy_document_ref`; later phases can add file uploads and SmartFlow import/API sync if available.
+- Current WDC implementation: imported SmartFlow workflow names into `workflow_templates`, IT Helpdesk steps into `workflow_steps`, and added `GET /workflows` for new approval requests.
 
 ### Payroll
 

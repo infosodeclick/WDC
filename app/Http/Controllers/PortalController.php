@@ -6,12 +6,14 @@ use App\Models\ActivityLog;
 use App\Models\Announcement;
 use App\Models\Complaint;
 use App\Models\Employee;
+use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeDocument;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
 use App\Models\LegacySystem;
 use App\Models\Notification;
 use App\Models\Ticket;
+use App\Models\WorkflowRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -28,9 +30,12 @@ class PortalController extends Controller
             'newAnnouncements' => Announcement::where('published_at', '>=', now()->subDays(7))->count(),
             'pendingTickets' => Ticket::where('reporter_id', $user->id)->whereNotIn('status', ['done'])->count(),
             'newVideos' => KnowledgeVideo::where('published_at', '>=', now()->subDays(14))->count(),
+            'directoryCount' => EmployeeDirectoryEntry::where('is_active', true)->count(),
+            'workflowPending' => WorkflowRequest::where('requester_id', $user->id)->whereNotIn('status', ['approved', 'rejected', 'completed', 'cancelled'])->count(),
             'pinnedAnnouncements' => Announcement::with('department')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
             'tickets' => Ticket::with('assignee')->where('reporter_id', $user->id)->latest()->take(4)->get(),
             'videos' => KnowledgeVideo::latest('published_at')->take(3)->get(),
+            'workflowRequests' => WorkflowRequest::with('template', 'currentStep')->where('requester_id', $user->id)->latest()->take(4)->get(),
             'featuredSystems' => LegacySystem::where('is_featured', true)->orderBy('sort_order')->take(4)->get(),
         ]);
     }
@@ -141,6 +146,26 @@ class PortalController extends Controller
             'employees' => $q === '' ? collect() : Employee::with('user', 'department')
                 ->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$q}%")->orWhere('employee_code', 'like', "%{$q}%"))
                 ->orWhere('position', 'like', "%{$q}%")
+                ->limit(8)
+                ->get(),
+            'directoryEntries' => $q === '' ? collect() : EmployeeDirectoryEntry::where('is_active', true)
+                ->where(function ($query) use ($q) {
+                    $query->where('display_name', 'like', "%{$q}%")
+                        ->orWhere('thai_name', 'like', "%{$q}%")
+                        ->orWhere('nickname', 'like', "%{$q}%")
+                        ->orWhere('department', 'like', "%{$q}%")
+                        ->orWhere('position', 'like', "%{$q}%")
+                        ->orWhere('email', 'like', "%{$q}%");
+                })
+                ->limit(8)
+                ->get(),
+            'workflowRequests' => $q === '' ? collect() : WorkflowRequest::with('template')
+                ->where('requester_id', $request->user()->id)
+                ->where(function ($query) use ($q) {
+                    $query->where('title', 'like', "%{$q}%")
+                        ->orWhere('details', 'like', "%{$q}%")
+                        ->orWhere('legacy_reference', 'like', "%{$q}%");
+                })
                 ->limit(8)
                 ->get(),
             'announcements' => $q === '' ? collect() : Announcement::where('title', 'like', "%{$q}%")->orWhere('body', 'like', "%{$q}%")->limit(8)->get(),
