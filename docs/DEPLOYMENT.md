@@ -27,4 +27,4 @@ Set environment variables in Railway:
 - `DB_PASSWORD`
 - `PAYROLL_URL`
 
-The repository includes `nixpacks.toml` and `railway.json` for build/start commands.
+The repository includes a `Dockerfile` and `railway.json`. The Docker image uses official PHP 8.4 with `pdo_mysql`/mysqlnd so it can connect to Railway MySQL 9 using `caching_sha2_password`.
