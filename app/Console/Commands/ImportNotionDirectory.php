@@ -306,7 +306,8 @@ class ImportNotionDirectory extends Command
      */
     private function findExistingEntry(array $row): ?EmployeeDirectoryEntry
     {
-        $query = EmployeeDirectoryEntry::where('source_system', 'notion');
+        $query = EmployeeDirectoryEntry::where('source_system', 'notion')
+            ->whereNull('source_record_id');
 
         if ($row['email']) {
             $match = (clone $query)->where('email', $row['email'])->first();
