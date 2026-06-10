@@ -42,6 +42,7 @@ Use `--dry-run` to verify the source count without writing records.
   - Super Admin can refresh the local catalog from `/workflows` using the `Sync SmartFlow Catalog` action. This sync uses the checked-in catalog snapshot and does not store SmartFlow login credentials.
 - Migration direction: employees should start work in WDC first. SmartFlow links remain only for old references or document types that have not been retired yet.
 - Current WDC implementation: SmartFlow Work Center mirrors All Documents, Your Tasks, Authorization, Statistics, Export Excel, Favorites, and Workflows. New requests receive `WDC-SF-*` document numbers, keep SmartFlow-style form payloads, support template favorites, comments, URL attachments, assignee/SLA updates, and export CSV from WDC.
+- IT Helpdesk consolidation: `/tickets` now points employees into the SmartFlow `IT Helpdesk` workflow template, `POST /tickets` creates `workflow_requests`, and legacy WDC ticket rows are migrated into workflow history with `external_source = wdc_ticket`.
 - Migration import: Super Admin/manager can download the WDC SmartFlow CSV template from `/workflows/import-template`, export old rows from SmartFlow into matching columns, then upload the CSV at `/workflows`. The importer upserts requests by old document/reference, maps employee code/email to WDC users, creates missing workflow templates, stores old payload in `external_payload`, and keeps old document URLs in `external_url`.
 - CLI import: `php artisan portal:import-smartflow path\to\smartflow-export.csv --default-requester=EMP09999`. Use `--dry-run` before large imports.
 
@@ -62,5 +63,5 @@ Use `--dry-run` to verify the source count without writing records.
 
 1. Portal hub: employees open WDC Portal first, then use linked legacy systems when needed.
 2. Directory migration: HR imports employee directory fields into WDC Portal.
-3. Helpdesk migration: new IT tickets and SmartFlow Work Center requests mirror SmartFlow categories, keep old references, and can receive imported CSV history.
+3. Helpdesk migration: new IT requests should start in WDC SmartFlow Work Center through the `IT Helpdesk` template; legacy `/tickets` routes remain compatibility shortcuts and old ticket rows are copied into workflow history.
 4. Workflow migration: retire selected SmartFlow workflows after CSV history, approval steps, and data owners are confirmed in WDC.

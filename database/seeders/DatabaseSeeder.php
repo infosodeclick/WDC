@@ -19,6 +19,7 @@ use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\TicketComment;
 use App\Models\User;
+use App\Services\ItHelpdeskWorkflow;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -31,8 +32,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $roles = collect([
-            ['name' => 'Employee', 'slug' => 'employee', 'description' => 'พนักงานทั่วไป ใช้งานโปรไฟล์ ข่าวสาร คู่มือ Ticket และร้องเรียน'],
-            ['name' => 'Supervisor', 'slug' => 'supervisor', 'description' => 'หัวหน้างาน เห็นทีมและช่วยติดตาม Ticket'],
+            ['name' => 'Employee', 'slug' => 'employee', 'description' => 'พนักงานทั่วไป ใช้งานโปรไฟล์ ข่าวสาร คู่มือ คำขอ IT และร้องเรียน'],
+            ['name' => 'Supervisor', 'slug' => 'supervisor', 'description' => 'หัวหน้างาน เห็นทีมและช่วยติดตามคำขอ IT'],
             ['name' => 'HR', 'slug' => 'hr', 'description' => 'HR จัดการพนักงาน ประกาศ เอกสาร และเรื่องร้องเรียน'],
             ['name' => 'Admin', 'slug' => 'admin', 'description' => 'ผู้ดูแลระบบ จัดการผู้ใช้ สิทธิ์ และ Log การใช้งาน'],
             ['name' => 'Super Admin', 'slug' => 'super_admin', 'description' => 'ผู้ดูแลสูงสุด แก้สิทธิ์และระบบหลังบ้านทั้งหมด'],
@@ -247,7 +248,7 @@ class DatabaseSeeder extends Seeder
         collect([
             ['category' => 'ERP', 'title' => 'วิธีเปิดใบสั่งขาย', 'summary' => 'ขั้นตอนการเปิดใบสั่งขายใน ERP สำหรับฝ่ายขาย', 'body' => 'เลือกเมนู Sales Order ตรวจสอบข้อมูลลูกค้า เพิ่มสินค้า ตรวจสอบเครดิต แล้วกดส่งอนุมัติ'],
             ['category' => 'คลังสินค้า', 'title' => 'วิธีรับสินค้าเข้าคลัง', 'summary' => 'คู่มือการรับสินค้าและตรวจนับสต็อก', 'body' => 'เปิดเอกสาร GRN ตรวจเลข PO สแกนสินค้า ตรวจจำนวน และบันทึกเข้าคลัง'],
-            ['category' => 'IT', 'title' => 'วิธีรีเซ็ตรหัสผ่านอีเมล', 'summary' => 'แนวทางแจ้ง IT และตั้งรหัสผ่านใหม่อย่างปลอดภัย', 'body' => 'เปิด Ticket ระบุรหัสพนักงาน ห้ามส่งรหัสผ่านเดิม และตั้งรหัสผ่านใหม่อย่างน้อย 12 ตัวอักษร'],
+            ['category' => 'IT', 'title' => 'วิธีรีเซ็ตรหัสผ่านอีเมล', 'summary' => 'แนวทางแจ้ง IT และตั้งรหัสผ่านใหม่อย่างปลอดภัย', 'body' => 'เปิดคำขอ IT ระบุรหัสพนักงาน ห้ามส่งรหัสผ่านเดิม และตั้งรหัสผ่านใหม่อย่างน้อย 12 ตัวอักษร'],
         ])->each(fn (array $article) => KnowledgeArticle::create([
             ...$article,
             'author_id' => $users['EMP00200']->id,
@@ -258,7 +259,7 @@ class DatabaseSeeder extends Seeder
         collect([
             ['category' => 'ERP', 'title' => 'สอนใช้งาน ERP เบื้องต้น', 'summary' => 'ภาพรวมเมนูหลักและ workflow', 'video_url' => 'https://example.com/videos/erp-intro', 'duration_minutes' => 18],
             ['category' => 'บัญชี', 'title' => 'สอนใช้งาน POS และรายงานยอดขาย', 'summary' => 'วิธีตรวจรายงาน POS หลังปิดรอบ', 'video_url' => 'https://example.com/videos/pos-report', 'duration_minutes' => 14],
-            ['category' => 'IT', 'title' => 'วิธีเปิด Ticket ให้ทีม IT แก้ได้เร็ว', 'summary' => 'ข้อมูลที่ควรแนบเมื่อแจ้งปัญหา', 'video_url' => 'https://example.com/videos/helpdesk-ticket', 'duration_minutes' => 7],
+            ['category' => 'IT', 'title' => 'วิธีเปิดคำขอ IT ให้ทีมแก้ได้เร็ว', 'summary' => 'ข้อมูลที่ควรแนบเมื่อแจ้งปัญหา', 'video_url' => 'https://example.com/videos/helpdesk-ticket', 'duration_minutes' => 7],
         ])->each(fn (array $video) => KnowledgeVideo::create([
             ...$video,
             'author_id' => $users['EMP00200']->id,
@@ -295,6 +296,21 @@ class DatabaseSeeder extends Seeder
             'body' => 'รับเรื่องแล้ว กำลังตรวจสอบ account lock ในระบบ ERP',
         ]);
 
+        $helpdesk = app(ItHelpdeskWorkflow::class);
+        $helpdeskRequest = $helpdesk->createFromLegacyTicketInput($users['EMP00125'], [
+            'title' => $ticket->title,
+            'request_type' => $ticket->request_type,
+            'details' => $ticket->details,
+            'urgency' => $ticket->urgency,
+            'legacy_document_ref' => $ticket->legacy_document_ref,
+        ]);
+
+        $helpdeskRequest->update([
+            'assigned_to' => $users['EMP00200']->id,
+            'status' => 'in_progress',
+            'current_step_id' => $helpdesk->stepForStatus($helpdeskRequest->template()->with('steps')->first(), 'in_progress')?->id,
+        ]);
+
         Complaint::create([
             'reporter_id' => null,
             'type' => 'เสนอแนะ',
@@ -307,7 +323,7 @@ class DatabaseSeeder extends Seeder
 
         collect([
             ['type' => 'announcement', 'title' => 'ประกาศใหม่ 5 รายการ', 'body' => 'มีประกาศล่าสุดที่ควรอ่าน', 'url' => '/announcements'],
-            ['type' => 'ticket', 'title' => 'Ticket ถูกตอบกลับ', 'body' => 'ทีม IT เพิ่มคำตอบใน Ticket ของคุณ', 'url' => '/tickets'],
+            ['type' => 'workflow', 'title' => 'คำขอ IT ถูกตอบกลับ', 'body' => 'ทีม IT เพิ่มคำตอบในคำขอของคุณ', 'url' => '/tickets'],
             ['type' => 'document', 'title' => 'มีเอกสารใหม่', 'body' => 'HR เพิ่มแบบฟอร์มใบลาและคู่มือพนักงาน', 'url' => '/documents'],
         ])->each(fn (array $notification) => Notification::create([
             ...$notification,

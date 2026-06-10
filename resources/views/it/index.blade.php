@@ -7,35 +7,39 @@
     <div>
         <p class="eyebrow">IT Helpdesk Portal</p>
         <h1>Dashboard IT</h1>
-        <p>ติดตาม Ticket ใหม่ ค้าง และเสร็จสิ้น พร้อมกรองตามแผนก ผู้แจ้ง และวันที่</p>
+        <p>ติดตามคำขอ IT Helpdesk จาก SmartFlow Workflow เดียว ลดการเปิดงานซ้ำระหว่าง Ticket และคำขออนุมัติ</p>
     </div>
+    <a class="btn btn-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-plus-circle"></i> เปิดคำขอ IT</a>
 </div>
 
 <div class="metric-grid">
-    <div class="metric-card"><span>Ticket ใหม่</span><strong>{{ $newTickets }}</strong><small>เปิดงาน</small></div>
-    <div class="metric-card"><span>Ticket ค้าง</span><strong>{{ $pendingTickets }}</strong><small>รับเรื่อง/กำลังดำเนินการ</small></div>
-    <div class="metric-card"><span>Ticket เสร็จ</span><strong>{{ $doneTickets }}</strong><small>ปิดงานแล้ว</small></div>
+    <div class="metric-card"><span>งานใหม่</span><strong>{{ $newTickets }}</strong><small>ส่งคำขอแล้ว</small></div>
+    <div class="metric-card"><span>งานค้าง</span><strong>{{ $pendingTickets }}</strong><small>ตรวจสอบ/รับเรื่อง/ดำเนินการ</small></div>
+    <div class="metric-card"><span>งานเสร็จ</span><strong>{{ $doneTickets }}</strong><small>อนุมัติหรือปิดงานแล้ว</small></div>
 </div>
 
 <div class="item-list">
-    @foreach($tickets as $ticket)
+    @forelse($requests as $requestItem)
         <article class="list-card">
             <div class="meta-row">
-                <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->statusLabel() }}</span>
-                <span>{{ $ticket->requestTypeLabel() }} · {{ $ticket->reporter->employee?->department?->name }}</span>
+                <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
+                <span>{{ $requestItem->template->name }} · {{ $requestItem->requester->employee?->department?->name }}</span>
             </div>
-            <h3>{{ $ticket->title }}</h3>
-            <p>{{ $ticket->details }}</p>
+            <h3>{{ $requestItem->title }}</h3>
+            <p>{{ $requestItem->details }}</p>
             <div class="meta-row">
-                <span>ผู้แจ้ง: {{ $ticket->reporter->name }}</span>
-                <span>{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
+                <span>ผู้แจ้ง: {{ $requestItem->requester->name }}</span>
+                <span>{{ $requestItem->created_at->format('d/m/Y H:i') }}</span>
             </div>
-            @if($ticket->legacy_document_ref)
-                <div class="legacy-ref"><i class="bi bi-link-45deg"></i> เอกสารเดิม: {{ $ticket->legacy_document_ref }}</div>
+            @if($requestItem->legacy_reference)
+                <div class="legacy-ref"><i class="bi bi-link-45deg"></i> เอกสารเดิม: {{ $requestItem->legacy_reference }}</div>
             @endif
+            <a class="text-link" href="{{ route('workflows.index', ['template' => $requestItem->workflow_template_id, 'status' => $requestItem->status]) }}">เปิดใน Workflow</a>
         </article>
-    @endforeach
+    @empty
+        <div class="empty-state">ยังไม่มีงาน IT Helpdesk ค้างใน Workflow</div>
+    @endforelse
 </div>
 
-{{ $tickets->links() }}
+{{ $requests->links() }}
 @endsection

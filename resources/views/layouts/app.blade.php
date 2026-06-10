@@ -11,6 +11,8 @@
 </head>
 <body class="portal-body">
 @php($currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department'))
+@php($helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0))
+@php($isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId)
 <div class="portal-shell">
     <aside class="portal-sidebar">
         <a class="brand-lockup" href="{{ route('dashboard') }}">
@@ -38,10 +40,10 @@
                 <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>ศูนย์ความรู้</span></a>
             @endif
             @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage']))
-                <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
+                <a class="nav-link {{ request()->routeIs('tickets.*') || $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ $itHelpdeskNavUrl ?? route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
             @endif
             @if($currentUser?->canAccessAny(['workflows.create', 'workflows.manage']))
-                <a class="nav-link {{ request()->routeIs('workflows.*') ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
+                <a class="nav-link {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
             @endif
             @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน / เสนอแนะ</span></a>

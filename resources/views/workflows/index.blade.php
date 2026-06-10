@@ -78,11 +78,12 @@
         </div>
         <form method="post" action="{{ route('workflows.store') }}" class="form-grid">
             @csrf
+            @php($selectedTemplateId = (int) old('workflow_template_id', $activeTemplateId ?: $templateCatalog->first()?->id))
             <label>
                 <span>Workflow</span>
                 <select class="form-select" name="workflow_template_id" data-smartflow-template-select required>
                     @foreach($templateCatalog as $template)
-                        <option value="{{ $template->id }}" @selected((int) old('workflow_template_id') === $template->id)>
+                        <option value="{{ $template->id }}" @selected($selectedTemplateId === $template->id)>
                             {{ $template->name }} · {{ $template->service_team ?? $template->category }}
                         </option>
                     @endforeach
@@ -105,7 +106,6 @@
                 <span>เลขอ้างอิง SmartFlow เดิม</span>
                 <input class="form-control" name="legacy_reference" value="{{ old('legacy_reference') }}" placeholder="เช่น REF: #2606815">
             </label>
-            @php($selectedTemplateId = (int) old('workflow_template_id', $templateCatalog->first()?->id))
             <div class="span-3 smartflow-form-fields" data-smartflow-fieldsets>
                 @foreach($templateCatalog as $template)
                     @php($isSelectedTemplate = $selectedTemplateId === $template->id)

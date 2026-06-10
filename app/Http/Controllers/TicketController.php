@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
-use App\Models\Department;
-use App\Models\LegacySystem;
 use App\Models\Notification;
 use App\Models\Ticket;
 use App\Models\TicketComment;
 use App\Models\User;
+use App\Models\WorkflowRequest;
+use App\Services\ItHelpdeskWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,60 +16,37 @@ use Illuminate\View\View;
 
 class TicketController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, ItHelpdeskWorkflow $helpdesk): RedirectResponse
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
-        $query = Ticket::with('reporter.employee.department', 'assignee', 'comments.user')->latest();
-        $canManage = $this->canManageTickets($user);
 
-        if (! $canManage) {
-            $query->where('reporter_id', $user->id);
-        } elseif (! $user->canSeeAllData()) {
-            if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
-                $query->where('department_id', $user->employee->department_id);
-            } else {
-                $query->where('reporter_id', $user->id);
-            }
-        }
+        abort_unless($user->canAccessAny(['tickets.create', 'tickets.manage', 'workflows.create', 'workflows.manage']), 403);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->string('status'));
-        }
-
-        return view('tickets.index', [
-            'tickets' => $query->paginate(12)->withQueryString(),
-            'departments' => Department::orderBy('name')->get(),
-            'canManage' => $canManage,
-            'canCreate' => $user->canAccess('tickets.create'),
-            'status' => $request->string('status')->toString(),
-            'requestTypes' => Ticket::requestTypeLabels(),
-            'statusLabels' => Ticket::statusLabels(),
-            'urgencyLabels' => Ticket::urgencyLabels(),
-            'smartflowHelpdesk' => LegacySystem::where('key', 'smartflow-helpdesk')->first(),
-        ]);
+        return redirect()->to($helpdesk->route([
+            'status' => $this->workflowStatusFromTicketStatus($request->string('status')->toString()),
+        ]));
     }
 
-    public function itDashboard(Request $request): View
+    public function itDashboard(Request $request, ItHelpdeskWorkflow $helpdesk): View
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
-        abort_unless($user->canAccess('it.portal.view') || $this->canManageTickets($user), 403);
+        abort_unless($user->canAccessAny(['it.portal.view', 'tickets.manage', 'workflows.manage']), 403);
 
-        $ticketScope = $this->scopedTicketQuery($user);
+        $workflowScope = $helpdesk->queryFor($user, $this->canManageHelpdesk($user));
 
         return view('it.index', [
-            'newTickets' => (clone $ticketScope)->where('status', 'open')->count(),
-            'pendingTickets' => (clone $ticketScope)->whereIn('status', ['accepted', 'in_progress'])->count(),
-            'doneTickets' => (clone $ticketScope)->where('status', 'done')->count(),
-            'tickets' => (clone $ticketScope)->with('reporter.employee.department', 'assignee')->latest()->paginate(12),
-            'departments' => Department::orderBy('name')->get(),
-            'requestTypes' => Ticket::requestTypeLabels(),
+            'newTickets' => (clone $workflowScope)->where('status', 'submitted')->count(),
+            'pendingTickets' => (clone $workflowScope)->whereIn('status', ['in_review', 'accepted', 'in_progress', 'waiting_requester'])->count(),
+            'doneTickets' => (clone $workflowScope)->whereIn('status', ItHelpdeskWorkflow::DONE_STATUSES)->count(),
+            'requests' => (clone $workflowScope)->paginate(12),
+            'itHelpdeskUrl' => $helpdesk->route(),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ItHelpdeskWorkflow $helpdesk): RedirectResponse
     {
-        abort_unless($request->user()->canAccess('tickets.create'), 403);
+        abort_unless($request->user()->canAccessAny(['tickets.create', 'workflows.create']), 403);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -79,28 +56,23 @@ class TicketController extends Controller
             'legacy_document_ref' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $ticket = Ticket::create([
-            ...$data,
-            'reporter_id' => $request->user()->id,
-            'department_id' => $request->user()->employee?->department_id,
-            'status' => 'open',
-        ]);
+        $workflowRequest = $helpdesk->createFromLegacyTicketInput($request->user(), $data);
 
-        $this->log($request, 'create_ticket', Ticket::class, $ticket->id, "Created ticket {$ticket->title}");
+        $this->log($request, 'create_helpdesk_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Created helpdesk workflow {$workflowRequest->title}");
 
         User::with('role.permissions', 'permissionOverrides')
             ->where('is_active', true)
             ->get()
-            ->filter(fn (User $user) => $user->canAccess('tickets.manage'))
+            ->filter(fn (User $user) => $user->canAccess('workflows.manage'))
             ->each(fn (User $user) => Notification::create([
                 'user_id' => $user->id,
-                'type' => 'ticket',
-                'title' => 'Ticket ใหม่',
-                'body' => $ticket->title,
-                'url' => route('tickets.index'),
+                'type' => 'workflow',
+                'title' => 'มีคำขอ IT Helpdesk ใหม่',
+                'body' => $workflowRequest->title,
+                'url' => $helpdesk->route(),
             ]));
 
-        return redirect()->route('tickets.index')->with('status', 'เปิด Ticket เรียบร้อยแล้ว');
+        return redirect()->to($helpdesk->route())->with('status', 'ส่งคำขอ IT Helpdesk เข้าศูนย์ Workflow แล้ว');
     }
 
     public function comment(Ticket $ticket, Request $request): RedirectResponse
@@ -160,6 +132,22 @@ class TicketController extends Controller
     private function canManageTickets(User $user): bool
     {
         return $user->canAccess('tickets.manage');
+    }
+
+    private function canManageHelpdesk(User $user): bool
+    {
+        return $user->canAccessAny(['tickets.manage', 'workflows.manage', 'it.portal.view']);
+    }
+
+    private function workflowStatusFromTicketStatus(string $status): ?string
+    {
+        return match ($status) {
+            'open' => 'submitted',
+            'accepted' => 'accepted',
+            'in_progress' => 'in_progress',
+            'done' => 'completed',
+            default => null,
+        };
     }
 
     private function canViewTicket(User $user, Ticket $ticket): bool

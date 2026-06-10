@@ -18,10 +18,10 @@
         <strong>{{ $newAnnouncements }}</strong>
         <small>รายการใน 7 วันล่าสุด</small>
     </a>
-    <a class="metric-card" href="{{ route('tickets.index') }}">
-        <span>Ticket ค้าง</span>
+    <a class="metric-card" href="{{ $itHelpdeskUrl }}">
+        <span>งาน IT ค้าง</span>
         <strong>{{ $pendingTickets }}</strong>
-        <small>ยังไม่เสร็จสิ้น</small>
+        <small>จาก SmartFlow Workflow เดียว</small>
     </a>
     <a class="metric-card" href="{{ route('knowledge.index') }}">
         <span>วิดีโอใหม่</span>
@@ -43,7 +43,7 @@
 <div class="quick-actions">
     <a class="btn btn-primary" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i> ดูประกาศ</a>
     <a class="btn btn-outline-primary" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i> ค้นหาพนักงาน</a>
-    <a class="btn btn-outline-primary" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i> แจ้งปัญหา</a>
+    <a class="btn btn-outline-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-life-preserver"></i> แจ้งปัญหา IT</a>
     <a class="btn btn-outline-primary" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i> ส่งคำขออนุมัติ</a>
     <a class="btn btn-outline-primary" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i> ร้องเรียน</a>
     <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> คู่มือการใช้งาน</a>
@@ -73,18 +73,18 @@
 
     <section>
         <div class="section-title">
-            <h2>Ticket ของฉัน</h2>
-            <a href="{{ route('tickets.index') }}">เปิด Helpdesk</a>
+            <h2>งาน IT ของฉัน</h2>
+            <a href="{{ $itHelpdeskUrl }}">เปิด Helpdesk</a>
         </div>
         <div class="item-list">
-            @forelse($tickets as $ticket)
+            @forelse($itRequests as $requestItem)
                 <article class="list-card compact">
-                    <h3>{{ $ticket->title }}</h3>
-                    <p>{{ $ticket->assignee ? 'ผู้รับผิดชอบ: '.$ticket->assignee->name : 'ยังไม่มีผู้รับผิดชอบ' }}</p>
-                    <span class="status-pill status-{{ $ticket->status }}">{{ $ticket->statusLabel() }}</span>
+                    <h3>{{ $requestItem->title }}</h3>
+                    <p>{{ $requestItem->currentStep?->name ?? ($requestItem->assignee ? 'ผู้รับผิดชอบ: '.$requestItem->assignee->name : 'รอทีม IT รับเรื่อง') }}</p>
+                    <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
                 </article>
             @empty
-                <div class="empty-state">ยังไม่มี Ticket ค้าง</div>
+                <div class="empty-state">ยังไม่มีงาน IT ค้าง</div>
             @endforelse
         </div>
     </section>

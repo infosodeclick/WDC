@@ -13,8 +13,8 @@ use App\Models\KnowledgeVideo;
 use App\Models\LegacySystem;
 use App\Models\LegacySystemSnapshot;
 use App\Models\Notification;
-use App\Models\Ticket;
 use App\Models\WorkflowRequest;
+use App\Services\ItHelpdeskWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -22,24 +22,28 @@ use Illuminate\View\View;
 
 class PortalController extends Controller
 {
-    public function dashboard(Request $request): View
+    public function dashboard(Request $request, ItHelpdeskWorkflow $helpdesk): View
     {
-        $user = $request->user()->load('role', 'employee.department');
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
         abort_unless($user->canAccess('portal.dashboard.view'), 403);
+
+        $itRequests = $helpdesk->queryFor($user, false);
+        $workflowRequests = $helpdesk->nonItWorkflowQueryFor($user, $user->canAccess('workflows.manage'));
 
         return view('dashboard', [
             'user' => $user,
             'newAnnouncements' => Announcement::where('published_at', '>=', now()->subDays(7))->count(),
-            'pendingTickets' => Ticket::where('reporter_id', $user->id)->whereNotIn('status', ['done'])->count(),
+            'pendingTickets' => (clone $itRequests)->whereIn('status', ItHelpdeskWorkflow::ACTIVE_STATUSES)->count(),
             'newVideos' => KnowledgeVideo::where('published_at', '>=', now()->subDays(14))->count(),
             'directoryCount' => EmployeeDirectoryEntry::where('is_active', true)->count(),
-            'workflowPending' => WorkflowRequest::where('requester_id', $user->id)->whereNotIn('status', ['approved', 'rejected', 'completed', 'cancelled'])->count(),
+            'workflowPending' => (clone $workflowRequests)->whereIn('status', ItHelpdeskWorkflow::ACTIVE_STATUSES)->count(),
             'pinnedAnnouncements' => Announcement::with('department')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
-            'tickets' => Ticket::with('assignee')->where('reporter_id', $user->id)->latest()->take(4)->get(),
+            'itRequests' => (clone $itRequests)->take(4)->get(),
             'videos' => KnowledgeVideo::latest('published_at')->take(3)->get(),
-            'workflowRequests' => WorkflowRequest::with('template', 'currentStep')->where('requester_id', $user->id)->latest()->take(4)->get(),
+            'workflowRequests' => (clone $workflowRequests)->take(4)->get(),
             'featuredSystems' => LegacySystem::where('is_featured', true)->orderBy('sort_order')->take(4)->get(),
+            'itHelpdeskUrl' => $helpdesk->route(),
         ]);
     }
 

@@ -8,7 +8,7 @@ Primary web routes:
 - `GET /directory`
 - `GET /announcements`
 - `GET /knowledge`
-- `GET /tickets`, `POST /tickets`
+- `GET /tickets`, `POST /tickets` compatibility shortcuts for IT Helpdesk
 - `POST /tickets/{ticket}/comments`
 - `PATCH /tickets/{ticket}/status`
 - `GET /complaints`, `POST /complaints`
@@ -31,7 +31,9 @@ Primary web routes:
 
 V1 uses Blade forms and session authentication rather than a JSON API. Add `routes/api.php` only when a separate frontend or mobile app needs structured API access.
 
-`POST /tickets` accepts SmartFlow-aligned fields:
+`GET /tickets` redirects employees to the WDC SmartFlow IT Helpdesk workflow template instead of opening a separate Ticket queue.
+
+`POST /tickets` is kept for old forms and accepts SmartFlow-aligned fields, then creates a `workflow_requests` row for the SmartFlow `IT Helpdesk` template:
 
 - `request_type`: `general`, `cancel_document`, `vpn_access`, `sap_b1`, `ai_crm`, or `remote_access`
 - `legacy_document_ref`: optional reference such as an old SmartFlow document number
