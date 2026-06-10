@@ -10,6 +10,7 @@ Laravel 12 internal company portal for a 200-person organization.
 - Legacy systems hub for Notion directory, SmartFlow IT Helpdesk, and Payroll links.
 - Notion directory importer with employee photos, team/location filters, mail groups, and showroom records.
 - SmartFlow Work Center with All Documents, Your Tasks, Authorization, Statistics, Export, Favorites, workflow templates, WDC document numbers, and SmartFlow-style form payloads.
+- SmartFlow CSV import for old documents, request comments, attachment links, assignee/SLA updates, and Super Admin workflow-template backend.
 - Announcements with pinned and urgent flags.
 - Knowledge Base with articles and videos.
 - IT Helpdesk ticket workflow.
@@ -25,6 +26,7 @@ composer install
 npm.cmd install
 php artisan migrate:fresh --seed
 php artisan portal:import-notion-directory
+php artisan portal:import-smartflow .\storage\app\smartflow-export.csv
 npm.cmd run build
 php artisan serve
 ```

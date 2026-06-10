@@ -9,6 +9,7 @@ use App\Models\WorkflowRequest;
 use App\Models\WorkflowRequestEvent;
 use App\Models\WorkflowStep;
 use App\Models\WorkflowTemplate;
+use App\Services\SmartflowCsvImporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,12 +21,13 @@ class WorkflowController extends Controller
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
         $canManage = $this->canManageWorkflows($user);
+        $canManageSystem = $user->canAccess('admin.system.manage');
         $status = $request->string('status')->toString();
         $templateId = $request->integer('template');
         $activeView = $this->activeSmartflowView($request);
         $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
 
-        $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user')->latest();
+        $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user', 'attachments')->latest();
 
         if (! $canManage) {
             $query->where('requester_id', $user->id);
@@ -60,12 +62,15 @@ class WorkflowController extends Controller
             'requests' => $query->paginate(12)->withQueryString(),
             'statusLabels' => WorkflowRequest::statusLabels(),
             'canManage' => $canManage,
+            'canManageSystem' => $canManageSystem,
             'canCreate' => $user->canAccess('workflows.create'),
+            'manageableUsers' => $canManage ? User::with('employee.department')->where('is_active', true)->orderBy('name')->get() : collect(),
             'menuTabs' => $this->smartflowMenuTabs(),
             'activeView' => $activeView,
             'activeStatus' => $status,
             'activeTemplateId' => $templateId,
             'favoriteTemplateIds' => $favoriteTemplateIds,
+            'importHeaders' => $this->smartflowImportHeaders(),
             'metrics' => [
                 'submitted' => (clone $this->scopedWorkflowQuery($user))->where('status', 'submitted')->count(),
                 'in_review' => (clone $this->scopedWorkflowQuery($user))->whereIn('status', ['in_review', 'accepted', 'in_progress', 'waiting_requester'])->count(),
@@ -85,9 +90,12 @@ class WorkflowController extends Controller
             'details' => ['required', 'string', 'max:5000'],
             'form_payload' => ['nullable', 'array'],
             'form_payload.*' => ['nullable', 'string', 'max:500'],
+            'attachment_links' => ['nullable', 'string', 'max:5000'],
             'priority' => ['required', 'in:low,normal,high,critical'],
             'legacy_reference' => ['nullable', 'string', 'max:120'],
         ]);
+        $attachmentLinks = $data['attachment_links'] ?? '';
+        unset($data['attachment_links']);
 
         $template = WorkflowTemplate::with('steps')->findOrFail($data['workflow_template_id']);
         $firstStep = $template->steps->first();
@@ -103,6 +111,8 @@ class WorkflowController extends Controller
             'due_at' => $template->sla_hours ? now()->addHours($template->sla_hours) : null,
             'submitted_at' => now(),
         ]);
+
+        $this->storeAttachmentLinks($workflowRequest, $attachmentLinks, $request->user(), 'wdc');
 
         $workflowRequest->update([
             'document_number' => $this->generateDocumentNumber($workflowRequest),
@@ -141,6 +151,8 @@ class WorkflowController extends Controller
 
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(WorkflowRequest::statusLabels()))],
+            'assigned_to' => ['nullable', 'exists:users,id'],
+            'due_at' => ['nullable', 'date'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -150,8 +162,9 @@ class WorkflowController extends Controller
         $workflowRequest->update([
             'status' => $data['status'],
             'current_step_id' => $nextStep?->id,
-            'assigned_to' => $workflowRequest->assigned_to ?: $request->user()->id,
+            'assigned_to' => $request->filled('assigned_to') ? $data['assigned_to'] : ($workflowRequest->assigned_to ?: $request->user()->id),
             'assigned_group' => $nextStep?->approver_group ?: $workflowRequest->assigned_group,
+            'due_at' => $request->filled('due_at') ? $data['due_at'] : $workflowRequest->due_at,
             'completed_at' => in_array($data['status'], ['approved', 'rejected', 'completed', 'cancelled'], true) ? now() : null,
         ]);
 
@@ -188,6 +201,126 @@ class WorkflowController extends Controller
         return back()->with('status', 'อัปเดตรายการโปรดแล้ว');
     }
 
+    public function comment(WorkflowRequest $workflowRequest, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canViewWorkflow($user, $workflowRequest->load('requester.employee.department')), 403);
+
+        $data = $request->validate([
+            'comment' => ['required', 'string', 'max:2000'],
+            'attachment_links' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        WorkflowRequestEvent::create([
+            'workflow_request_id' => $workflowRequest->id,
+            'user_id' => $user->id,
+            'action' => 'comment',
+            'comment' => $data['comment'],
+        ]);
+
+        $this->storeAttachmentLinks($workflowRequest, $data['attachment_links'] ?? '', $user, 'wdc');
+        $this->notifyWorkflowParticipants($workflowRequest, $user, 'มีคอมเมนต์ใหม่', $data['comment']);
+        $this->log($request, 'comment_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Commented {$workflowRequest->document_number}");
+
+        return back()->with('status', 'เพิ่มคอมเมนต์แล้ว');
+    }
+
+    public function importCsv(Request $request, SmartflowCsvImporter $importer): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canManageWorkflows($user), 403);
+
+        $data = $request->validate([
+            'smartflow_csv' => ['required', 'file', 'max:10240'],
+        ]);
+
+        $stats = $importer->import($data['smartflow_csv']->getRealPath(), $user, [
+            'default_requester' => $user,
+        ]);
+
+        $this->log($request, 'import_smartflow_csv', WorkflowRequest::class, null, "Imported {$stats['total']} SmartFlow rows");
+
+        return back()
+            ->with('status', "Import SmartFlow สำเร็จ {$stats['created']} ใหม่, {$stats['updated']} อัปเดต, {$stats['skipped']} ข้าม")
+            ->with('import_errors', $stats['errors']);
+    }
+
+    public function downloadImportTemplate(Request $request)
+    {
+        abort_unless($this->canManageWorkflows($request->user()->load('role.permissions', 'permissionOverrides')), 403);
+
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+            echo "\xEF\xBB\xBF";
+            fputcsv($handle, $this->smartflowImportHeaders());
+            fputcsv($handle, [
+                'SF-2606815',
+                '7',
+                'IT Helpdesk',
+                'ขอใช้งาน VPN',
+                'พนักงานขอเปิด VPN สำหรับทำงานนอกสถานที่',
+                'EMP00125',
+                'somchai@wdc.co.th',
+                'submitted',
+                'normal',
+                now()->format('Y-m-d H:i:s'),
+                '',
+                now()->addDay()->format('Y-m-d H:i:s'),
+                'EMP00200',
+                'IT Helpdesk',
+                'Your Tasks',
+                'REF: #2606815',
+                'https://wdc.smartflow.pw/document/2606815/',
+                'SAP B1',
+                'VPN',
+                'https://example.com/file.pdf',
+            ]);
+            fclose($handle);
+        }, 'wdc-smartflow-import-template.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function storeTemplate(Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($user->canAccess('admin.system.manage'), 403);
+
+        $data = $this->validateTemplateData($request);
+
+        $template = WorkflowTemplate::create($this->templateAttributes($data, [
+            'source_system' => 'wdc',
+            'is_active' => true,
+            'sort_order' => ((int) WorkflowTemplate::max('sort_order')) + 10,
+        ]));
+
+        $this->syncTemplateSteps($template, $data['step_lines'] ?? '');
+        $this->log($request, 'create_workflow_template', WorkflowTemplate::class, $template->id, "Created workflow template {$template->name}");
+
+        return back()->with('status', 'สร้าง workflow template ใหม่แล้ว');
+    }
+
+    public function updateTemplate(WorkflowTemplate $template, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($user->canAccess('admin.system.manage'), 403);
+
+        $data = $this->validateTemplateData($request);
+
+        $template->update($this->templateAttributes($data, [
+            'is_active' => $request->boolean('is_active'),
+        ]));
+
+        $this->syncTemplateSteps($template, $data['step_lines'] ?? '');
+        $this->log($request, 'update_workflow_template', WorkflowTemplate::class, $template->id, "Updated workflow template {$template->name}");
+
+        return back()->with('status', 'อัปเดต workflow template แล้ว');
+    }
+
     public function export(Request $request)
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
@@ -195,14 +328,15 @@ class WorkflowController extends Controller
         abort_unless($this->canManageWorkflows($user), 403);
 
         $rows = $this->scopedWorkflowQuery($user)
-            ->with('template', 'requester.employee.department', 'currentStep')
+            ->with('template', 'requester.employee.department', 'currentStep', 'assignee')
             ->latest()
             ->limit(2000)
             ->get();
 
         return response()->streamDownload(function () use ($rows) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['document_number', 'workflow', 'requester', 'department', 'status', 'priority', 'current_step', 'submitted_at', 'due_at']);
+            echo "\xEF\xBB\xBF";
+            fputcsv($handle, ['document_number', 'workflow', 'requester', 'department', 'status', 'priority', 'current_step', 'assigned_to', 'assigned_group', 'legacy_reference', 'external_url', 'submitted_at', 'due_at']);
 
             foreach ($rows as $row) {
                 fputcsv($handle, [
@@ -213,6 +347,10 @@ class WorkflowController extends Controller
                     $row->status,
                     $row->priority,
                     $row->currentStep?->name,
+                    $row->assignee?->name,
+                    $row->assigned_group,
+                    $row->legacy_reference,
+                    $row->external_url,
                     $row->submitted_at?->format('Y-m-d H:i:s'),
                     $row->due_at?->format('Y-m-d H:i:s'),
                 ]);
@@ -222,6 +360,147 @@ class WorkflowController extends Controller
         }, 'wdc-smartflow-documents-'.now()->format('Ymd-His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private function validateTemplateData(Request $request): array
+    {
+        return $request->validate([
+            'legacy_workflow_id' => ['nullable', 'string', 'max:120'],
+            'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:120'],
+            'smartflow_menu' => ['required', Rule::in(array_keys($this->smartflowMenuTabs()))],
+            'service_team' => ['nullable', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'form_schema_fields' => ['nullable', 'string', 'max:5000'],
+            'sla_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
+            'approval_policy' => ['required', 'string', 'max:120'],
+            'legacy_url' => ['nullable', 'url', 'max:1000'],
+            'step_lines' => ['nullable', 'string', 'max:5000'],
+        ]);
+    }
+
+    private function templateAttributes(array $data, array $overrides = []): array
+    {
+        $fields = collect(preg_split('/\r\n|\r|\n/', $data['form_schema_fields'] ?? '') ?: [])
+            ->map(fn (string $field) => trim($field))
+            ->filter()
+            ->values()
+            ->all();
+
+        return [
+            'legacy_workflow_id' => $data['legacy_workflow_id'] ?? null,
+            'name' => $data['name'],
+            'category' => $data['category'],
+            'description' => $data['description'] ?? null,
+            'smartflow_menu' => $this->smartflowMenuTabs()[$data['smartflow_menu']]['label'] ?? 'All Documents',
+            'service_team' => $data['service_team'] ?? null,
+            'form_schema' => ['fields' => $fields],
+            'sla_hours' => $data['sla_hours'] ?? null,
+            'approval_policy' => $data['approval_policy'],
+            'legacy_url' => $data['legacy_url'] ?? null,
+            ...$overrides,
+        ];
+    }
+
+    private function syncTemplateSteps(WorkflowTemplate $template, string $stepLines): void
+    {
+        $lines = collect(preg_split('/\r\n|\r|\n/', $stepLines) ?: [])
+            ->map(fn (string $line) => trim($line))
+            ->filter();
+
+        if ($lines->isEmpty() && ! $template->steps()->exists()) {
+            $lines = collect([
+                '1|Submit Request|Requester|ส่งคำขอเข้าระบบ|0',
+                '2|Manager Review|Manager / Approver|ตรวจสอบรายละเอียด|0',
+                '3|Complete Request|Service Owner|ปิดงานหรืออนุมัติขั้นสุดท้าย|1',
+            ]);
+        }
+
+        foreach ($lines as $line) {
+            $parts = array_map('trim', explode('|', $line));
+            $order = (int) ($parts[0] ?? 0);
+
+            if ($order < 1 || ($parts[1] ?? '') === '') {
+                continue;
+            }
+
+            $template->steps()->updateOrCreate(
+                ['step_order' => $order],
+                [
+                    'name' => $parts[1],
+                    'mode' => 'any_one',
+                    'approver_group' => $parts[2] ?? null,
+                    'approver_hint' => $parts[2] ?? null,
+                    'condition_label' => $parts[3] ?? null,
+                    'requires_input' => in_array(($parts[4] ?? '0'), ['1', 'true', 'yes', 'required'], true),
+                ],
+            );
+        }
+    }
+
+    private function smartflowImportHeaders(): array
+    {
+        return [
+            'document_number',
+            'workflow_id',
+            'workflow',
+            'title',
+            'details',
+            'requester_employee_code',
+            'requester_email',
+            'status',
+            'priority',
+            'submitted_at',
+            'completed_at',
+            'due_at',
+            'assigned_employee_code',
+            'assigned_group',
+            'smartflow_menu',
+            'legacy_reference',
+            'external_url',
+            'system',
+            'request_type',
+            'attachments',
+        ];
+    }
+
+    private function storeAttachmentLinks(WorkflowRequest $workflowRequest, string $rawLinks, User $user, string $sourceSystem): int
+    {
+        $links = collect(preg_split('/[\r\n;|]+/', $rawLinks) ?: [])
+            ->map(fn (string $link) => trim($link))
+            ->filter();
+
+        $count = 0;
+
+        foreach ($links as $index => $link) {
+            $workflowRequest->attachments()->updateOrCreate(
+                ['file_url' => $link],
+                [
+                    'source_system' => $sourceSystem,
+                    'file_name' => basename(parse_url($link, PHP_URL_PATH) ?: $link),
+                    'uploaded_by' => $user->id,
+                    'sort_order' => $index + 1,
+                ],
+            );
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function notifyWorkflowParticipants(WorkflowRequest $workflowRequest, User $actor, string $title, string $body): void
+    {
+        collect([$workflowRequest->requester_id, $workflowRequest->assigned_to])
+            ->filter(fn (?int $userId) => $userId && $userId !== $actor->id)
+            ->unique()
+            ->each(fn (int $userId) => Notification::create([
+                'user_id' => $userId,
+                'type' => 'workflow',
+                'title' => $title,
+                'body' => "{$workflowRequest->document_number}: ".((string) str($body)->limit(120)),
+                'url' => route('workflows.index'),
+            ]));
     }
 
     private function stepForStatus(WorkflowRequest $workflowRequest, string $status): ?WorkflowStep

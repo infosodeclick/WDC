@@ -32,8 +32,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
+    Route::get('/workflows/import-template', [WorkflowController::class, 'downloadImportTemplate'])->name('workflows.import-template');
     Route::post('/workflows', [WorkflowController::class, 'store'])->name('workflows.store');
+    Route::post('/workflows/import', [WorkflowController::class, 'importCsv'])->name('workflows.import');
+    Route::post('/workflows/templates', [WorkflowController::class, 'storeTemplate'])->name('workflows.templates.store');
     Route::post('/workflows/templates/{template}/favorite', [WorkflowController::class, 'toggleFavorite'])->name('workflows.templates.favorite');
+    Route::patch('/workflows/templates/{template}', [WorkflowController::class, 'updateTemplate'])->name('workflows.templates.update');
+    Route::post('/workflows/{workflowRequest}/comments', [WorkflowController::class, 'comment'])->name('workflows.comments.store');
     Route::patch('/workflows/{workflowRequest}/status', [WorkflowController::class, 'updateStatus'])->name('workflows.status');
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');

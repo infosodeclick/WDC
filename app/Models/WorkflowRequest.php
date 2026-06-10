@@ -25,18 +25,25 @@ class WorkflowRequest extends Model
         'priority',
         'status',
         'legacy_reference',
+        'external_source',
+        'external_record_id',
+        'external_url',
+        'external_payload',
         'due_at',
         'submitted_at',
         'completed_at',
+        'imported_at',
     ];
 
     protected function casts(): array
     {
         return [
             'form_payload' => 'array',
+            'external_payload' => 'array',
             'due_at' => 'datetime',
             'submitted_at' => 'datetime',
             'completed_at' => 'datetime',
+            'imported_at' => 'datetime',
         ];
     }
 
@@ -63,6 +70,11 @@ class WorkflowRequest extends Model
     public function events(): HasMany
     {
         return $this->hasMany(WorkflowRequestEvent::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(WorkflowRequestAttachment::class)->orderBy('sort_order');
     }
 
     public function statusLabel(): string

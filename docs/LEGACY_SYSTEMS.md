@@ -36,7 +36,9 @@ Use `--dry-run` to verify the source count without writing records.
   - AI-CRM Accept/Resolve Case: approver `thipaporn aisystem`, used when AI-CRM is selected.
   - SoftpowerIT Accept/Resolve Case: SAP B1 branch, assigned to the SoftpowerIT group.
 - Migration direction: employees should start work in WDC first. SmartFlow links remain only for old references or document types that have not been retired yet.
-- Current WDC implementation: SmartFlow Work Center mirrors All Documents, Your Tasks, Authorization, Statistics, Export Excel, Favorites, and Workflows. New requests receive `WDC-SF-*` document numbers, keep SmartFlow-style form payloads, support template favorites, and export CSV from WDC.
+- Current WDC implementation: SmartFlow Work Center mirrors All Documents, Your Tasks, Authorization, Statistics, Export Excel, Favorites, and Workflows. New requests receive `WDC-SF-*` document numbers, keep SmartFlow-style form payloads, support template favorites, comments, URL attachments, assignee/SLA updates, and export CSV from WDC.
+- Migration import: Super Admin/manager can download the WDC SmartFlow CSV template from `/workflows/import-template`, export old rows from SmartFlow into matching columns, then upload the CSV at `/workflows`. The importer upserts requests by old document/reference, maps employee code/email to WDC users, creates missing workflow templates, stores old payload in `external_payload`, and keeps old document URLs in `external_url`.
+- CLI import: `php artisan portal:import-smartflow path\to\smartflow-export.csv --default-requester=EMP09999`. Use `--dry-run` before large imports.
 
 ### Payroll
 
@@ -55,5 +57,5 @@ Use `--dry-run` to verify the source count without writing records.
 
 1. Portal hub: employees open WDC Portal first, then use linked legacy systems when needed.
 2. Directory migration: HR imports employee directory fields into WDC Portal.
-3. Helpdesk migration: new IT tickets mirror SmartFlow categories, then add file uploads and reporting.
-4. Workflow migration: replace selected SmartFlow workflows only after the approval steps and data owners are confirmed.
+3. Helpdesk migration: new IT tickets and SmartFlow Work Center requests mirror SmartFlow categories, keep old references, and can receive imported CSV history.
+4. Workflow migration: retire selected SmartFlow workflows after CSV history, approval steps, and data owners are confirmed in WDC.

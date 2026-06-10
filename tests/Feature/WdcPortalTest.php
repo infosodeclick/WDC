@@ -10,6 +10,7 @@ use App\Models\WorkflowRequest;
 use App\Models\WorkflowTemplate;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class WdcPortalTest extends TestCase
@@ -160,6 +161,69 @@ class WdcPortalTest extends TestCase
 
         $this->assertSame('in_review', $workflowRequest->status);
         $this->assertSame('รับเรื่องแล้ว', $workflowRequest->events()->latest()->first()?->comment);
+    }
+
+    public function test_manager_can_import_smartflow_csv_export(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $csv = implode("\n", [
+            'document_number,workflow_id,workflow,title,details,requester_employee_code,status,priority,submitted_at,assigned_employee_code,assigned_group,smartflow_menu,legacy_reference,external_url,system,attachments',
+            'SF-2606815,7,IT Helpdesk,VPN access,Need VPN for remote work,EMP00125,Accepted,High,2026-06-10 09:00:00,EMP00200,IT Helpdesk,Your Tasks,REF: #2606815,https://wdc.smartflow.pw/document/2606815/,VPN,https://example.com/smartflow.pdf',
+        ]);
+        $path = tempnam(sys_get_temp_dir(), 'smartflow');
+        file_put_contents($path, $csv);
+        $file = new UploadedFile($path, 'smartflow.csv', 'text/csv', null, true);
+
+        $this->post(route('workflows.import'), [
+            'smartflow_csv' => $file,
+        ])->assertRedirect();
+
+        $workflowRequest = WorkflowRequest::where('document_number', 'SF-2606815')->firstOrFail();
+
+        $this->assertSame('accepted', $workflowRequest->status);
+        $this->assertSame('smartflow', $workflowRequest->external_source);
+        $this->assertSame('VPN', $workflowRequest->form_payload['system']);
+        $this->assertSame(1, $workflowRequest->attachments()->count());
+    }
+
+    public function test_super_admin_can_update_workflow_template_backend(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $this->patch(route('workflows.templates.update', $template), [
+            'legacy_workflow_id' => '7',
+            'name' => 'IT Helpdesk WDC',
+            'category' => 'IT Helpdesk',
+            'smartflow_menu' => 'tasks',
+            'service_team' => 'IT Helpdesk',
+            'description' => 'Updated from workflow backend',
+            'form_schema_fields' => "System\nRequest type\nEvidence",
+            'sla_hours' => 12,
+            'approval_policy' => 'any_one',
+            'legacy_url' => 'https://wdc.smartflow.pw/document/submit/7/',
+            'step_lines' => "1|Accept Case|IT Helpdesk|รับเรื่อง|0\n2|Resolve Case|IT Helpdesk|แก้ไขและปิดงาน|1",
+            'is_active' => '1',
+        ])->assertRedirect();
+
+        $template->refresh();
+
+        $this->assertSame('IT Helpdesk WDC', $template->name);
+        $this->assertSame(12, $template->sla_hours);
+        $this->assertSame(['System', 'Request type', 'Evidence'], $template->schemaFields());
+        $this->assertTrue($template->steps()->where('name', 'Resolve Case')->exists());
     }
 
     public function test_ticket_can_store_smartflow_request_type_and_reference(): void

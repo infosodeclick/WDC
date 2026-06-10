@@ -14,7 +14,8 @@
 - Helpdesk workflow.
 - Notifications.
 - IT dashboard filters and assignments.
-- Rich file uploads.
+- SmartFlow Work Center with CSV import, assignee/SLA updates, comments, and URL attachments.
+- Replace URL attachments with first-party file storage when storage policy is confirmed.
 
 ## Phase 3
 
@@ -22,3 +23,4 @@
 - Knowledge Base publishing workflow.
 - Statistics reports.
 - Permission policy layer and finer role rules.
+- Full SmartFlow retirement plan: final exports, data-owner approval, and read-only legacy archive.

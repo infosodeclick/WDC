@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\ImportNotionDirectory;
+use App\Console\Commands\ImportSmartflowWorkflows;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         ImportNotionDirectory::class,
+        ImportSmartflowWorkflows::class,
     ])
     ->withMiddleware(function (Middleware $middleware) {
         //
