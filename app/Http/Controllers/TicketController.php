@@ -18,11 +18,18 @@ class TicketController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user()->load('role', 'employee.department');
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
         $query = Ticket::with('reporter.employee.department', 'assignee', 'comments.user')->latest();
+        $canManage = $this->canManageTickets($user);
 
-        if (! $this->canManageTickets($user)) {
+        if (! $canManage) {
             $query->where('reporter_id', $user->id);
+        } elseif (! $user->canSeeAllData()) {
+            if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+                $query->where('department_id', $user->employee->department_id);
+            } else {
+                $query->where('reporter_id', $user->id);
+            }
         }
 
         if ($request->filled('status')) {
@@ -32,7 +39,8 @@ class TicketController extends Controller
         return view('tickets.index', [
             'tickets' => $query->paginate(12)->withQueryString(),
             'departments' => Department::orderBy('name')->get(),
-            'canManage' => $this->canManageTickets($user),
+            'canManage' => $canManage,
+            'canCreate' => $user->canAccess('tickets.create'),
             'status' => $request->string('status')->toString(),
             'requestTypes' => Ticket::requestTypeLabels(),
             'statusLabels' => Ticket::statusLabels(),
@@ -43,13 +51,17 @@ class TicketController extends Controller
 
     public function itDashboard(Request $request): View
     {
-        abort_unless($this->canManageTickets($request->user()->load('role', 'employee.department')), 403);
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($user->canAccess('it.portal.view') || $this->canManageTickets($user), 403);
+
+        $ticketScope = $this->scopedTicketQuery($user);
 
         return view('it.index', [
-            'newTickets' => Ticket::where('status', 'open')->count(),
-            'pendingTickets' => Ticket::whereIn('status', ['accepted', 'in_progress'])->count(),
-            'doneTickets' => Ticket::where('status', 'done')->count(),
-            'tickets' => Ticket::with('reporter.employee.department', 'assignee')->latest()->paginate(12),
+            'newTickets' => (clone $ticketScope)->where('status', 'open')->count(),
+            'pendingTickets' => (clone $ticketScope)->whereIn('status', ['accepted', 'in_progress'])->count(),
+            'doneTickets' => (clone $ticketScope)->where('status', 'done')->count(),
+            'tickets' => (clone $ticketScope)->with('reporter.employee.department', 'assignee')->latest()->paginate(12),
             'departments' => Department::orderBy('name')->get(),
             'requestTypes' => Ticket::requestTypeLabels(),
         ]);
@@ -57,6 +69,8 @@ class TicketController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->canAccess('tickets.create'), 403);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'request_type' => ['required', Rule::in(array_keys(Ticket::requestTypeLabels()))],
@@ -74,9 +88,10 @@ class TicketController extends Controller
 
         $this->log($request, 'create_ticket', Ticket::class, $ticket->id, "Created ticket {$ticket->title}");
 
-        User::whereHas('employee.department', fn ($query) => $query->where('code', 'IT'))
-            ->orWhereHas('role', fn ($query) => $query->where('slug', 'admin'))
+        User::with('role.permissions', 'permissionOverrides')
+            ->where('is_active', true)
             ->get()
+            ->filter(fn (User $user) => $user->canAccess('tickets.manage'))
             ->each(fn (User $user) => Notification::create([
                 'user_id' => $user->id,
                 'type' => 'ticket',
@@ -90,7 +105,7 @@ class TicketController extends Controller
 
     public function comment(Ticket $ticket, Request $request): RedirectResponse
     {
-        abort_unless($this->canViewTicket($request->user()->load('role', 'employee.department'), $ticket), 403);
+        abort_unless($this->canViewTicket($request->user()->load('role.permissions', 'permissionOverrides', 'employee.department'), $ticket), 403);
 
         $data = $request->validate(['body' => ['required', 'string', 'max:3000']]);
 
@@ -118,7 +133,9 @@ class TicketController extends Controller
 
     public function updateStatus(Ticket $ticket, Request $request): RedirectResponse
     {
-        abort_unless($this->canManageTickets($request->user()->load('role', 'employee.department')), 403);
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canManageTickets($user) && $this->canViewTicket($user, $ticket), 403);
 
         $data = $request->validate(['status' => ['required', 'in:open,accepted,in_progress,done']]);
         $ticket->update([
@@ -142,12 +159,47 @@ class TicketController extends Controller
 
     private function canManageTickets(User $user): bool
     {
-        return $user->hasRole('admin') || $user->isInDepartment('IT');
+        return $user->canAccess('tickets.manage');
     }
 
     private function canViewTicket(User $user, Ticket $ticket): bool
     {
-        return $ticket->reporter_id === $user->id || $this->canManageTickets($user);
+        if ($ticket->reporter_id === $user->id) {
+            return true;
+        }
+
+        if (! $this->canManageTickets($user)) {
+            return false;
+        }
+
+        if ($user->canSeeAllData()) {
+            return true;
+        }
+
+        if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+            return $ticket->department_id === $user->employee->department_id;
+        }
+
+        return false;
+    }
+
+    private function scopedTicketQuery(User $user)
+    {
+        $query = Ticket::query();
+
+        if (! $this->canManageTickets($user)) {
+            return $query->where('reporter_id', $user->id);
+        }
+
+        if ($user->canSeeAllData()) {
+            return $query;
+        }
+
+        if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+            return $query->where('department_id', $user->employee->department_id);
+        }
+
+        return $query->where('reporter_id', $user->id);
     }
 
     private function log(Request $request, string $action, ?string $subjectType = null, ?int $subjectId = null, ?string $description = null): void

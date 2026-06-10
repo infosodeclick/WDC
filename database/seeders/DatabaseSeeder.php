@@ -14,6 +14,7 @@ use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
 use App\Models\LegacySystem;
 use App\Models\Notification;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\TicketComment;
@@ -34,7 +35,12 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Supervisor', 'slug' => 'supervisor', 'description' => 'หัวหน้างาน เห็นทีมและช่วยติดตาม Ticket'],
             ['name' => 'HR', 'slug' => 'hr', 'description' => 'HR จัดการพนักงาน ประกาศ เอกสาร และเรื่องร้องเรียน'],
             ['name' => 'Admin', 'slug' => 'admin', 'description' => 'ผู้ดูแลระบบ จัดการผู้ใช้ สิทธิ์ และ Log การใช้งาน'],
-        ])->mapWithKeys(fn (array $role) => [$role['slug'] => Role::create($role)]);
+            ['name' => 'Super Admin', 'slug' => 'super_admin', 'description' => 'ผู้ดูแลสูงสุด แก้สิทธิ์และระบบหลังบ้านทั้งหมด'],
+        ])->mapWithKeys(function (array $role) {
+            return [$role['slug'] => Role::updateOrCreate(['slug' => $role['slug']], $role)];
+        });
+
+        $this->syncDefaultPermissions($roles);
 
         $departments = collect([
             ['code' => 'HR', 'name' => 'ทรัพยากรบุคคล', 'description' => 'ดูแลข้อมูลพนักงาน เอกสาร และประกาศ HR'],
@@ -97,7 +103,7 @@ class DatabaseSeeder extends Seeder
                 'employee_code' => 'EMP09999',
                 'name' => 'ผู้ดูแลระบบ WDC',
                 'email' => 'admin@wdc.co.th',
-                'role' => 'admin',
+                'role' => 'super_admin',
                 'department' => 'IT',
                 'english_name' => 'WDC Administrator',
                 'nickname' => 'แอดมิน',
@@ -137,6 +143,13 @@ class DatabaseSeeder extends Seeder
 
             return [$profile['employee_code'] => $user];
         });
+
+        if (isset($users['EMP00200'])) {
+            $itPermissionIds = Permission::whereIn('key', ['tickets.manage', 'it.portal.view'])->pluck('id');
+            $users['EMP00200']->permissionOverrides()->syncWithoutDetaching(
+                $itPermissionIds->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'grant']])->all(),
+            );
+        }
 
         $announcements = collect([
             [
@@ -306,5 +319,118 @@ class DatabaseSeeder extends Seeder
             'action' => 'seed',
             'description' => 'Seeded WDC V1 demo data',
         ]);
+    }
+
+    private function syncDefaultPermissions($roles): void
+    {
+        if (! class_exists(Permission::class) || Permission::query()->count() === 0) {
+            return;
+        }
+
+        $roleDefaults = [
+            'employee' => [
+                'scope' => 'own',
+                'permissions' => [
+                    'portal.dashboard.view',
+                    'profile.view',
+                    'directory.view',
+                    'announcements.view',
+                    'knowledge.view',
+                    'documents.view',
+                    'systems.view',
+                    'payroll.link',
+                    'tickets.create',
+                    'workflows.create',
+                    'complaints.create',
+                ],
+            ],
+            'supervisor' => [
+                'scope' => 'department',
+                'permissions' => [
+                    'portal.dashboard.view',
+                    'profile.view',
+                    'directory.view',
+                    'announcements.view',
+                    'knowledge.view',
+                    'documents.view',
+                    'systems.view',
+                    'payroll.link',
+                    'tickets.create',
+                    'workflows.create',
+                    'workflows.manage',
+                    'complaints.create',
+                ],
+            ],
+            'hr' => [
+                'scope' => 'all',
+                'permissions' => [
+                    'portal.dashboard.view',
+                    'profile.view',
+                    'directory.view',
+                    'announcements.view',
+                    'knowledge.view',
+                    'documents.view',
+                    'documents.manage',
+                    'systems.view',
+                    'payroll.link',
+                    'tickets.create',
+                    'workflows.create',
+                    'workflows.manage',
+                    'complaints.create',
+                    'complaints.review',
+                    'hr.portal.view',
+                    'hr.employees.manage',
+                    'hr.announcements.manage',
+                ],
+            ],
+            'admin' => [
+                'scope' => 'all',
+                'permissions' => [
+                    'portal.dashboard.view',
+                    'profile.view',
+                    'directory.view',
+                    'announcements.view',
+                    'knowledge.view',
+                    'documents.view',
+                    'documents.manage',
+                    'systems.view',
+                    'payroll.link',
+                    'tickets.create',
+                    'tickets.manage',
+                    'it.portal.view',
+                    'workflows.create',
+                    'workflows.manage',
+                    'complaints.create',
+                    'complaints.review',
+                    'hr.portal.view',
+                    'hr.employees.manage',
+                    'hr.announcements.manage',
+                    'admin.users.manage',
+                    'admin.activity.view',
+                ],
+            ],
+            'super_admin' => [
+                'scope' => 'all',
+                'permissions' => Permission::catalogKeys(),
+            ],
+        ];
+
+        $permissionIds = Permission::query()->pluck('id', 'key');
+
+        foreach ($roleDefaults as $roleSlug => $definition) {
+            $role = $roles[$roleSlug] ?? null;
+
+            if (! $role) {
+                continue;
+            }
+
+            $role->update(['default_data_scope' => $definition['scope']]);
+            $role->permissions()->sync(
+                collect($definition['permissions'])
+                    ->map(fn (string $permissionKey) => $permissionIds[$permissionKey] ?? null)
+                    ->filter()
+                    ->all(),
+            );
+        }
     }
 }

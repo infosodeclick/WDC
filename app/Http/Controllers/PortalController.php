@@ -26,6 +26,8 @@ class PortalController extends Controller
     {
         $user = $request->user()->load('role', 'employee.department');
 
+        abort_unless($user->canAccess('portal.dashboard.view'), 403);
+
         return view('dashboard', [
             'user' => $user,
             'newAnnouncements' => Announcement::where('published_at', '>=', now()->subDays(7))->count(),
@@ -43,6 +45,8 @@ class PortalController extends Controller
 
     public function profile(Request $request): View
     {
+        abort_unless($request->user()->canAccess('profile.view'), 403);
+
         return view('profile.show', [
             'user' => $request->user()->load('role', 'employee.department', 'employee.documents', 'externalAccounts.legacySystem'),
         ]);
@@ -51,6 +55,8 @@ class PortalController extends Controller
     public function systems(Request $request): View
     {
         $user = $request->user()->load('externalAccounts.legacySystem');
+
+        abort_unless($user->canAccess('systems.view'), 403);
 
         return view('systems.index', [
             'systems' => LegacySystem::with(['accounts' => fn ($query) => $query->where('user_id', $user->id)])
@@ -63,6 +69,8 @@ class PortalController extends Controller
 
     public function announcements(Request $request): View
     {
+        abort_unless($request->user()->canAccess('announcements.view'), 403);
+
         $query = Announcement::with('department', 'files', 'creator')
             ->where(function ($query) {
                 $query->whereNull('expires_at')->orWhere('expires_at', '>=', now());
@@ -81,6 +89,8 @@ class PortalController extends Controller
 
     public function knowledge(Request $request): View
     {
+        abort_unless($request->user()->canAccess('knowledge.view'), 403);
+
         $category = $request->string('category')->toString();
         $articles = KnowledgeArticle::where('is_published', true);
         $videos = KnowledgeVideo::where('is_published', true);
@@ -100,21 +110,39 @@ class PortalController extends Controller
 
     public function documents(Request $request): View
     {
-        $employeeId = $request->user()->employee?->id;
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+        $employeeId = $user->employee?->id;
+        $documents = EmployeeDocument::query();
+
+        abort_unless($user->canAccess('documents.view'), 403);
+
+        if ($user->canAccess('documents.manage') && $user->canSeeAllData()) {
+            $documents->with('employee.user', 'employee.department');
+        } elseif ($user->canAccess('documents.manage') && $user->canSeeDepartmentData() && $user->employee?->department_id) {
+            $documents->where(function ($query) use ($employeeId, $user) {
+                $query->where('is_company_wide', true)
+                    ->orWhere('employee_id', $employeeId)
+                    ->orWhereHas('employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
+            });
+        } else {
+            $documents->where(function ($query) use ($employeeId) {
+                $query->where('is_company_wide', true)
+                    ->orWhere('employee_id', $employeeId);
+            });
+        }
 
         return view('documents.index', [
-            'documents' => EmployeeDocument::where('is_company_wide', true)
-                ->orWhere('employee_id', $employeeId)
-                ->latest()
-                ->get(),
+            'documents' => $documents->latest()->get(),
         ]);
     }
 
     public function downloadDocument(EmployeeDocument $document, Request $request)
     {
-        $employeeId = $request->user()->employee?->id;
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+        $employeeId = $user->employee?->id;
 
-        abort_unless($document->is_company_wide || $document->employee_id === $employeeId || $request->user()->hasAnyRole(['hr', 'admin']), 403);
+        abort_unless($user->canAccess('documents.view'), 403);
+        abort_unless($document->is_company_wide || $document->employee_id === $employeeId || $this->canManageDocument($user, $document->load('employee.department')), 403);
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -136,6 +164,8 @@ class PortalController extends Controller
 
     public function payroll(): RedirectResponse
     {
+        abort_unless(request()->user()?->canAccess('payroll.link'), 403);
+
         return redirect()->away(config('services.payroll.url', 'https://example.com/payroll'));
     }
 
@@ -182,5 +212,22 @@ class PortalController extends Controller
         Notification::where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
 
         return back()->with('status', 'อ่านแจ้งเตือนทั้งหมดแล้ว');
+    }
+
+    private function canManageDocument($user, EmployeeDocument $document): bool
+    {
+        if (! $user->canAccess('documents.manage')) {
+            return false;
+        }
+
+        if ($user->canSeeAllData()) {
+            return true;
+        }
+
+        if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+            return $document->employee?->department_id === $user->employee->department_id;
+        }
+
+        return false;
     }
 }

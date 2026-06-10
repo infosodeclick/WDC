@@ -18,46 +18,48 @@
     <div class="metric-card"><span>ปิดงานแล้ว</span><strong>{{ $metrics['completed'] }}</strong><small>อนุมัติหรือเสร็จสิ้น</small></div>
 </div>
 
-<section class="panel">
-    <div class="section-title">
-        <h2>ส่งคำขอใหม่</h2>
-        <a href="{{ route('systems.index') }}">ดูระบบเดิม</a>
-    </div>
-    <form method="post" action="{{ route('workflows.store') }}" class="form-grid">
-        @csrf
-        <label>
-            <span>ประเภทงาน</span>
-            <select class="form-select" name="workflow_template_id" required>
-                @foreach($templates as $template)
-                    <option value="{{ $template->id }}" @selected((int) old('workflow_template_id') === $template->id)>{{ $template->name }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label class="span-2">
-            <span>หัวข้อ</span>
-            <input class="form-control" name="title" value="{{ old('title') }}" required>
-        </label>
-        <label>
-            <span>ความเร่งด่วน</span>
-            <select class="form-select" name="priority">
-                <option value="low" @selected(old('priority') === 'low')>ต่ำ</option>
-                <option value="normal" @selected(old('priority', 'normal') === 'normal')>ปกติ</option>
-                <option value="high" @selected(old('priority') === 'high')>สูง</option>
-                <option value="critical" @selected(old('priority') === 'critical')>วิกฤต</option>
-            </select>
-        </label>
-        <label class="span-2">
-            <span>เลขอ้างอิง SmartFlow เดิม</span>
-            <input class="form-control" name="legacy_reference" value="{{ old('legacy_reference') }}" placeholder="เช่น REF: #2606815">
-        </label>
-        <label class="span-3">
-            <span>รายละเอียด</span>
-            <textarea class="form-control" name="details" rows="3" required>{{ old('details') }}</textarea>
-        </label>
-        <p class="form-help span-3">เริ่มจากแบบฟอร์มกลางนี้ก่อน หากงานยังต้องใช้ลายเซ็น/ขั้นตอนเดิม ให้ใส่เลขอ้างอิงและเปิดลิงก์ SmartFlow จากการ์ดประเภทงานด้านล่างได้</p>
-        <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งคำขอ</button>
-    </form>
-</section>
+@if($canCreate)
+    <section class="panel">
+        <div class="section-title">
+            <h2>ส่งคำขอใหม่</h2>
+            <a href="{{ route('systems.index') }}">ดูระบบเดิม</a>
+        </div>
+        <form method="post" action="{{ route('workflows.store') }}" class="form-grid">
+            @csrf
+            <label>
+                <span>ประเภทงาน</span>
+                <select class="form-select" name="workflow_template_id" required>
+                    @foreach($templates as $template)
+                        <option value="{{ $template->id }}" @selected((int) old('workflow_template_id') === $template->id)>{{ $template->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label class="span-2">
+                <span>หัวข้อ</span>
+                <input class="form-control" name="title" value="{{ old('title') }}" required>
+            </label>
+            <label>
+                <span>ความเร่งด่วน</span>
+                <select class="form-select" name="priority">
+                    <option value="low" @selected(old('priority') === 'low')>ต่ำ</option>
+                    <option value="normal" @selected(old('priority', 'normal') === 'normal')>ปกติ</option>
+                    <option value="high" @selected(old('priority') === 'high')>สูง</option>
+                    <option value="critical" @selected(old('priority') === 'critical')>วิกฤต</option>
+                </select>
+            </label>
+            <label class="span-2">
+                <span>เลขอ้างอิง SmartFlow เดิม</span>
+                <input class="form-control" name="legacy_reference" value="{{ old('legacy_reference') }}" placeholder="เช่น REF: #2606815">
+            </label>
+            <label class="span-3">
+                <span>รายละเอียด</span>
+                <textarea class="form-control" name="details" rows="3" required>{{ old('details') }}</textarea>
+            </label>
+            <p class="form-help span-3">เริ่มจากแบบฟอร์มกลางนี้ก่อน หากงานยังต้องใช้ลายเซ็น/ขั้นตอนเดิม ให้ใส่เลขอ้างอิงและเปิดลิงก์ SmartFlow จากการ์ดประเภทงานด้านล่างได้</p>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งคำขอ</button>
+        </form>
+    </section>
+@endif
 
 <section class="panel">
     <div class="section-title">

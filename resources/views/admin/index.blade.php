@@ -5,71 +5,213 @@
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Admin</p>
-        <h1>จัดการผู้ใช้งานและ Log</h1>
-        <p>ควบคุมสิทธิ์ Employee, Supervisor, HR และ Admin</p>
+        <p class="eyebrow">Super Admin Console</p>
+        <h1>ศูนย์หลังบ้านและสิทธิ์ผู้ใช้งาน</h1>
+        <p>กำหนดว่าแต่ละคนทำอะไรได้ เห็นข้อมูลได้ถึงระดับไหน และให้หลังบ้านสอดคล้องกับเมนูหน้าบ้าน</p>
     </div>
+    @if($canManageSystem)
+        <div class="role-badge">สิทธิ์แอดมินสูงสุด</div>
+    @endif
 </div>
 
+<div class="metric-grid">
+    <div class="metric-card"><span>ผู้ใช้งาน</span><strong>{{ $users->count() }}</strong><small>บัญชีในระบบ WDC</small></div>
+    <div class="metric-card"><span>Role</span><strong>{{ $roles->count() }}</strong><small>รวม Super Admin</small></div>
+    <div class="metric-card"><span>Permission</span><strong>{{ $allPermissions->count() }}</strong><small>สิทธิ์ที่ควบคุมเมนูและ backend</small></div>
+</div>
+
+@if($canManageUsers)
 <section class="panel">
-    <h2>เพิ่มผู้ใช้งาน</h2>
+    <div class="section-title">
+        <h2>เพิ่มผู้ใช้งาน</h2>
+        <span class="status-pill">สร้างบัญชี WDC Login</span>
+    </div>
     <form method="post" action="{{ route('admin.users.store') }}" class="form-grid">
         @csrf
-        <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" required></label>
-        <label><span>ชื่อ</span><input class="form-control" name="name" required></label>
-        <label><span>อีเมล</span><input class="form-control" name="email" type="email"></label>
+        <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" value="{{ old('employee_code') }}" required></label>
+        <label><span>ชื่อ</span><input class="form-control" name="name" value="{{ old('name') }}" required></label>
+        <label><span>อีเมล</span><input class="form-control" name="email" type="email" value="{{ old('email') }}"></label>
         <label><span>รหัสผ่าน</span><input class="form-control" name="password" type="password" required></label>
-        <label><span>สิทธิ์</span><select class="form-select" name="role_id">@foreach($roles as $role)<option value="{{ $role->id }}">{{ $role->name }}</option>@endforeach</select></label>
-        <label><span>แผนก</span><select class="form-select" name="department_id">@foreach($departments as $department)<option value="{{ $department->id }}">{{ $department->name }}</option>@endforeach</select></label>
-        <label><span>ตำแหน่ง</span><input class="form-control" name="position" required></label>
-        <label><span>เบอร์โทร</span><input class="form-control" name="phone"></label>
+        <label><span>Role</span>
+            <select class="form-select" name="role_id">
+                @foreach($roles as $role)
+                    <option value="{{ $role->id }}" @disabled($role->isSuperAdmin() && ! auth()->user()->isSuperAdmin())>{{ $role->name }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label><span>ขอบเขตข้อมูล</span>
+            <select class="form-select" name="data_scope">
+                <option value="">ตาม Role</option>
+                @foreach($scopeLabels as $key => $label)
+                    <option value="{{ $key }}">{{ $label }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label><span>แผนก</span>
+            <select class="form-select" name="department_id">
+                @foreach($departments as $department)
+                    <option value="{{ $department->id }}">{{ $department->name }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label><span>ตำแหน่ง</span><input class="form-control" name="position" value="{{ old('position') }}" required></label>
+        <label><span>เบอร์โทร</span><input class="form-control" name="phone" value="{{ old('phone') }}"></label>
         <button class="btn btn-primary" type="submit"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้</button>
     </form>
 </section>
+@endif
 
-<div class="content-grid">
-    <section class="panel">
-        <h2>ผู้ใช้งาน</h2>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead><tr><th>รหัส</th><th>ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>แก้ไข</th></tr></thead>
-                <tbody>
-                @foreach($users as $user)
-                    <tr>
-                        <td>{{ $user->employee_code }}</td>
-                        <td>{{ $user->name }}</td>
-                        <td>{{ $user->role?->name }}</td>
-                        <td>{{ $user->is_active ? 'ใช้งาน' : 'ระงับ' }}</td>
-                        <td>
-                            <form class="inline-form" method="post" action="{{ route('admin.users.update', $user) }}">
-                                @csrf
-                                @method('PATCH')
-                                <select class="form-select form-select-sm" name="role_id">
-                                    @foreach($roles as $role)
-                                        <option value="{{ $role->id }}" @selected($user->role_id === $role->id)>{{ $role->name }}</option>
+@if($canManageUsers || $canManageRoles)
+<section class="panel">
+    <div class="section-title">
+        <h2>สิทธิ์รายผู้ใช้</h2>
+        <span class="status-pill">Role + Override + Data Scope</span>
+    </div>
+    <div class="admin-user-list">
+        @foreach($users as $managedUser)
+            @php
+                $overrideMap = $managedUser->permissionOverrides->mapWithKeys(fn ($permission) => [$permission->key => $permission->pivot->effect]);
+                $effectiveKeys = $managedUser->effectivePermissionKeys();
+            @endphp
+            <article class="admin-user-card">
+                <form method="post" action="{{ route('admin.users.access', $managedUser) }}">
+                    @csrf
+                    @method('PATCH')
+                    <div class="admin-user-head">
+                        <div>
+                            <strong>{{ $managedUser->employee_code }} · {{ $managedUser->name }}</strong>
+                            <small>{{ $managedUser->employee?->department?->name ?? '-' }} · {{ $managedUser->email ?? 'ไม่มีอีเมล' }}</small>
+                        </div>
+                        <span class="status-pill {{ $managedUser->is_active ? 'status-done' : 'status-open' }}">{{ $managedUser->is_active ? 'ใช้งาน' : 'ระงับ' }}</span>
+                    </div>
+
+                    <div class="admin-access-grid">
+                        <label><span>Role</span>
+                            <select class="form-select form-select-sm" name="role_id" @disabled(! $canManageUsers || ($managedUser->isSuperAdmin() && ! auth()->user()->isSuperAdmin()))>
+                                @foreach($roles as $role)
+                                    <option value="{{ $role->id }}" @selected($managedUser->role_id === $role->id) @disabled($role->isSuperAdmin() && ! auth()->user()->isSuperAdmin())>{{ $role->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label><span>ขอบเขตข้อมูล</span>
+                            <select class="form-select form-select-sm" name="data_scope" @disabled(! $canManageUsers)>
+                                <option value="" @selected($managedUser->data_scope === null)>ตาม Role: {{ $scopeLabels[$managedUser->role?->default_data_scope ?? 'own'] ?? 'เฉพาะของตนเอง' }}</option>
+                                @foreach($scopeLabels as $key => $label)
+                                    <option value="{{ $key }}" @selected($managedUser->data_scope === $key)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="form-check small-check">
+                            <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($managedUser->is_active) @disabled(! $canManageUsers || auth()->id() === $managedUser->id)>
+                            <span class="form-check-label">เปิดใช้งาน</span>
+                        </label>
+                        <div class="permission-count">
+                            <strong>{{ $effectiveKeys->count() }}</strong>
+                            <span>สิทธิ์ใช้งานจริง</span>
+                        </div>
+                    </div>
+
+                    <details class="permission-details">
+                        <summary>ปรับสิทธิ์รายคน</summary>
+                        <div class="permission-matrix">
+                            @foreach($permissions as $group => $groupPermissions)
+                                <section>
+                                    <h3>{{ $group }}</h3>
+                                    @foreach($groupPermissions as $permission)
+                                        @php($effect = $overrideMap[$permission->key] ?? null)
+                                        <div class="permission-row">
+                                            <div>
+                                                <strong>{{ $permission->name }}</strong>
+                                                <small>{{ $permission->description }}</small>
+                                            </div>
+                                            <label class="small-check">
+                                                <input class="form-check-input" type="checkbox" name="permission_grants[]" value="{{ $permission->key }}" @checked($effect === 'grant') @disabled(! $canManageRoles)>
+                                                เพิ่ม
+                                            </label>
+                                            <label class="small-check">
+                                                <input class="form-check-input" type="checkbox" name="permission_denies[]" value="{{ $permission->key }}" @checked($effect === 'deny') @disabled(! $canManageRoles || $managedUser->isSuperAdmin())>
+                                                ปิด
+                                            </label>
+                                        </div>
                                     @endforeach
-                                </select>
-                                <label class="form-check small-check"><input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($user->is_active)> ใช้งาน</label>
-                                <button class="btn btn-sm btn-outline-primary">บันทึก</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-        </div>
-    </section>
+                                </section>
+                            @endforeach
+                        </div>
+                    </details>
 
-    <section class="panel">
+                    @if($canManageUsers)
+                        <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-shield-check"></i> บันทึกสิทธิ์</button>
+                    @endif
+                </form>
+            </article>
+        @endforeach
+    </div>
+</section>
+@endif
+
+@if($canManageRoles)
+<section class="panel">
+    <div class="section-title">
+        <h2>Role Template</h2>
+        <span class="status-pill">สิทธิ์เริ่มต้นของแต่ละกลุ่ม</span>
+    </div>
+    <div class="role-template-grid">
+        @foreach($roles as $role)
+            <article class="role-template-card">
+                <form method="post" action="{{ route('admin.roles.permissions', $role) }}">
+                    @csrf
+                    @method('PATCH')
+                    <div class="admin-user-head">
+                        <div>
+                            <strong>{{ $role->name }}</strong>
+                            <small>{{ $role->description }} · {{ $role->users_count }} users</small>
+                        </div>
+                        @if($role->isSuperAdmin())
+                            <span class="status-pill status-primary">สูงสุด</span>
+                        @endif
+                    </div>
+                    <label><span>ขอบเขตข้อมูลเริ่มต้น</span>
+                        <select class="form-select form-select-sm" name="default_data_scope">
+                            @foreach($scopeLabels as $key => $label)
+                                <option value="{{ $key }}" @selected($role->default_data_scope === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <div class="permission-matrix compact-matrix">
+                        @foreach($permissions as $group => $groupPermissions)
+                            <section>
+                                <h3>{{ $group }}</h3>
+                                @foreach($groupPermissions as $permission)
+                                    <label class="permission-check">
+                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->key }}" @checked($role->isSuperAdmin() || $role->permissions->contains('key', $permission->key)) @disabled($role->isSuperAdmin())>
+                                        <span>{{ $permission->name }}</span>
+                                    </label>
+                                @endforeach
+                            </section>
+                        @endforeach
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-save"></i> บันทึก Role</button>
+                </form>
+            </article>
+        @endforeach
+    </div>
+</section>
+@endif
+
+@if($canViewLogs)
+<section class="panel">
+    <div class="section-title">
         <h2>Activity Logs</h2>
-        <div class="item-list">
-            @foreach($logs as $log)
-                <div class="result-row">
-                    <strong>{{ $log->action }}</strong>
-                    <small>{{ $log->user?->employee_code ?? 'system' }} · {{ $log->created_at->format('d/m/Y H:i') }} · {{ $log->description }}</small>
-                </div>
-            @endforeach
-        </div>
-    </section>
-</div>
+        <span class="status-pill">{{ $logs->count() }} รายการล่าสุด</span>
+    </div>
+    <div class="item-list">
+        @foreach($logs as $log)
+            <div class="result-row">
+                <strong>{{ $log->action }}</strong>
+                <small>{{ $log->user?->employee_code ?? 'system' }} · {{ $log->created_at->format('d/m/Y H:i') }} · {{ $log->description }}</small>
+            </div>
+        @endforeach
+    </div>
+</section>
+@endif
 @endsection

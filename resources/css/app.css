@@ -859,6 +859,148 @@ a {
     align-items: center;
 }
 
+.admin-user-list,
+.role-template-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.role-template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-user-card,
+.role-template-card {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.admin-user-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.admin-user-head strong,
+.admin-user-head small {
+    display: block;
+}
+
+.admin-user-head small {
+    color: var(--muted);
+}
+
+.admin-access-grid {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto minmax(120px, auto);
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+.admin-access-grid label {
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+    font-weight: 650;
+}
+
+.permission-count {
+    display: grid;
+    min-height: 54px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #f8fbff;
+}
+
+.permission-count strong {
+    line-height: 1;
+    font-size: 1.25rem;
+}
+
+.permission-count span {
+    color: var(--muted);
+    font-size: .82rem;
+}
+
+.permission-details {
+    margin: 10px 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #f8fbff;
+}
+
+.permission-details summary {
+    cursor: pointer;
+    padding: 10px 12px;
+    color: var(--primary);
+    font-weight: 800;
+}
+
+.permission-matrix {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 12px;
+}
+
+.permission-matrix section {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.permission-matrix h3 {
+    margin: 0 0 10px;
+    font-size: .95rem;
+    font-weight: 800;
+}
+
+.permission-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid #edf2f7;
+}
+
+.permission-row:first-of-type {
+    border-top: 0;
+}
+
+.permission-row strong,
+.permission-row small {
+    display: block;
+}
+
+.permission-row small {
+    color: var(--muted);
+    font-size: .82rem;
+}
+
+.compact-matrix {
+    grid-template-columns: 1fr;
+    padding: 0;
+    margin: 12px 0;
+}
+
+.permission-check {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 6px 0;
+    color: var(--ink);
+    font-size: .9rem;
+}
+
 .empty-state {
     padding: 18px;
     color: var(--muted);
@@ -974,6 +1116,9 @@ a {
     .topbar,
     .content-grid,
     .metric-grid,
+    .role-template-grid,
+    .admin-access-grid,
+    .permission-matrix,
     .system-mini-grid,
     .system-grid,
     .directory-grid,
@@ -1004,7 +1149,10 @@ a {
     .portal-nav,
     .directory-filter,
     .form-grid,
-    .metric-grid {
+    .metric-grid,
+    .role-template-grid,
+    .admin-access-grid,
+    .permission-matrix {
         grid-template-columns: 1fr;
     }
 
@@ -1034,6 +1182,15 @@ a {
 
     .directory-card-top {
         grid-template-columns: 72px minmax(0, 1fr);
+    }
+
+    .admin-user-head,
+    .permission-row {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-user-head {
+        flex-direction: column;
     }
 
     .directory-photo,

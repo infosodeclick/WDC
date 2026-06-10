@@ -18,7 +18,7 @@ class WorkflowController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user()->load('role', 'employee.department');
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
         $canManage = $this->canManageWorkflows($user);
         $status = $request->string('status')->toString();
         $templateId = $request->integer('template');
@@ -27,6 +27,12 @@ class WorkflowController extends Controller
 
         if (! $canManage) {
             $query->where('requester_id', $user->id);
+        } elseif (! $user->canSeeAllData()) {
+            if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+                $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
+            } else {
+                $query->where('requester_id', $user->id);
+            }
         }
 
         if ($status !== '') {
@@ -47,18 +53,21 @@ class WorkflowController extends Controller
             'requests' => $query->paginate(12)->withQueryString(),
             'statusLabels' => WorkflowRequest::statusLabels(),
             'canManage' => $canManage,
+            'canCreate' => $user->canAccess('workflows.create'),
             'activeStatus' => $status,
             'activeTemplateId' => $templateId,
             'metrics' => [
-                'submitted' => WorkflowRequest::where('status', 'submitted')->count(),
-                'in_review' => WorkflowRequest::where('status', 'in_review')->count(),
-                'completed' => WorkflowRequest::whereIn('status', ['approved', 'completed'])->count(),
+                'submitted' => (clone $this->scopedWorkflowQuery($user))->where('status', 'submitted')->count(),
+                'in_review' => (clone $this->scopedWorkflowQuery($user))->where('status', 'in_review')->count(),
+                'completed' => (clone $this->scopedWorkflowQuery($user))->whereIn('status', ['approved', 'completed'])->count(),
             ],
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->canAccess('workflows.create'), 403);
+
         $data = $request->validate([
             'workflow_template_id' => ['required', 'exists:workflow_templates,id'],
             'title' => ['required', 'string', 'max:255'],
@@ -88,9 +97,10 @@ class WorkflowController extends Controller
 
         $this->log($request, 'create_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Created {$workflowRequest->title}");
 
-        User::whereHas('role', fn ($query) => $query->whereIn('slug', ['supervisor', 'hr', 'admin']))
-            ->orWhereHas('employee.department', fn ($query) => $query->where('code', 'IT'))
+        User::with('role.permissions', 'permissionOverrides')
+            ->where('is_active', true)
             ->get()
+            ->filter(fn (User $user) => $user->canAccess('workflows.manage'))
             ->each(fn (User $user) => Notification::create([
                 'user_id' => $user->id,
                 'type' => 'workflow',
@@ -104,7 +114,9 @@ class WorkflowController extends Controller
 
     public function updateStatus(WorkflowRequest $workflowRequest, Request $request): RedirectResponse
     {
-        abort_unless($this->canManageWorkflows($request->user()->load('role', 'employee.department')), 403);
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canManageWorkflows($user) && $this->canViewWorkflow($user, $workflowRequest->load('requester.employee.department')), 403);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(WorkflowRequest::statusLabels()))],
@@ -158,7 +170,47 @@ class WorkflowController extends Controller
 
     private function canManageWorkflows(User $user): bool
     {
-        return $user->hasAnyRole(['supervisor', 'hr', 'admin']) || $user->isInDepartment('IT');
+        return $user->canAccess('workflows.manage');
+    }
+
+    private function canViewWorkflow(User $user, WorkflowRequest $workflowRequest): bool
+    {
+        if ($workflowRequest->requester_id === $user->id) {
+            return true;
+        }
+
+        if (! $this->canManageWorkflows($user)) {
+            return false;
+        }
+
+        if ($user->canSeeAllData()) {
+            return true;
+        }
+
+        if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+            return $workflowRequest->requester?->employee?->department_id === $user->employee->department_id;
+        }
+
+        return false;
+    }
+
+    private function scopedWorkflowQuery(User $user)
+    {
+        $query = WorkflowRequest::query();
+
+        if (! $this->canManageWorkflows($user)) {
+            return $query->where('requester_id', $user->id);
+        }
+
+        if ($user->canSeeAllData()) {
+            return $query;
+        }
+
+        if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+            return $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
+        }
+
+        return $query->where('requester_id', $user->id);
     }
 
     private function log(Request $request, string $action, ?string $subjectType = null, ?int $subjectId = null, ?string $description = null): void

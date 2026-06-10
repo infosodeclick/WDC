@@ -10,6 +10,8 @@ class DirectoryController extends Controller
 {
     public function index(Request $request): View
     {
+        abort_unless($request->user()->canAccess('directory.view'), 403);
+
         $q = trim($request->string('q')->toString());
         $department = $request->string('department')->toString();
         $team = $request->string('team')->toString();

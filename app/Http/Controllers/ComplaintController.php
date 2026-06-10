@@ -14,21 +14,34 @@ class ComplaintController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user()->load('role');
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
         $query = Complaint::with('reporter.employee.department')->latest();
+        $canReview = $user->canAccess('complaints.review');
 
-        if (! $user->hasAnyRole(['hr', 'admin'])) {
+        if (! $canReview) {
             $query->where('reporter_id', $user->id);
+        } elseif (! $user->canSeeAllData()) {
+            if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+                $query->where(function ($query) use ($user) {
+                    $query->whereNull('reporter_id')
+                        ->orWhereHas('reporter.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
+                });
+            } else {
+                $query->where('reporter_id', $user->id);
+            }
         }
 
         return view('complaints.index', [
             'complaints' => $query->paginate(12),
-            'canReview' => $user->hasAnyRole(['hr', 'admin']),
+            'canReview' => $canReview,
+            'canCreate' => $user->canAccess('complaints.create'),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->canAccess('complaints.create'), 403);
+
         $data = $request->validate([
             'type' => ['required', 'in:เสนอแนะ,ร้องเรียน,แจ้งการทุจริต,แจ้งปัญหาหัวหน้างาน'],
             'subject' => ['required', 'string', 'max:255'],
@@ -55,7 +68,10 @@ class ComplaintController extends Controller
             'user_agent' => (string) $request->userAgent(),
         ]);
 
-        User::whereHas('role', fn ($query) => $query->whereIn('slug', ['hr', 'admin']))->get()
+        User::with('role.permissions', 'permissionOverrides')
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $user) => $user->canAccess('complaints.review'))
             ->each(fn (User $user) => Notification::create([
                 'user_id' => $user->id,
                 'type' => 'complaint',
@@ -69,7 +85,10 @@ class ComplaintController extends Controller
 
     public function updateStatus(Complaint $complaint, Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasAnyRole(['hr', 'admin']), 403);
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($actor->canAccess('complaints.review'), 403);
+        abort_unless($this->canReviewComplaint($actor, $complaint->load('reporter.employee.department')), 403);
 
         $data = $request->validate(['status' => ['required', 'in:submitted,reviewing,resolved,closed']]);
         $complaint->update([
@@ -89,5 +108,19 @@ class ComplaintController extends Controller
         ]);
 
         return back()->with('status', 'อัปเดตสถานะเรื่องร้องเรียนแล้ว');
+    }
+
+    private function canReviewComplaint(User $user, Complaint $complaint): bool
+    {
+        if ($user->canSeeAllData()) {
+            return true;
+        }
+
+        if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
+            return $complaint->reporter_id === null
+                || $complaint->reporter?->employee?->department_id === $user->employee->department_id;
+        }
+
+        return $complaint->reporter_id === $user->id;
     }
 }

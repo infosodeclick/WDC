@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="portal-body">
-@php($currentUser = auth()->user()?->loadMissing('role', 'employee.department'))
+@php($currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department'))
 <div class="portal-shell">
     <aside class="portal-sidebar">
         <a class="brand-lockup" href="{{ route('dashboard') }}">
@@ -22,29 +22,51 @@
         </a>
 
         <nav class="nav flex-column portal-nav">
-            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
-            <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
-            <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>สมุดโทรศัพท์</span></a>
-            <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ข่าวสารและประกาศ</span></a>
-            <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>ศูนย์ความรู้</span></a>
-            <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
-            <a class="nav-link {{ request()->routeIs('workflows.*') ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
-            <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน / เสนอแนะ</span></a>
-            <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>เอกสารดาวน์โหลด</span></a>
-            <a class="nav-link {{ request()->routeIs('systems.*') ? 'active' : '' }}" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
-            <a class="nav-link" href="{{ route('payroll') }}"><i class="bi bi-receipt"></i><span>สลิปเงินเดือน</span></a>
+            @if($currentUser?->canAccess('portal.dashboard.view'))
+                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
+            @endif
+            @if($currentUser?->canAccess('profile.view'))
+                <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
+            @endif
+            @if($currentUser?->canAccess('directory.view'))
+                <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>สมุดโทรศัพท์</span></a>
+            @endif
+            @if($currentUser?->canAccess('announcements.view'))
+                <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ข่าวสารและประกาศ</span></a>
+            @endif
+            @if($currentUser?->canAccess('knowledge.view'))
+                <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>ศูนย์ความรู้</span></a>
+            @endif
+            @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage']))
+                <a class="nav-link {{ request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
+            @endif
+            @if($currentUser?->canAccessAny(['workflows.create', 'workflows.manage']))
+                <a class="nav-link {{ request()->routeIs('workflows.*') ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
+            @endif
+            @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
+                <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน / เสนอแนะ</span></a>
+            @endif
+            @if($currentUser?->canAccess('documents.view'))
+                <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>เอกสารดาวน์โหลด</span></a>
+            @endif
+            @if($currentUser?->canAccess('systems.view'))
+                <a class="nav-link {{ request()->routeIs('systems.*') ? 'active' : '' }}" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
+            @endif
+            @if($currentUser?->canAccess('payroll.link'))
+                <a class="nav-link" href="{{ route('payroll') }}"><i class="bi bi-receipt"></i><span>สลิปเงินเดือน</span></a>
+            @endif
         </nav>
 
         <div class="portal-divider"></div>
 
         <nav class="nav flex-column portal-nav">
-            @if($currentUser?->isInDepartment('IT') || $currentUser?->hasRole('admin'))
+            @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
                 <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>ศูนย์ IT</span></a>
             @endif
-            @if($currentUser?->hasAnyRole(['hr', 'admin']))
+            @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>
             @endif
-            @if($currentUser?->hasRole('admin'))
+            @if($currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage']))
                 <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span></a>
             @endif
         </nav>

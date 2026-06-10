@@ -16,19 +16,40 @@ class HrController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()->hasAnyRole(['hr', 'admin']), 403);
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($actor->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']), 403);
+
+        $employees = User::with('role', 'employee.department')->orderBy('employee_code');
+
+        if (! $actor->canSeeAllData()) {
+            if ($actor->canSeeDepartmentData() && $actor->employee?->department_id) {
+                $employees->whereHas('employee', fn ($query) => $query->where('department_id', $actor->employee->department_id));
+            } else {
+                $employees->where('id', $actor->id);
+            }
+        }
+
+        $complaints = Complaint::with('reporter')->latest()->take(8);
+
+        if (! $actor->canAccess('complaints.review')) {
+            $complaints->whereRaw('1 = 0');
+        }
 
         return view('hr.index', [
-            'employees' => User::with('role', 'employee.department')->orderBy('employee_code')->get(),
+            'employees' => $employees->get(),
             'departments' => Department::orderBy('name')->get(),
             'announcements' => Announcement::with('department')->latest()->take(8)->get(),
-            'complaints' => Complaint::with('reporter')->latest()->take(8)->get(),
+            'complaints' => $complaints->get(),
+            'canManageAnnouncements' => $actor->canAccess('hr.announcements.manage'),
+            'canManageEmployees' => $actor->canAccess('hr.employees.manage'),
+            'canReviewComplaints' => $actor->canAccess('complaints.review'),
         ]);
     }
 
     public function storeAnnouncement(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasAnyRole(['hr', 'admin']), 403);
+        abort_unless($request->user()->canAccess('hr.announcements.manage'), 403);
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -71,8 +92,15 @@ class HrController extends Controller
 
     public function updateEmployeeStatus(User $user, Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasAnyRole(['hr', 'admin']), 403);
-        abort_if($request->user()->id === $user->id, 422, 'Cannot suspend your own account.');
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($actor->canAccess('hr.employees.manage'), 403);
+        abort_if($actor->id === $user->id, 422, 'Cannot suspend your own account.');
+        abort_if($user->isSuperAdmin() && ! $actor->isSuperAdmin(), 403);
+
+        if (! $actor->canSeeAllData()) {
+            abort_unless($actor->canSeeDepartmentData() && $actor->employee?->department_id === $user->employee?->department_id, 403);
+        }
 
         $user->update(['is_active' => ! $user->is_active]);
 

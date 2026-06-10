@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Complaint;
+use App\Models\Permission;
 use App\Models\Ticket;
+use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Models\WorkflowTemplate;
 use Database\Seeders\DatabaseSeeder;
@@ -41,7 +43,8 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('จัดการผู้ใช้งานและ Log')
+            ->assertSee('Super Admin Console')
+            ->assertSee('Role Template')
             ->assertSee('EMP00125');
     }
 
@@ -61,6 +64,22 @@ class WdcPortalTest extends TestCase
             ->assertSee('SmartFlow IT Helpdesk')
             ->assertSee('ระบบสลิปเงินเดือน')
             ->assertDontSee('Qa741852');
+    }
+
+    public function test_user_permission_override_can_block_frontend_route(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $permission = Permission::where('key', 'systems.view')->firstOrFail();
+
+        $employee->permissionOverrides()->sync([
+            $permission->id => ['effect' => 'deny'],
+        ]);
+
+        $this->actingAs($employee);
+
+        $this->get(route('systems.index'))->assertForbidden();
     }
 
     public function test_employee_can_search_imported_directory(): void

@@ -19,10 +19,10 @@
             </span>
         </div>
         <h1>ระบบพนักงานกลาง สำหรับบริษัท 200 คน</h1>
-        <p>รวมโปรไฟล์ ข่าวสาร คู่มือวิดีโอ Helpdesk เรื่องร้องเรียน และเอกสาร HR ไว้ในเว็บเดียวด้วยสิทธิ์ Employee, Supervisor, HR และ Admin</p>
+        <p>รวมโปรไฟล์ ข่าวสาร คู่มือวิดีโอ Helpdesk เรื่องร้องเรียน และเอกสาร HR ไว้ในเว็บเดียวด้วยสิทธิ์ Employee, Supervisor, HR, Admin และ Super Admin</p>
         <div class="login-metrics">
             <span><strong>3</strong> พอร์ทัล</span>
-            <span><strong>4</strong> สิทธิ์</span>
+            <span><strong>5</strong> สิทธิ์</span>
             <span><strong>12+</strong> ตารางข้อมูล</span>
         </div>
     </section>
@@ -57,7 +57,7 @@
             <code>EMP00125</code> พนักงาน
             <code>EMP00200</code> หัวหน้างาน / IT
             <code>EMP01000</code> HR
-            <code>EMP09999</code> Admin
+            <code>EMP09999</code> Super Admin
             <span>รหัสผ่านทุกบัญชี: <code>password123</code></span>
         </div>
     </section>
