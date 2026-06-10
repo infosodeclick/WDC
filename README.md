@@ -9,7 +9,7 @@ Laravel 12 internal company portal for a 200-person organization.
 - Employee profile and document downloads.
 - Legacy systems hub for Notion directory, SmartFlow IT Helpdesk, and Payroll links.
 - Notion directory importer with employee photos, team/location filters, mail groups, and showroom records.
-- SmartFlow-inspired request and approval center for common document workflows.
+- SmartFlow Work Center with All Documents, Your Tasks, Authorization, Statistics, Export, Favorites, workflow templates, WDC document numbers, and SmartFlow-style form payloads.
 - Announcements with pinned and urgent flags.
 - Knowledge Base with articles and videos.
 - IT Helpdesk ticket workflow.

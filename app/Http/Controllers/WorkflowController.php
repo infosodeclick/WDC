@@ -22,8 +22,10 @@ class WorkflowController extends Controller
         $canManage = $this->canManageWorkflows($user);
         $status = $request->string('status')->toString();
         $templateId = $request->integer('template');
+        $activeView = $this->activeSmartflowView($request);
+        $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
 
-        $query = WorkflowRequest::with('template', 'requester.employee.department', 'currentStep', 'events.user')->latest();
+        $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user')->latest();
 
         if (! $canManage) {
             $query->where('requester_id', $user->id);
@@ -43,23 +45,32 @@ class WorkflowController extends Controller
             $query->where('workflow_template_id', $templateId);
         }
 
+        $this->applySmartflowView($query, $activeView, $user, $favoriteTemplateIds);
+
         $templates = WorkflowTemplate::with('steps')
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
         return view('workflows.index', [
-            'templates' => $templates,
+            'templates' => $activeView === 'favorites'
+                ? $templates->whereIn('id', $favoriteTemplateIds)
+                : $templates,
+            'templateCatalog' => $templates,
             'requests' => $query->paginate(12)->withQueryString(),
             'statusLabels' => WorkflowRequest::statusLabels(),
             'canManage' => $canManage,
             'canCreate' => $user->canAccess('workflows.create'),
+            'menuTabs' => $this->smartflowMenuTabs(),
+            'activeView' => $activeView,
             'activeStatus' => $status,
             'activeTemplateId' => $templateId,
+            'favoriteTemplateIds' => $favoriteTemplateIds,
             'metrics' => [
                 'submitted' => (clone $this->scopedWorkflowQuery($user))->where('status', 'submitted')->count(),
-                'in_review' => (clone $this->scopedWorkflowQuery($user))->where('status', 'in_review')->count(),
+                'in_review' => (clone $this->scopedWorkflowQuery($user))->whereIn('status', ['in_review', 'accepted', 'in_progress', 'waiting_requester'])->count(),
                 'completed' => (clone $this->scopedWorkflowQuery($user))->whereIn('status', ['approved', 'completed'])->count(),
+                'overdue' => (clone $this->scopedWorkflowQuery($user))->whereNotIn('status', ['approved', 'rejected', 'completed', 'cancelled'])->whereNotNull('due_at')->where('due_at', '<', now())->count(),
             ],
         ]);
     }
@@ -72,6 +83,8 @@ class WorkflowController extends Controller
             'workflow_template_id' => ['required', 'exists:workflow_templates,id'],
             'title' => ['required', 'string', 'max:255'],
             'details' => ['required', 'string', 'max:5000'],
+            'form_payload' => ['nullable', 'array'],
+            'form_payload.*' => ['nullable', 'string', 'max:500'],
             'priority' => ['required', 'in:low,normal,high,critical'],
             'legacy_reference' => ['nullable', 'string', 'max:120'],
         ]);
@@ -83,8 +96,16 @@ class WorkflowController extends Controller
             ...$data,
             'requester_id' => $request->user()->id,
             'current_step_id' => $firstStep?->id,
+            'smartflow_menu' => $template->smartflow_menu ?: 'All Documents',
+            'form_payload' => $this->cleanPayload($data['form_payload'] ?? []),
+            'assigned_group' => $firstStep?->approver_group ?: $template->service_team,
             'status' => 'submitted',
+            'due_at' => $template->sla_hours ? now()->addHours($template->sla_hours) : null,
             'submitted_at' => now(),
+        ]);
+
+        $workflowRequest->update([
+            'document_number' => $this->generateDocumentNumber($workflowRequest),
         ]);
 
         WorkflowRequestEvent::create([
@@ -92,7 +113,7 @@ class WorkflowController extends Controller
             'user_id' => $request->user()->id,
             'action' => 'create',
             'to_status' => 'submitted',
-            'comment' => "Created {$template->name} request",
+            'comment' => "Created {$template->name} request {$workflowRequest->document_number}",
         ]);
 
         $this->log($request, 'create_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Created {$workflowRequest->title}");
@@ -129,6 +150,8 @@ class WorkflowController extends Controller
         $workflowRequest->update([
             'status' => $data['status'],
             'current_step_id' => $nextStep?->id,
+            'assigned_to' => $workflowRequest->assigned_to ?: $request->user()->id,
+            'assigned_group' => $nextStep?->approver_group ?: $workflowRequest->assigned_group,
             'completed_at' => in_array($data['status'], ['approved', 'rejected', 'completed', 'cancelled'], true) ? now() : null,
         ]);
 
@@ -154,6 +177,53 @@ class WorkflowController extends Controller
         return back()->with('status', 'อัปเดตสถานะคำขอแล้ว');
     }
 
+    public function toggleFavorite(WorkflowTemplate $template, Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canAccess('workflows.create'), 403);
+
+        $request->user()->favoriteWorkflowTemplates()->toggle([$template->id]);
+
+        $this->log($request, 'toggle_workflow_favorite', WorkflowTemplate::class, $template->id, "Toggled favorite {$template->name}");
+
+        return back()->with('status', 'อัปเดตรายการโปรดแล้ว');
+    }
+
+    public function export(Request $request)
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canManageWorkflows($user), 403);
+
+        $rows = $this->scopedWorkflowQuery($user)
+            ->with('template', 'requester.employee.department', 'currentStep')
+            ->latest()
+            ->limit(2000)
+            ->get();
+
+        return response()->streamDownload(function () use ($rows) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['document_number', 'workflow', 'requester', 'department', 'status', 'priority', 'current_step', 'submitted_at', 'due_at']);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row->document_number,
+                    $row->template?->name,
+                    $row->requester?->name,
+                    $row->requester?->employee?->department?->name,
+                    $row->status,
+                    $row->priority,
+                    $row->currentStep?->name,
+                    $row->submitted_at?->format('Y-m-d H:i:s'),
+                    $row->due_at?->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            fclose($handle);
+        }, 'wdc-smartflow-documents-'.now()->format('Ymd-His').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function stepForStatus(WorkflowRequest $workflowRequest, string $status): ?WorkflowStep
     {
         if (in_array($status, ['approved', 'rejected', 'completed', 'cancelled'], true)) {
@@ -164,6 +234,9 @@ class WorkflowController extends Controller
 
         return match ($status) {
             'in_review' => $steps->skip(1)->first() ?? $steps->first(),
+            'accepted' => $steps->firstWhere('name', 'Accept Case') ?? $steps->skip(1)->first() ?? $steps->first(),
+            'in_progress' => $steps->firstWhere('name', 'Resolve Case') ?? $steps->skip(2)->first() ?? $steps->last(),
+            'waiting_requester' => $workflowRequest->currentStep,
             default => $steps->first(),
         };
     }
@@ -211,6 +284,65 @@ class WorkflowController extends Controller
         }
 
         return $query->where('requester_id', $user->id);
+    }
+
+    private function activeSmartflowView(Request $request): string
+    {
+        $view = $request->string('view')->toString();
+
+        return array_key_exists($view, $this->smartflowMenuTabs()) ? $view : 'all';
+    }
+
+    private function smartflowMenuTabs(): array
+    {
+        return [
+            'all' => ['label' => 'All Documents', 'icon' => 'bi-collection'],
+            'tasks' => ['label' => 'Your Tasks', 'icon' => 'bi-inbox'],
+            'authorizations' => ['label' => 'Authorization', 'icon' => 'bi-shield-check'],
+            'statistics' => ['label' => 'Statistics', 'icon' => 'bi-bar-chart'],
+            'export' => ['label' => 'Export Excel', 'icon' => 'bi-file-earmark-spreadsheet'],
+            'favorites' => ['label' => 'Favorites', 'icon' => 'bi-star'],
+            'workflows' => ['label' => 'Workflows', 'icon' => 'bi-diagram-3'],
+        ];
+    }
+
+    private function applySmartflowView($query, string $view, User $user, $favoriteTemplateIds): void
+    {
+        if ($view === 'tasks') {
+            $query->whereIn('status', ['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester'])
+                ->where(function ($query) use ($user) {
+                    $query->where('assigned_to', $user->id)
+                        ->orWhere('requester_id', $user->id);
+
+                    if ($this->canManageWorkflows($user)) {
+                        $query->orWhereNull('assigned_to');
+                    }
+                });
+        }
+
+        if ($view === 'authorizations') {
+            $query->whereIn('status', ['submitted', 'in_review'])
+                ->whereHas('template', fn ($templateQuery) => $templateQuery->where('smartflow_menu', 'Authorization'));
+        }
+
+        if ($view === 'favorites') {
+            $query->whereIn('workflow_template_id', $favoriteTemplateIds->all() ?: [0]);
+        }
+    }
+
+    private function cleanPayload(array $payload): array
+    {
+        return collect($payload)
+            ->map(fn ($value) => is_string($value) ? trim($value) : $value)
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->all();
+    }
+
+    private function generateDocumentNumber(WorkflowRequest $workflowRequest): string
+    {
+        $date = ($workflowRequest->submitted_at ?: now())->format('Ymd');
+
+        return 'WDC-SF-'.$date.'-'.str_pad((string) $workflowRequest->id, 5, '0', STR_PAD_LEFT);
     }
 
     private function log(Request $request, string $action, ?string $subjectType = null, ?int $subjectId = null, ?string $description = null): void

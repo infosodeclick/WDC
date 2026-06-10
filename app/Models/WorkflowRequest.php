@@ -15,11 +15,17 @@ class WorkflowRequest extends Model
         'workflow_template_id',
         'requester_id',
         'current_step_id',
+        'assigned_to',
+        'document_number',
+        'smartflow_menu',
         'title',
         'details',
+        'form_payload',
+        'assigned_group',
         'priority',
         'status',
         'legacy_reference',
+        'due_at',
         'submitted_at',
         'completed_at',
     ];
@@ -27,6 +33,8 @@ class WorkflowRequest extends Model
     protected function casts(): array
     {
         return [
+            'form_payload' => 'array',
+            'due_at' => 'datetime',
             'submitted_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
@@ -40,6 +48,11 @@ class WorkflowRequest extends Model
     public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requester_id');
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function currentStep(): BelongsTo
@@ -75,6 +88,9 @@ class WorkflowRequest extends Model
         return [
             'submitted' => 'ส่งคำขอแล้ว',
             'in_review' => 'อยู่ระหว่างตรวจสอบ',
+            'accepted' => 'รับเรื่องแล้ว',
+            'in_progress' => 'กำลังดำเนินการ',
+            'waiting_requester' => 'รอข้อมูลจากผู้ขอ',
             'approved' => 'อนุมัติแล้ว',
             'rejected' => 'ไม่อนุมัติ',
             'completed' => 'เสร็จสิ้น',

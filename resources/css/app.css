@@ -314,6 +314,34 @@ a {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.smartflow-tabs {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.smartflow-tab {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 8px 10px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    font-weight: 750;
+}
+
+.smartflow-tab:hover,
+.smartflow-tab.active {
+    color: #ffffff;
+    border-color: var(--primary);
+    background: var(--primary);
+}
+
 .system-card {
     display: grid;
     gap: 14px;
@@ -349,6 +377,31 @@ a {
     margin: 0;
     font-size: 1rem;
     font-weight: 750;
+}
+
+.workflow-template-meta,
+.workflow-schema {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.workflow-template-meta span,
+.workflow-schema span {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 8px;
+    background: #f3f7fb;
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 650;
+}
+
+.workflow-schema span {
+    color: #174ea6;
+    background: #eaf2ff;
 }
 
 .snapshot-card h3 {
@@ -536,6 +589,26 @@ a {
     color: var(--muted);
 }
 
+.workflow-payload {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 8px 12px;
+    margin: 12px 0 0;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8fbff;
+}
+
+.workflow-payload dt {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.workflow-payload dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
 .quick-actions {
     display: flex;
     flex-wrap: wrap;
@@ -632,7 +705,8 @@ a {
 }
 
 .status-accepted,
-.status-in_progress {
+.status-in_progress,
+.status-waiting_requester {
     color: var(--warning);
     background: #fff7e6;
 }
@@ -1119,6 +1193,7 @@ a {
     .role-template-grid,
     .admin-access-grid,
     .permission-matrix,
+    .smartflow-tabs,
     .system-mini-grid,
     .system-grid,
     .directory-grid,
@@ -1152,7 +1227,9 @@ a {
     .metric-grid,
     .role-template-grid,
     .admin-access-grid,
-    .permission-matrix {
+    .permission-matrix,
+    .smartflow-tabs,
+    .workflow-payload {
         grid-template-columns: 1fr;
     }
 

@@ -35,8 +35,8 @@ Use `--dry-run` to verify the source count without writing records.
   - Resolve Case: same IT owners, requires input for resolution.
   - AI-CRM Accept/Resolve Case: approver `thipaporn aisystem`, used when AI-CRM is selected.
   - SoftpowerIT Accept/Resolve Case: SAP B1 branch, assigned to the SoftpowerIT group.
-- Migration direction: WDC tickets now store `request_type` and `legacy_document_ref`; later phases can add file uploads and SmartFlow import/API sync if available.
-- Current WDC implementation: imported SmartFlow workflow names into `workflow_templates`, IT Helpdesk steps into `workflow_steps`, and added `GET /workflows` for new approval requests.
+- Migration direction: employees should start work in WDC first. SmartFlow links remain only for old references or document types that have not been retired yet.
+- Current WDC implementation: SmartFlow Work Center mirrors All Documents, Your Tasks, Authorization, Statistics, Export Excel, Favorites, and Workflows. New requests receive `WDC-SF-*` document numbers, keep SmartFlow-style form payloads, support template favorites, and export CSV from WDC.
 
 ### Payroll
 

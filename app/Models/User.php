@@ -17,6 +17,8 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    private ?Collection $cachedEffectivePermissionKeys = null;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -80,6 +82,11 @@ class User extends Authenticatable
         return $this->hasMany(ExternalSystemAccount::class);
     }
 
+    public function favoriteWorkflowTemplates(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkflowTemplate::class, 'workflow_template_favorites')->withTimestamps();
+    }
+
     public function hasRole(string $slug): bool
     {
         return $this->role?->slug === $slug;
@@ -122,6 +129,10 @@ class User extends Authenticatable
 
     public function effectivePermissionKeys(): Collection
     {
+        if ($this->cachedEffectivePermissionKeys !== null) {
+            return $this->cachedEffectivePermissionKeys;
+        }
+
         $this->loadMissing('role.permissions', 'permissionOverrides');
 
         $rolePermissions = $this->role?->permissions->pluck('key') ?? collect();
@@ -132,7 +143,7 @@ class User extends Authenticatable
             ->where('pivot.effect', 'deny')
             ->pluck('key');
 
-        return $rolePermissions
+        return $this->cachedEffectivePermissionKeys = $rolePermissions
             ->merge($grants)
             ->unique()
             ->diff($denies)

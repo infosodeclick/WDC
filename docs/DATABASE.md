@@ -16,9 +16,10 @@ Core tables:
 - `knowledge_videos`: training videos.
 - `tickets`: IT Helpdesk tickets.
 - `ticket_comments`: ticket conversation.
-- `workflow_templates`: SmartFlow workflow types imported into WDC Portal.
+- `workflow_templates`: SmartFlow workflow types imported into WDC Portal, including menu, service team, SLA, and form schema metadata.
 - `workflow_steps`: approval or resolution steps for each workflow type.
-- `workflow_requests`: employee-submitted requests based on workflow templates.
+- `workflow_requests`: employee-submitted requests based on workflow templates, with WDC document numbers, payload metadata, assignee/group, and due dates.
+- `workflow_template_favorites`: per-user favorite SmartFlow templates.
 - `workflow_request_events`: audit trail for request creation and status changes.
 - `complaints`: suggestions, complaints, fraud reports, supervisor issues.
 - `notifications`: user-facing notifications.

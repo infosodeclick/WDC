@@ -31,7 +31,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
+    Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
     Route::post('/workflows', [WorkflowController::class, 'store'])->name('workflows.store');
+    Route::post('/workflows/templates/{template}/favorite', [WorkflowController::class, 'toggleFavorite'])->name('workflows.templates.favorite');
     Route::patch('/workflows/{workflowRequest}/status', [WorkflowController::class, 'updateStatus'])->name('workflows.status');
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');

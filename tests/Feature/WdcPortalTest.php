@@ -113,6 +113,10 @@ class WdcPortalTest extends TestCase
             'workflow_template_id' => $template->id,
             'title' => 'ขออนุมัติ Remote Access',
             'details' => 'ต้องการให้ IT remote เพื่อแก้ปัญหา SAP B1',
+            'form_payload' => [
+                'ระบบที่เกี่ยวข้อง' => 'SAP B1',
+                'วันที่ต้องการ' => '20/06/2026',
+            ],
             'priority' => 'high',
             'legacy_reference' => 'REF: #2606815',
         ])->assertRedirect(route('workflows.index'));
@@ -121,6 +125,8 @@ class WdcPortalTest extends TestCase
 
         $this->assertSame('submitted', $workflowRequest->status);
         $this->assertSame('REF: #2606815', $workflowRequest->legacy_reference);
+        $this->assertStringStartsWith('WDC-SF-', $workflowRequest->document_number);
+        $this->assertSame('SAP B1', $workflowRequest->form_payload['ระบบที่เกี่ยวข้อง']);
         $this->assertNotNull($workflowRequest->current_step_id);
     }
 

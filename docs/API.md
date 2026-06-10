@@ -18,7 +18,8 @@ Primary web routes:
 - `GET /systems`
 - `GET /payroll`
 - `GET /search`
-- `GET /workflows`, `POST /workflows`
+- `GET /workflows`, `GET /workflows/export`, `POST /workflows`
+- `POST /workflows/templates/{template}/favorite`
 - `PATCH /workflows/{workflowRequest}/status`
 - `GET /hr`, `POST /hr/announcements`, `PATCH /hr/employees/{user}/status`
 - `GET /it`
@@ -30,3 +31,5 @@ V1 uses Blade forms and session authentication rather than a JSON API. Add `rout
 
 - `request_type`: `general`, `cancel_document`, `vpn_access`, `sap_b1`, `ai_crm`, or `remote_access`
 - `legacy_document_ref`: optional reference such as an old SmartFlow document number
+
+`GET /workflows` now mirrors SmartFlow document views with `view=all`, `tasks`, `authorizations`, `statistics`, `favorites`, or `workflows`. `POST /workflows` creates a WDC document number (`WDC-SF-YYYYMMDD-00000`) and accepts optional `form_payload[...]` fields for SmartFlow-style document metadata.

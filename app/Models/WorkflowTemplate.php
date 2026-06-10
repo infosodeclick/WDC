@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkflowTemplate extends Model
@@ -16,6 +17,11 @@ class WorkflowTemplate extends Model
         'name',
         'category',
         'description',
+        'smartflow_menu',
+        'service_team',
+        'form_schema',
+        'sla_hours',
+        'approval_policy',
         'legacy_url',
         'is_active',
         'sort_order',
@@ -23,7 +29,10 @@ class WorkflowTemplate extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'form_schema' => 'array',
+            'is_active' => 'boolean',
+        ];
     }
 
     public function steps(): HasMany
@@ -34,5 +43,15 @@ class WorkflowTemplate extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(WorkflowRequest::class);
+    }
+
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'workflow_template_favorites')->withTimestamps();
+    }
+
+    public function schemaFields(): array
+    {
+        return $this->form_schema['fields'] ?? [];
     }
 }
