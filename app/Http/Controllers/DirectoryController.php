@@ -12,6 +12,7 @@ class DirectoryController extends Controller
     {
         $q = trim($request->string('q')->toString());
         $department = $request->string('department')->toString();
+        $team = $request->string('team')->toString();
         $location = $request->string('location')->toString();
         $entryType = $request->string('type')->toString();
 
@@ -23,6 +24,7 @@ class DirectoryController extends Controller
                         ->orWhere('thai_name', 'like', "%{$q}%")
                         ->orWhere('nickname', 'like', "%{$q}%")
                         ->orWhere('department', 'like', "%{$q}%")
+                        ->orWhere('team', 'like', "%{$q}%")
                         ->orWhere('position', 'like', "%{$q}%")
                         ->orWhere('location', 'like', "%{$q}%")
                         ->orWhere('email', 'like', "%{$q}%")
@@ -31,6 +33,7 @@ class DirectoryController extends Controller
                 });
             })
             ->when($department !== '', fn ($query) => $query->where('department', $department))
+            ->when($team !== '', fn ($query) => $query->where('team', $team))
             ->when($location !== '', fn ($query) => $query->where('location', $location))
             ->when($entryType !== '', fn ($query) => $query->where('entry_type', $entryType))
             ->orderByRaw("CASE entry_type WHEN 'employee' THEN 1 WHEN 'mail_group' THEN 2 ELSE 3 END")
@@ -43,9 +46,11 @@ class DirectoryController extends Controller
             'entries' => $entries,
             'q' => $q,
             'department' => $department,
+            'team' => $team,
             'location' => $location,
             'entryType' => $entryType,
             'departments' => EmployeeDirectoryEntry::whereNotNull('department')->distinct()->orderBy('department')->pluck('department'),
+            'teams' => EmployeeDirectoryEntry::whereNotNull('team')->distinct()->orderBy('team')->pluck('team'),
             'locations' => EmployeeDirectoryEntry::whereNotNull('location')->distinct()->orderBy('location')->pluck('location'),
             'entryTypes' => [
                 'employee' => 'พนักงาน',
@@ -53,6 +58,8 @@ class DirectoryController extends Controller
                 'showroom' => 'สาขา/โชว์รูม',
             ],
             'totalEntries' => EmployeeDirectoryEntry::where('is_active', true)->count(),
+            'importedEntries' => EmployeeDirectoryEntry::where('is_active', true)->whereNotNull('source_record_id')->count(),
+            'lastImportedAt' => EmployeeDirectoryEntry::whereNotNull('imported_at')->max('imported_at'),
         ]);
     }
 }

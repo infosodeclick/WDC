@@ -8,7 +8,7 @@ Laravel 12 internal company portal for a 200-person organization.
 - Employee dashboard with announcements, pending tickets, and new videos.
 - Employee profile and document downloads.
 - Legacy systems hub for Notion directory, SmartFlow IT Helpdesk, and Payroll links.
-- Imported employee directory from the old Notion directory with search and filters.
+- Notion directory importer with employee photos, team/location filters, mail groups, and showroom records.
 - SmartFlow-inspired request and approval center for common document workflows.
 - Announcements with pinned and urgent flags.
 - Knowledge Base with articles and videos.
@@ -24,6 +24,7 @@ Laravel 12 internal company portal for a 200-person organization.
 composer install
 npm.cmd install
 php artisan migrate:fresh --seed
+php artisan portal:import-notion-directory
 npm.cmd run build
 php artisan serve
 ```

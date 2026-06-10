@@ -11,24 +11,34 @@ class EmployeeDirectoryEntry extends Model
 
     protected $fillable = [
         'source_system',
+        'source_record_id',
+        'source_url',
+        'image_url',
         'entry_type',
         'display_name',
         'english_name',
         'thai_name',
         'nickname',
         'department',
+        'team',
         'position',
         'location',
         'email',
         'phone',
         'extension_number',
         'notes',
+        'raw_payload',
+        'imported_at',
         'is_active',
     ];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'raw_payload' => 'array',
+            'imported_at' => 'datetime',
+            'is_active' => 'boolean',
+        ];
     }
 
     public function entryTypeLabel(): string
@@ -38,5 +48,23 @@ class EmployeeDirectoryEntry extends Model
             'mail_group' => 'กลุ่มอีเมล',
             'showroom' => 'สาขา/โชว์รูม',
         ][$this->entry_type] ?? $this->entry_type;
+    }
+
+    public function avatarInitials(): string
+    {
+        $name = trim($this->thai_name ?: $this->display_name);
+
+        if ($name === '') {
+            return 'W';
+        }
+
+        $parts = preg_split('/\s+/u', $name) ?: [$name];
+        $letters = collect($parts)
+            ->filter()
+            ->take(2)
+            ->map(fn (string $part) => mb_substr($part, 0, 1, 'UTF-8'))
+            ->implode('');
+
+        return $letters !== '' ? $letters : 'W';
     }
 }

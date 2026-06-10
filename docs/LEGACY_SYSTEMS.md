@@ -9,8 +9,19 @@ WDC Portal should become the single starting point for employees, while legacy s
 - Current system: public Notion directory.
 - Purpose: employee telephone directory and internal contact lookup.
 - Visible fields: Thai name, English name, nickname, business unit/team, position, location, phone extension, email groups.
+- Structured import source: public Notion API for the collection view `All team members`.
+- Latest observed import scope: 192 rows total: 150 employee records, 19 mail groups, 23 showroom/location records.
+- Image handling: profile/showroom images are read from child image blocks and stored as proxied Notion image URLs in `employee_directory_entries.image_url`.
 - Migration direction: move directory fields into `employees` and manage updates from HR Portal later.
-- Current WDC implementation: imported visible directory records into `employee_directory_entries` and exposed them through `GET /directory`.
+- Current WDC implementation: `portal:import-notion-directory` imports/upserts Notion rows into `employee_directory_entries` and exposes them through `GET /directory`.
+
+Run:
+
+```powershell
+php artisan portal:import-notion-directory
+```
+
+Use `--dry-run` to verify the source count without writing records.
 
 ### SmartFlow
 
@@ -18,7 +29,12 @@ WDC Portal should become the single starting point for employees, while legacy s
 - Purpose: document workflows, approval tasks, IT Helpdesk, reporting, authorization, workflow settings, dynamic fields, export.
 - Login method: corporate email and SmartFlow password.
 - IT Helpdesk fields observed: title, cancel document request, VPN request, SAP B1 issue, AI-CRM issue, database/Remote Access request, details, attachments 1-4.
-- IT Helpdesk workflow observed: manager approval for cancel document, IT accept/resolve case, AI-CRM accept/resolve case, SoftpowerIT accept/resolve case for SAP B1.
+- IT Helpdesk workflow observed:
+  - Manager Approval: Any One, Senior_Management/user-selected manager, used for cancel document.
+  - Accept Case: Any One, IT owners including พีรสิทธิ์ หนองรั้ง and ชนะพล จักรพันธ์.
+  - Resolve Case: same IT owners, requires input for resolution.
+  - AI-CRM Accept/Resolve Case: approver `thipaporn aisystem`, used when AI-CRM is selected.
+  - SoftpowerIT Accept/Resolve Case: SAP B1 branch, assigned to the SoftpowerIT group.
 - Migration direction: WDC tickets now store `request_type` and `legacy_document_ref`; later phases can add file uploads and SmartFlow import/API sync if available.
 - Current WDC implementation: imported SmartFlow workflow names into `workflow_templates`, IT Helpdesk steps into `workflow_steps`, and added `GET /workflows` for new approval requests.
 

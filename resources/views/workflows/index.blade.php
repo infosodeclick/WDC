@@ -75,7 +75,12 @@
                 <p>{{ $template->description }}</p>
                 <div class="workflow-steps">
                     @foreach($template->steps as $step)
-                        <span>{{ $step->step_order }}. {{ $step->name }}</span>
+                        <span>
+                            <strong>{{ $step->step_order }}. {{ $step->name }}</strong>
+                            @if($step->approver_hint || $step->condition_label)
+                                <small>{{ collect([$step->approver_hint, $step->condition_label])->filter()->join(' · ') }}</small>
+                            @endif
+                        </span>
                     @endforeach
                 </div>
                 @if($template->legacy_url)

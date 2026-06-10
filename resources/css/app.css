@@ -267,6 +267,7 @@ a {
 .system-mini-grid,
 .system-grid,
 .directory-grid,
+.snapshot-grid,
 .workflow-template-grid {
     display: grid;
     gap: 14px;
@@ -305,6 +306,10 @@ a {
     margin-bottom: 18px;
 }
 
+.snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .workflow-template-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -316,6 +321,7 @@ a {
 }
 
 .directory-card,
+.snapshot-card,
 .workflow-template-card {
     display: grid;
     gap: 12px;
@@ -343,6 +349,42 @@ a {
     margin: 0;
     font-size: 1rem;
     font-weight: 750;
+}
+
+.snapshot-card h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.snapshot-card p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.snapshot-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.snapshot-stat-row span,
+.snapshot-list {
+    padding: 10px;
+    border-radius: 8px;
+    background: #f8fbff;
+}
+
+.snapshot-stat-row strong,
+.snapshot-list strong {
+    display: block;
+    color: var(--ink);
+}
+
+.snapshot-list {
+    display: grid;
+    gap: 4px;
+    color: var(--muted);
 }
 
 .integration-steps {
@@ -382,7 +424,7 @@ a {
 
 .directory-filter {
     display: grid;
-    grid-template-columns: 1.4fr repeat(3, minmax(150px, .8fr)) auto;
+    grid-template-columns: 1.4fr repeat(4, minmax(140px, .78fr)) auto;
     gap: 12px;
     align-items: end;
 }
@@ -400,17 +442,85 @@ a {
     font-size: .9rem;
 }
 
+.directory-card-with-photo {
+    align-content: start;
+}
+
+.directory-card-top {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+}
+
+.directory-photo,
+.directory-avatar {
+    width: 86px;
+    height: 86px;
+    border-radius: 8px;
+}
+
+.directory-photo {
+    object-fit: cover;
+    border: 1px solid var(--line);
+    background: #eef2f7;
+}
+
+.directory-avatar {
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.directory-card-title {
+    min-width: 0;
+}
+
+.directory-card-title h2 {
+    overflow-wrap: anywhere;
+}
+
+.compact-meta {
+    align-items: center;
+}
+
+.source-link {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.metric-date {
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+}
+
 .workflow-steps {
     display: grid;
     gap: 6px;
 }
 
 .workflow-steps span {
+    display: grid;
+    gap: 3px;
     padding: 7px 9px;
     border-radius: 8px;
     background: #f5f8fb;
     color: var(--muted);
     font-size: .86rem;
+}
+
+.workflow-steps strong {
+    color: var(--ink);
+}
+
+.workflow-steps small {
+    overflow-wrap: anywhere;
 }
 
 .workflow-current-step {
@@ -867,6 +977,7 @@ a {
     .system-mini-grid,
     .system-grid,
     .directory-grid,
+    .snapshot-grid,
     .workflow-template-grid,
     .integration-steps,
     .login-screen {
@@ -919,5 +1030,15 @@ a {
 
     .video-card {
         grid-template-columns: 1fr;
+    }
+
+    .directory-card-top {
+        grid-template-columns: 72px minmax(0, 1fr);
+    }
+
+    .directory-photo,
+    .directory-avatar {
+        width: 72px;
+        height: 72px;
     }
 }

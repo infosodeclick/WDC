@@ -11,6 +11,7 @@ use App\Models\EmployeeDocument;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
 use App\Models\LegacySystem;
+use App\Models\LegacySystemSnapshot;
 use App\Models\Notification;
 use App\Models\Ticket;
 use App\Models\WorkflowRequest;
@@ -55,6 +56,7 @@ class PortalController extends Controller
             'systems' => LegacySystem::with(['accounts' => fn ($query) => $query->where('user_id', $user->id)])
                 ->orderBy('sort_order')
                 ->get(),
+            'snapshots' => LegacySystemSnapshot::latest('captured_at')->get(),
             'user' => $user,
         ]);
     }
@@ -154,6 +156,7 @@ class PortalController extends Controller
                         ->orWhere('thai_name', 'like', "%{$q}%")
                         ->orWhere('nickname', 'like', "%{$q}%")
                         ->orWhere('department', 'like', "%{$q}%")
+                        ->orWhere('team', 'like', "%{$q}%")
                         ->orWhere('position', 'like', "%{$q}%")
                         ->orWhere('email', 'like', "%{$q}%");
                 })
