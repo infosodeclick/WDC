@@ -13,18 +13,25 @@ class WorkflowStep extends Model
 
     protected $fillable = [
         'workflow_template_id',
+        'external_step_id',
         'step_order',
         'name',
+        'action_label',
         'mode',
         'approver_group',
         'approver_hint',
         'condition_label',
+        'branch_label',
+        'metadata',
         'requires_input',
     ];
 
     protected function casts(): array
     {
-        return ['requires_input' => 'boolean'];
+        return [
+            'metadata' => 'array',
+            'requires_input' => 'boolean',
+        ];
     }
 
     public function template(): BelongsTo
@@ -35,5 +42,15 @@ class WorkflowStep extends Model
     public function requests(): HasMany
     {
         return $this->hasMany(WorkflowRequest::class, 'current_step_id');
+    }
+
+    public function smartflowConditions(): array
+    {
+        return $this->metadata['conditions'] ?? [];
+    }
+
+    public function smartflowApprovers(): array
+    {
+        return $this->metadata['approvers'] ?? [];
     }
 }

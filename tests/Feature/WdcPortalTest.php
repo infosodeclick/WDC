@@ -131,6 +131,40 @@ class WdcPortalTest extends TestCase
         $this->assertNotNull($workflowRequest->current_step_id);
     }
 
+    public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame(12, WorkflowTemplate::where('source_system', 'smartflow')->count());
+        $this->assertTrue(WorkflowTemplate::where('legacy_workflow_id', '5')->where('name', 'ใบคืนสินค้า')->exists());
+
+        $template = WorkflowTemplate::where('legacy_workflow_id', '7')->firstOrFail();
+        $fields = collect($template->schemaFieldDefinitions());
+
+        $this->assertTrue($fields->contains(fn (array $field) => $field['key'] === 'dynamic_181' && $field['type'] === 'checkbox'));
+        $this->assertTrue($fields->contains(fn (array $field) => $field['key'] === 'dynamic_62' && $field['type'] === 'rich_text'));
+        $this->assertNotEmpty($template->routingRules());
+        $this->assertTrue($template->steps()->where('external_step_id', '67')->where('name', 'AI-CRM Accept Case')->exists());
+        $this->assertTrue($template->steps()->where('external_step_id', '68')->where('name', 'Softpowerit Accept Case')->exists());
+    }
+
+    public function test_super_admin_can_resync_smartflow_catalog_from_backend(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $this->post(route('workflows.templates.sync-smartflow'))->assertRedirect();
+
+        $template = WorkflowTemplate::where('legacy_workflow_id', '14')->firstOrFail();
+
+        $this->assertSame('ขออนุมัติคอนเทนฅ์ (Marketing)', $template->name);
+        $this->assertTrue($template->steps()->where('external_step_id', '74')->where('condition_label', 'content Equals "WDC"')->exists());
+    }
+
     public function test_manager_can_update_workflow_status(): void
     {
         $this->seed(DatabaseSeeder::class);

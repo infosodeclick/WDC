@@ -80,7 +80,7 @@
             @csrf
             <label>
                 <span>Workflow</span>
-                <select class="form-select" name="workflow_template_id" required>
+                <select class="form-select" name="workflow_template_id" data-smartflow-template-select required>
                     @foreach($templateCatalog as $template)
                         <option value="{{ $template->id }}" @selected((int) old('workflow_template_id') === $template->id)>
                             {{ $template->name }} · {{ $template->service_team ?? $template->category }}
@@ -105,29 +105,57 @@
                 <span>เลขอ้างอิง SmartFlow เดิม</span>
                 <input class="form-control" name="legacy_reference" value="{{ old('legacy_reference') }}" placeholder="เช่น REF: #2606815">
             </label>
-            <label>
-                <span>ลูกค้า/แผนก/หน่วยงาน</span>
-                <input class="form-control" name="form_payload[ลูกค้า/แผนก/หน่วยงาน]" value="{{ old('form_payload.ลูกค้า/แผนก/หน่วยงาน') }}">
-            </label>
-            <label>
-                <span>เลขเอกสาร/PO/ระบบที่เกี่ยวข้อง</span>
-                <input class="form-control" name="form_payload[เลขเอกสาร/PO/ระบบที่เกี่ยวข้อง]" value="{{ old('form_payload.เลขเอกสาร/PO/ระบบที่เกี่ยวข้อง') }}">
-            </label>
-            <label>
-                <span>มูลค่า/จำนวน/ผลกระทบ</span>
-                <input class="form-control" name="form_payload[มูลค่า/จำนวน/ผลกระทบ]" value="{{ old('form_payload.มูลค่า/จำนวน/ผลกระทบ') }}">
-            </label>
-            <label>
-                <span>วันที่ต้องการ</span>
-                <input class="form-control" name="form_payload[วันที่ต้องการ]" value="{{ old('form_payload.วันที่ต้องการ') }}" placeholder="เช่น 20/06/2026">
-            </label>
+            @php($selectedTemplateId = (int) old('workflow_template_id', $templateCatalog->first()?->id))
+            <div class="span-3 smartflow-form-fields" data-smartflow-fieldsets>
+                @foreach($templateCatalog as $template)
+                    @php($isSelectedTemplate = $selectedTemplateId === $template->id)
+                    <fieldset class="smartflow-template-fields" data-template-id="{{ $template->id }}" @if(! $isSelectedTemplate) hidden @endif>
+                        <legend>{{ $template->name }} · Dynamic Fields</legend>
+                        <div class="form-grid compact-form-grid">
+                            @forelse($template->schemaFieldDefinitions() as $field)
+                                @php($fieldName = "form_payload[{$field['label']}]")
+                                @php($oldValue = old("form_payload.{$field['label']}"))
+                                <label class="{{ in_array($field['type'], ['textarea', 'rich_text', 'file'], true) ? 'span-3' : '' }}">
+                                    <span>
+                                        {{ $field['label'] }}
+                                        @if($field['required'])
+                                            <strong class="required-mark">*</strong>
+                                        @endif
+                                        <small>{{ strtoupper($field['type']) }}</small>
+                                    </span>
+                                    @if(in_array($field['type'], ['textarea', 'rich_text'], true))
+                                        <textarea class="form-control" name="{{ $fieldName }}" rows="3" @disabled(! $isSelectedTemplate)>{{ $oldValue }}</textarea>
+                                    @elseif($field['type'] === 'checkbox')
+                                        <select class="form-select" name="{{ $fieldName }}" @disabled(! $isSelectedTemplate)>
+                                            <option value="">No</option>
+                                            <option value="on" @selected($oldValue === 'on')>Yes</option>
+                                        </select>
+                                    @elseif($field['type'] === 'select' && ! empty($field['options']))
+                                        <select class="form-select" name="{{ $fieldName }}" @disabled(! $isSelectedTemplate)>
+                                            <option value="">เลือก</option>
+                                            @foreach($field['options'] as $option)
+                                                <option value="{{ $option }}" @selected($oldValue === $option)>{{ $option }}</option>
+                                            @endforeach
+                                        </select>
+                                    @elseif($field['type'] === 'file')
+                                        <input class="form-control" name="{{ $fieldName }}" value="{{ $oldValue }}" placeholder="วางลิงก์ไฟล์หรือหมายเหตุไฟล์แนบ" @disabled(! $isSelectedTemplate)>
+                                    @else
+                                        <input class="form-control" name="{{ $fieldName }}" value="{{ $oldValue }}" type="{{ in_array($field['type'], ['date', 'number', 'tel'], true) ? $field['type'] : 'text' }}" @disabled(! $isSelectedTemplate)>
+                                    @endif
+                                    @if($field['help'])
+                                        <em>{{ $field['help'] }}</em>
+                                    @endif
+                                </label>
+                            @empty
+                                <div class="empty-state">SmartFlow เดิมยังไม่มี dynamic field สำหรับ workflow นี้</div>
+                            @endforelse
+                        </div>
+                    </fieldset>
+                @endforeach
+            </div>
             <label class="span-3">
                 <span>รายละเอียด</span>
                 <textarea class="form-control" name="details" rows="3" required>{{ old('details') }}</textarea>
-            </label>
-            <label class="span-3">
-                <span>ไฟล์/ลิงก์/หมายเหตุประกอบ</span>
-                <input class="form-control" name="form_payload[ไฟล์/ลิงก์/หมายเหตุประกอบ]" value="{{ old('form_payload.ไฟล์/ลิงก์/หมายเหตุประกอบ') }}" placeholder="วางลิงก์ไฟล์ รูป หรือหมายเหตุที่ต้องใช้ตรวจงาน">
             </label>
             <label class="span-3">
                 <span>ลิงก์ไฟล์แนบ</span>
@@ -157,10 +185,29 @@
                     <span><i class="bi bi-clock"></i> SLA {{ $template->sla_hours ?? '-' }} ชม.</span>
                     <span><i class="bi bi-signpost"></i> {{ $template->approval_policy }}</span>
                 </div>
-                @if($template->schemaFields())
+                @if($template->schemaFieldDefinitions())
                     <div class="workflow-schema">
-                        @foreach($template->schemaFields() as $field)
-                            <span>{{ $field }}</span>
+                        @foreach($template->schemaFieldDefinitions() as $field)
+                            <span>
+                                {{ $field['label'] }}
+                                <small>{{ strtoupper($field['type']) }}{{ $field['required'] ? ' · REQUIRED' : '' }}</small>
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
+                @if($template->routingRules())
+                    <div class="workflow-routing">
+                        <strong>Routing จาก SmartFlow</strong>
+                        @foreach($template->routingRules() as $rule)
+                            <small>{{ $rule['when'] ?? '-' }} → {{ $rule['step'] ?? '-' }}</small>
+                        @endforeach
+                    </div>
+                @endif
+                @if($template->statusFlow())
+                    <div class="workflow-routing">
+                        <strong>Status / Action Flow</strong>
+                        @foreach(array_slice($template->statusFlow(), 0, 5) as $statusRule)
+                            <small>{{ $statusRule['from'] ?? '-' }} → {{ $statusRule['to'] ?? '-' }} · {{ $statusRule['action'] ?? '-' }}</small>
                         @endforeach
                     </div>
                 @endif
@@ -168,8 +215,14 @@
                     @foreach($template->steps as $step)
                         <span>
                             <strong>{{ $step->step_order }}. {{ $step->name }}</strong>
+                            @if($step->action_label)
+                                <small>Action: {{ $step->action_label }}</small>
+                            @endif
                             @if($step->approver_hint || $step->condition_label)
                                 <small>{{ collect([$step->approver_hint, $step->condition_label])->filter()->join(' · ') }}</small>
+                            @endif
+                            @if($step->requires_input)
+                                <small>Input required</small>
                             @endif
                         </span>
                     @endforeach
@@ -190,7 +243,13 @@
     <section class="panel">
         <div class="section-title">
             <h2>Workflow Backend</h2>
-            <span class="status-pill">Super Admin</span>
+            <div class="button-row">
+                <form method="post" action="{{ route('workflows.templates.sync-smartflow') }}">
+                    @csrf
+                    <button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-repeat"></i> Sync SmartFlow Catalog</button>
+                </form>
+                <span class="status-pill">Super Admin</span>
+            </div>
         </div>
         <form method="post" action="{{ route('workflows.templates.store') }}" class="form-grid template-admin-form">
             @csrf
@@ -233,6 +292,7 @@
                 <textarea class="form-control" name="form_schema_fields" rows="4">Requester
 Reference
 รายละเอียดเดิม</textarea>
+                <small>Format ใหม่: key|label|type|required|help เช่น dynamic_181|แจ้งขอใช้งาน VPN|checkbox|0</small>
             </label>
             <label>
                 <span>Step format</span>
@@ -291,7 +351,8 @@ Reference
                         </label>
                         <label class="span-2">
                             <span>ช่องฟอร์มที่ต้องการ</span>
-                            <textarea class="form-control" name="form_schema_fields" rows="4">{{ collect($template->schemaFields())->join("\n") }}</textarea>
+                            <textarea class="form-control" name="form_schema_fields" rows="4">{{ collect($template->schemaFieldDefinitions())->map(fn ($field) => ($field['key'] ?? '').'|'.($field['label'] ?? '').'|'.($field['type'] ?? 'text').'|'.(($field['required'] ?? false) ? '1' : '0').'|'.($field['help'] ?? ''))->join("\n") }}</textarea>
+                            <small>Format: key|label|type|required|help</small>
                         </label>
                         <label>
                             <span>Step format</span>

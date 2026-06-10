@@ -10,6 +10,7 @@ use App\Models\WorkflowRequestEvent;
 use App\Models\WorkflowStep;
 use App\Models\WorkflowTemplate;
 use App\Services\SmartflowCsvImporter;
+use App\Services\SmartflowWorkflowCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -89,7 +90,7 @@ class WorkflowController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'details' => ['required', 'string', 'max:5000'],
             'form_payload' => ['nullable', 'array'],
-            'form_payload.*' => ['nullable', 'string', 'max:500'],
+            'form_payload.*' => ['nullable', 'string', 'max:5000'],
             'attachment_links' => ['nullable', 'string', 'max:5000'],
             'priority' => ['required', 'in:low,normal,high,critical'],
             'legacy_reference' => ['nullable', 'string', 'max:120'],
@@ -313,12 +314,24 @@ class WorkflowController extends Controller
 
         $template->update($this->templateAttributes($data, [
             'is_active' => $request->boolean('is_active'),
-        ]));
+        ], $template));
 
         $this->syncTemplateSteps($template, $data['step_lines'] ?? '');
         $this->log($request, 'update_workflow_template', WorkflowTemplate::class, $template->id, "Updated workflow template {$template->name}");
 
         return back()->with('status', 'อัปเดต workflow template แล้ว');
+    }
+
+    public function syncSmartflowCatalog(Request $request, SmartflowWorkflowCatalog $catalog): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($user->canAccess('admin.system.manage'), 403);
+
+        $catalog->sync();
+        $this->log($request, 'sync_smartflow_catalog', WorkflowTemplate::class, null, 'Synced SmartFlow workflow catalog from WDC source snapshot');
+
+        return back()->with('status', 'Sync SmartFlow workflow catalog เข้า WDC แล้ว');
     }
 
     public function export(Request $request)
@@ -379,13 +392,11 @@ class WorkflowController extends Controller
         ]);
     }
 
-    private function templateAttributes(array $data, array $overrides = []): array
+    private function templateAttributes(array $data, array $overrides = [], ?WorkflowTemplate $template = null): array
     {
-        $fields = collect(preg_split('/\r\n|\r|\n/', $data['form_schema_fields'] ?? '') ?: [])
-            ->map(fn (string $field) => trim($field))
-            ->filter()
-            ->values()
-            ->all();
+        $schema = $template?->form_schema ?? [];
+        $schema['fields'] = $this->parseTemplateFieldLines($data['form_schema_fields'] ?? '');
+        $schema['statuses'] = $schema['statuses'] ?? SmartflowWorkflowCatalog::defaultStatusFlow();
 
         return [
             'legacy_workflow_id' => $data['legacy_workflow_id'] ?? null,
@@ -394,12 +405,42 @@ class WorkflowController extends Controller
             'description' => $data['description'] ?? null,
             'smartflow_menu' => $this->smartflowMenuTabs()[$data['smartflow_menu']]['label'] ?? 'All Documents',
             'service_team' => $data['service_team'] ?? null,
-            'form_schema' => ['fields' => $fields],
+            'form_schema' => $schema,
             'sla_hours' => $data['sla_hours'] ?? null,
             'approval_policy' => $data['approval_policy'],
             'legacy_url' => $data['legacy_url'] ?? null,
             ...$overrides,
         ];
+    }
+
+    private function parseTemplateFieldLines(string $fieldLines): array
+    {
+        return collect(preg_split('/\r\n|\r|\n/', $fieldLines) ?: [])
+            ->map(fn (string $field) => trim($field))
+            ->filter()
+            ->map(function (string $field) {
+                $parts = array_map('trim', explode('|', $field));
+
+                if (count($parts) > 1) {
+                    return [
+                        'key' => $parts[0] !== '' ? $parts[0] : str($parts[1] ?? 'field')->slug('_')->toString(),
+                        'label' => $parts[1] ?? $parts[0],
+                        'type' => $parts[2] ?? 'text',
+                        'required' => in_array(strtolower($parts[3] ?? ''), ['1', 'true', 'yes', 'required'], true),
+                        'help' => $parts[4] ?? null,
+                    ];
+                }
+
+                return [
+                    'key' => str($field)->slug('_')->toString(),
+                    'label' => $field,
+                    'type' => 'text',
+                    'required' => false,
+                    'help' => null,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function syncTemplateSteps(WorkflowTemplate $template, string $stepLines): void
@@ -432,6 +473,13 @@ class WorkflowController extends Controller
                     'approver_group' => $parts[2] ?? null,
                     'approver_hint' => $parts[2] ?? null,
                     'condition_label' => $parts[3] ?? null,
+                    'action_label' => $parts[1],
+                    'branch_label' => $parts[3] ?? null,
+                    'metadata' => [
+                        'approvers' => array_values(array_filter(array_map('trim', explode(',', $parts[2] ?? '')))),
+                        'conditions' => array_values(array_filter([$parts[3] ?? null])),
+                        'source_note' => 'Edited from WDC Workflow Backend.',
+                    ],
                     'requires_input' => in_array(($parts[4] ?? '0'), ['1', 'true', 'yes', 'required'], true),
                 ],
             );

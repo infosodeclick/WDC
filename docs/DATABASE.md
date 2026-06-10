@@ -16,8 +16,8 @@ Core tables:
 - `knowledge_videos`: training videos.
 - `tickets`: IT Helpdesk tickets.
 - `ticket_comments`: ticket conversation.
-- `workflow_templates`: SmartFlow workflow types imported into WDC Portal, including menu, service team, SLA, and form schema metadata.
-- `workflow_steps`: approval or resolution steps for each workflow type.
+- `workflow_templates`: SmartFlow workflow types imported into WDC Portal, including menu, service team, SLA, dynamic field schema, routing rules, status/action flow, and source notes.
+- `workflow_steps`: approval or resolution steps for each workflow type, including SmartFlow step id, action label, branch condition, approver metadata, and input-required flag.
 - `workflow_requests`: employee-submitted requests based on workflow templates, with WDC document numbers, payload metadata, assignee/group, due dates, and optional SmartFlow import references.
 - `workflow_request_attachments`: URL-based attachments imported from SmartFlow or added in WDC comments/requests.
 - `workflow_template_favorites`: per-user favorite SmartFlow templates.
@@ -41,4 +41,5 @@ Important identity rules:
 - `users.email` should hold the corporate email used by systems such as SmartFlow.
 - `employees` can store directory fields from the Notion directory: English name, Thai name, nickname, BU, team, location, and extension number.
 - SmartFlow imports should map old rows to `workflow_requests.external_source = smartflow`, `external_record_id`, `external_url`, and `external_payload`; do not store SmartFlow passwords.
+- SmartFlow workflow catalog sync is stored in `app\Services\SmartflowWorkflowCatalog`; migrations/upserts should keep the catalog backward-compatible by storing extra source detail in JSON fields rather than requiring legacy credentials at runtime.
 - Do not store external-system passwords, national ID numbers, salary data, or payroll details in WDC Portal.

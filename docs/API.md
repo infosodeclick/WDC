@@ -21,6 +21,7 @@ Primary web routes:
 - `GET /workflows`, `GET /workflows/export`, `GET /workflows/import-template`, `POST /workflows`
 - `POST /workflows/import`
 - `POST /workflows/templates`, `PATCH /workflows/templates/{template}`
+- `POST /workflows/templates/sync-smartflow`
 - `POST /workflows/templates/{template}/favorite`
 - `POST /workflows/{workflowRequest}/comments`
 - `PATCH /workflows/{workflowRequest}/status`
@@ -43,4 +44,12 @@ Workflow migration/admin routes:
 - `GET /workflows/import-template`: downloads a UTF-8 CSV template for old SmartFlow rows.
 - `POST /workflows/templates`: Super Admin creates a new workflow template.
 - `PATCH /workflows/templates/{template}`: Super Admin updates workflow metadata, SLA, form fields, active state, and steps.
+- `POST /workflows/templates/sync-smartflow`: Super Admin re-syncs the checked-in SmartFlow catalog snapshot into `workflow_templates` and `workflow_steps`.
 - `POST /workflows/{workflowRequest}/comments`: requester/assignee/manager adds a workflow comment and optional attachment links.
+
+Workflow template form schema:
+
+- `form_schema.fields`: dynamic fields copied from SmartFlow with `key`, `label`, `type`, `required`, optional `options`, and optional `help`.
+- `form_schema.routing`: branch rules copied from SmartFlow step conditions, for example SAP B1 and AI-CRM Helpdesk paths.
+- `form_schema.statuses`: WDC status/action flow used to mirror SmartFlow-style submit, review, accept, resolve, approve, reject, and complete actions.
+- `workflow_steps.metadata`: SmartFlow step id, approvers, branch conditions, user-selectable flag, and source note.

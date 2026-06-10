@@ -89,3 +89,22 @@ if (directoryModal) {
         }
     });
 }
+
+const smartflowTemplateSelect = document.querySelector('[data-smartflow-template-select]');
+const smartflowFieldsets = document.querySelectorAll('[data-smartflow-fieldsets] [data-template-id]');
+
+if (smartflowTemplateSelect && smartflowFieldsets.length > 0) {
+    const syncSmartflowFieldsets = () => {
+        smartflowFieldsets.forEach((fieldset) => {
+            const isActive = fieldset.dataset.templateId === smartflowTemplateSelect.value;
+
+            fieldset.hidden = ! isActive;
+            fieldset.querySelectorAll('input, select, textarea, button').forEach((input) => {
+                input.disabled = ! isActive;
+            });
+        });
+    };
+
+    smartflowTemplateSelect.addEventListener('change', syncSmartflowFieldsets);
+    syncSmartflowFieldsets();
+}

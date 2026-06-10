@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/workflows', [WorkflowController::class, 'store'])->name('workflows.store');
     Route::post('/workflows/import', [WorkflowController::class, 'importCsv'])->name('workflows.import');
     Route::post('/workflows/templates', [WorkflowController::class, 'storeTemplate'])->name('workflows.templates.store');
+    Route::post('/workflows/templates/sync-smartflow', [WorkflowController::class, 'syncSmartflowCatalog'])->name('workflows.templates.sync-smartflow');
     Route::post('/workflows/templates/{template}/favorite', [WorkflowController::class, 'toggleFavorite'])->name('workflows.templates.favorite');
     Route::patch('/workflows/templates/{template}', [WorkflowController::class, 'updateTemplate'])->name('workflows.templates.update');
     Route::post('/workflows/{workflowRequest}/comments', [WorkflowController::class, 'comment'])->name('workflows.comments.store');

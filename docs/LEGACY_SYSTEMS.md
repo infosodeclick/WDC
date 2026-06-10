@@ -35,6 +35,11 @@ Use `--dry-run` to verify the source count without writing records.
   - Resolve Case: same IT owners, requires input for resolution.
   - AI-CRM Accept/Resolve Case: approver `thipaporn aisystem`, used when AI-CRM is selected.
   - SoftpowerIT Accept/Resolve Case: SAP B1 branch, assigned to the SoftpowerIT group.
+- SmartFlow workflow catalog now synced into WDC from the live structure read on 2026-06-10:
+  - 12 workflows: E-MEMO, ใบเบิกสินค้า, ขอเครดิต/เปิดบัญชีใหม่, ใบคืนสินค้า, IT Helpdesk, ประสานงานภายใน, ขอสำรวจหน้างานและงานติดตั้ง, ขออนุมัติราคา/ขายสินค้า, ก่อสร้าง SHOWROOM, แจ้งสินค้าที่มีปัญหา, Developer/IT support, and ขออนุมัติคอนเทนต์ (Marketing).
+  - Dynamic fields keep the original SmartFlow labels and field ids such as `dynamic_181`, `dynamic_62`, and `dynamic_197`.
+  - Workflow steps keep the original SmartFlow step ids, order gaps, approver hints, user-selectable flags, input-required flags, and branch conditions.
+  - Super Admin can refresh the local catalog from `/workflows` using the `Sync SmartFlow Catalog` action. This sync uses the checked-in catalog snapshot and does not store SmartFlow login credentials.
 - Migration direction: employees should start work in WDC first. SmartFlow links remain only for old references or document types that have not been retired yet.
 - Current WDC implementation: SmartFlow Work Center mirrors All Documents, Your Tasks, Authorization, Statistics, Export Excel, Favorites, and Workflows. New requests receive `WDC-SF-*` document numbers, keep SmartFlow-style form payloads, support template favorites, comments, URL attachments, assignee/SLA updates, and export CSV from WDC.
 - Migration import: Super Admin/manager can download the WDC SmartFlow CSV template from `/workflows/import-template`, export old rows from SmartFlow into matching columns, then upload the CSV at `/workflows`. The importer upserts requests by old document/reference, maps employee code/email to WDC users, creates missing workflow templates, stores old payload in `external_payload`, and keeps old document URLs in `external_url`.
