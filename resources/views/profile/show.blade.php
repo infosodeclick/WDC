@@ -47,6 +47,15 @@
     </section>
 </div>
 
+@if($user->canAccess('payroll.link'))
+    <section class="panel">
+        <div class="section-title">
+            <h2>สลิปเงินเดือน</h2>
+            <a class="btn btn-outline-primary" href="{{ route('payroll') }}" target="_blank" rel="noopener"><i class="bi bi-receipt"></i> ดูสลิปเงินเดือน</a>
+        </div>
+    </section>
+@endif
+
 <section class="panel">
     <div class="section-title">
         <h2>บัญชีระบบที่เกี่ยวข้อง</h2>

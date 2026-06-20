@@ -154,7 +154,7 @@ class DatabaseSeeder extends Seeder
 
         $announcements = collect([
             [
-                'category' => 'ประกาศสำคัญ',
+                'category' => 'ประกาศ',
                 'title' => 'ปรับปรุงระบบ ERP คืนวันศุกร์นี้',
                 'body' => 'ระบบ ERP จะปิดปรับปรุงเวลา 22:00-23:30 น. กรุณาบันทึกงานก่อนเวลาดังกล่าว',
                 'is_pinned' => true,
@@ -162,7 +162,7 @@ class DatabaseSeeder extends Seeder
                 'department_id' => $departments['IT']->id,
             ],
             [
-                'category' => 'วันหยุด',
+                'category' => 'ประกาศ',
                 'title' => 'ประกาศวันหยุดประจำไตรมาส',
                 'body' => 'บริษัทประกาศวันหยุดเพิ่มเติมสำหรับกิจกรรมประจำปี สามารถดาวน์โหลดปฏิทินได้จากไฟล์แนบ',
                 'is_pinned' => true,
@@ -178,7 +178,7 @@ class DatabaseSeeder extends Seeder
                 'department_id' => null,
             ],
             [
-                'category' => 'กิจกรรม',
+                'category' => 'ประกาศ',
                 'title' => 'กิจกรรมอบรมความปลอดภัยในที่ทำงาน',
                 'body' => 'พนักงานทุกคนลงทะเบียนเข้าร่วมอบรมผ่านฝ่าย HR ภายในสัปดาห์นี้',
                 'is_pinned' => false,
@@ -186,9 +186,9 @@ class DatabaseSeeder extends Seeder
                 'department_id' => $departments['HR']->id,
             ],
             [
-                'category' => 'บริษัท',
+                'category' => 'ประกาศ',
                 'title' => 'เปิดตัว Employee Portal รุ่นทดลอง',
-                'body' => 'บริษัทเริ่มทดลองใช้งาน WDC Portal สำหรับประกาศ คู่มือ แจ้งปัญหา และร้องเรียนในเว็บเดียว',
+                'body' => 'บริษัทเริ่มทดลองใช้งาน WDC Portal สำหรับประกาศ เทรนนิ่ง แจ้งปัญหา และร้องเรียนในเว็บเดียว',
                 'is_pinned' => true,
                 'is_urgent' => false,
                 'department_id' => null,
@@ -313,10 +313,10 @@ class DatabaseSeeder extends Seeder
 
         Complaint::create([
             'reporter_id' => null,
-            'type' => 'เสนอแนะ',
+            'type' => 'ร้องเรียน',
             'status' => 'submitted',
-            'subject' => 'อยากให้มีคู่มือ ERP เพิ่ม',
-            'details' => 'ควรมีคลิปสั้นแยกตามเมนูที่ใช้งานบ่อย เพื่อให้พนักงานใหม่เรียนรู้เร็วขึ้น',
+            'subject' => 'ต้องการให้ตรวจสอบขั้นตอนการทำงาน',
+            'details' => 'ขอให้ HR ตรวจสอบรายละเอียดและติดตามผลตามกระบวนการร้องเรียนภายใน',
             'is_anonymous' => true,
             'submitted_to' => 'hr',
         ]);
@@ -324,7 +324,7 @@ class DatabaseSeeder extends Seeder
         collect([
             ['type' => 'announcement', 'title' => 'ประกาศใหม่ 5 รายการ', 'body' => 'มีประกาศล่าสุดที่ควรอ่าน', 'url' => '/announcements'],
             ['type' => 'workflow', 'title' => 'คำขอ IT ถูกตอบกลับ', 'body' => 'ทีม IT เพิ่มคำตอบในคำขอของคุณ', 'url' => '/tickets'],
-            ['type' => 'document', 'title' => 'มีเอกสารใหม่', 'body' => 'HR เพิ่มแบบฟอร์มใบลาและคู่มือพนักงาน', 'url' => '/documents'],
+            ['type' => 'document', 'title' => 'มีแบบฟอร์มใหม่', 'body' => 'HR เพิ่มแบบฟอร์มใบลาและคู่มือพนักงาน', 'url' => '/documents'],
         ])->each(fn (array $notification) => Notification::create([
             ...$notification,
             'user_id' => $users['EMP00125']->id,

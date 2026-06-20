@@ -17,7 +17,12 @@
         <form method="post" action="{{ route('hr.announcements.store') }}" class="form-grid">
             @csrf
             <label class="span-2"><span>หัวข้อ</span><input class="form-control" name="title" required></label>
-            <label><span>หมวด</span><input class="form-control" name="category" value="บริษัท" required></label>
+            <label><span>หมวด</span>
+                <select class="form-select" name="category" required>
+                    <option>ประกาศ</option>
+                    <option>นโยบาย</option>
+                </select>
+            </label>
             <label><span>แผนก</span>
                 <select class="form-select" name="department_id">
                     <option value="">ทุกแผนก</option>

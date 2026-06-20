@@ -293,16 +293,15 @@ class WdcPortalTest extends TestCase
         ]);
 
         $this->post(route('complaints.store'), [
-            'type' => 'เสนอแนะ',
-            'submitted_to' => 'hr',
             'subject' => 'ทดสอบไม่เปิดเผยชื่อ',
-            'details' => 'ต้องไม่เก็บ reporter_id เมื่อเลือกไม่เปิดเผยชื่อ',
-            'is_anonymous' => '1',
+            'details' => 'ต้องไม่เก็บ reporter_id และส่งถึง HR เสมอ',
         ])->assertRedirect(route('complaints.index'));
 
         $complaint = Complaint::where('subject', 'ทดสอบไม่เปิดเผยชื่อ')->firstOrFail();
 
         $this->assertTrue($complaint->is_anonymous);
         $this->assertNull($complaint->reporter_id);
+        $this->assertSame('ร้องเรียน', $complaint->type);
+        $this->assertSame('hr', $complaint->submitted_to);
     }
 }

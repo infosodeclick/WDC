@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'ศูนย์ความรู้ | WDC Portal')
+@section('title', 'เทรนนิ่ง | WDC Portal')
 
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Knowledge Base</p>
-        <h1>ศูนย์ความรู้</h1>
-        <p>คู่มือ บทความ และวิดีโอสำหรับ ERP บัญชี คลัง ฝ่ายขาย และ IT</p>
+        <p class="eyebrow">Training</p>
+        <h1>เทรนนิ่ง</h1>
+        <p>บทความและวิดีโอสำหรับ ERP บัญชี คลัง ฝ่ายขาย และ IT</p>
     </div>
 </div>
 
@@ -20,7 +20,7 @@
 
 <div class="content-grid">
     <section>
-        <div class="section-title"><h2>บทความคู่มือ</h2></div>
+        <div class="section-title"><h2>บทความเทรนนิ่ง</h2></div>
         <div class="item-list">
             @forelse($articles as $article)
                 <article class="list-card">

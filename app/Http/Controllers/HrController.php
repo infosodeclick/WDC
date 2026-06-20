@@ -53,7 +53,7 @@ class HrController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'max:80'],
+            'category' => ['required', 'in:นโยบาย,ประกาศ'],
             'body' => ['required', 'string', 'max:5000'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'is_pinned' => ['nullable', 'boolean'],

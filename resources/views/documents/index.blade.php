@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'เอกสารดาวน์โหลด | WDC Portal')
+@section('title', 'แบบฟอร์ม | WDC Portal')
 
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Documents</p>
-        <h1>เอกสารดาวน์โหลด</h1>
+        <p class="eyebrow">Forms</p>
+        <h1>แบบฟอร์ม</h1>
         <p>ใบลา ระเบียบบริษัท คู่มือพนักงาน สัญญาจ้าง และหนังสือรับรอง</p>
     </div>
 </div>

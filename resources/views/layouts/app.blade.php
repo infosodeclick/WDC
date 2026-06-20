@@ -34,10 +34,10 @@
                 <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>สมุดโทรศัพท์</span></a>
             @endif
             @if($currentUser?->canAccess('announcements.view'))
-                <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ข่าวสารและประกาศ</span></a>
+                <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ประกาศ</span></a>
             @endif
             @if($currentUser?->canAccess('knowledge.view'))
-                <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>ศูนย์ความรู้</span></a>
+                <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>เทรนนิ่ง</span></a>
             @endif
             @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage']))
                 <a class="nav-link {{ request()->routeIs('tickets.*') || $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ $itHelpdeskNavUrl ?? route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
@@ -46,16 +46,13 @@
                 <a class="nav-link {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
             @endif
             @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
-                <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน / เสนอแนะ</span></a>
+                <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน</span></a>
             @endif
             @if($currentUser?->canAccess('documents.view'))
-                <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>เอกสารดาวน์โหลด</span></a>
+                <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>แบบฟอร์ม</span></a>
             @endif
             @if($currentUser?->canAccess('systems.view'))
                 <a class="nav-link {{ request()->routeIs('systems.*') ? 'active' : '' }}" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
-            @endif
-            @if($currentUser?->canAccess('payroll.link'))
-                <a class="nav-link" href="{{ route('payroll') }}"><i class="bi bi-receipt"></i><span>สลิปเงินเดือน</span></a>
             @endif
         </nav>
 
@@ -78,7 +75,7 @@
         <header class="topbar">
             <form class="search-box" action="{{ route('search') }}" method="get">
                 <i class="bi bi-search"></i>
-                <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ คู่มือ วิดีโอ" aria-label="ค้นหา">
+                <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ เทรนนิ่ง" aria-label="ค้นหา">
             </form>
 
             <div class="topbar-actions">

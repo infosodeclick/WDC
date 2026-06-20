@@ -24,7 +24,7 @@
         <small>จาก SmartFlow Workflow เดียว</small>
     </a>
     <a class="metric-card" href="{{ route('knowledge.index') }}">
-        <span>วิดีโอใหม่</span>
+        <span>วิดีโอเทรนนิ่งใหม่</span>
         <strong>{{ $newVideos }}</strong>
         <small>อัปเดตใน 14 วันล่าสุด</small>
     </a>
@@ -46,9 +46,24 @@
     <a class="btn btn-outline-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-life-preserver"></i> แจ้งปัญหา IT</a>
     <a class="btn btn-outline-primary" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i> ส่งคำขออนุมัติ</a>
     <a class="btn btn-outline-primary" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i> ร้องเรียน</a>
-    <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> คู่มือการใช้งาน</a>
+    <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> เทรนนิ่ง</a>
+    <a class="btn btn-outline-primary" href="#meeting-room"><i class="bi bi-calendar2-week"></i> ห้องประชุม</a>
     <a class="btn btn-outline-primary" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i> เข้าระบบเดิม</a>
 </div>
+
+<section class="panel meeting-room-panel" id="meeting-room">
+    <div class="section-title">
+        <h2>ห้องประชุม</h2>
+        <span class="tag">Google Sheet</span>
+    </div>
+    <div class="meeting-room-grid">
+        <div>
+            <strong>ตารางจองห้องประชุม</strong>
+            <p>เตรียมเชื่อมข้อมูลจาก Google Sheet</p>
+        </div>
+        <button class="btn btn-outline-primary" type="button" disabled><i class="bi bi-calendar-check"></i> เปิดตารางจอง</button>
+    </div>
+</section>
 
 <div class="content-grid">
     <section>

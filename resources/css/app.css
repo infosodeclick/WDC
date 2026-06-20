@@ -373,6 +373,18 @@ a {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.meeting-room-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+}
+
+.meeting-room-grid p {
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
 .system-mini-card,
 .system-card {
     border: 1px solid var(--line);
@@ -943,8 +955,16 @@ body.directory-modal-open {
 }
 
 .alert-panel {
+    padding: 12px 14px;
+    border: 1px solid #ffd8a8;
+    border-radius: 8px;
     border-color: #ffd8a8;
     background: #fff9f0;
+}
+
+.alert-panel p {
+    margin: 4px 0 0;
+    color: var(--muted);
 }
 
 .import-column-list {
@@ -1604,6 +1624,7 @@ body.directory-modal-open {
     .topbar,
     .content-grid,
     .metric-grid,
+    .meeting-room-grid,
     .role-template-grid,
     .admin-access-grid,
     .permission-matrix,

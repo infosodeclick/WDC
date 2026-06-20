@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'ข่าวสารและประกาศ | WDC Portal')
+@section('title', 'ประกาศ | WDC Portal')
 
 @section('content')
 <div class="page-heading">
     <div>
         <p class="eyebrow">Announcements</p>
-        <h1>ข่าวสารและประกาศ</h1>
-        <p>ประกาศบริษัท วันหยุด กิจกรรม นโยบาย แผนก และประกาศด่วน</p>
+        <h1>ประกาศ</h1>
+        <p>นโยบายและประกาศบริษัท</p>
     </div>
 </div>
 

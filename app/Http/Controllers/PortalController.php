@@ -52,7 +52,7 @@ class PortalController extends Controller
         abort_unless($request->user()->canAccess('profile.view'), 403);
 
         return view('profile.show', [
-            'user' => $request->user()->load('role', 'employee.department', 'employee.documents', 'externalAccounts.legacySystem'),
+            'user' => $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department', 'employee.documents', 'externalAccounts.legacySystem'),
         ]);
     }
 
@@ -75,19 +75,23 @@ class PortalController extends Controller
     {
         abort_unless($request->user()->canAccess('announcements.view'), 403);
 
+        $categories = collect(['นโยบาย', 'ประกาศ']);
+        $activeCategory = $request->string('category')->toString();
         $query = Announcement::with('department', 'files', 'creator')
             ->where(function ($query) {
                 $query->whereNull('expires_at')->orWhere('expires_at', '>=', now());
             });
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->string('category'));
+        if ($activeCategory !== '' && $categories->contains($activeCategory)) {
+            $query->where('category', $activeCategory);
+        } else {
+            $activeCategory = '';
         }
 
         return view('announcements.index', [
             'announcements' => $query->orderByDesc('is_pinned')->latest('published_at')->paginate(10)->withQueryString(),
-            'categories' => Announcement::distinct()->orderBy('category')->pluck('category'),
-            'activeCategory' => $request->string('category')->toString(),
+            'categories' => $categories,
+            'activeCategory' => $activeCategory,
         ]);
     }
 

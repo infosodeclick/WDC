@@ -1,42 +1,28 @@
 @extends('layouts.app')
 
-@section('title', 'ร้องเรียน / เสนอแนะ | WDC Portal')
+@section('title', 'ร้องเรียน | WDC Portal')
 
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Complaint & Suggestion</p>
-        <h1>ร้องเรียน / เสนอแนะ</h1>
-        <p>ส่งเรื่องถึง HR หรือผู้บริหาร พร้อมตัวเลือกเปิดเผยชื่อหรือไม่เปิดเผยชื่อ</p>
+        <p class="eyebrow">Complaint</p>
+        <h1>ร้องเรียน</h1>
+        <p>ส่งเรื่องถึง HR โดยตรง</p>
     </div>
 </div>
 
 @if($canCreate)
     <section class="panel">
-        <h2>ส่งเรื่องใหม่</h2>
+        <h2>ส่งเรื่องร้องเรียน</h2>
         <form method="post" action="{{ route('complaints.store') }}" class="form-grid">
             @csrf
-            <label><span>ประเภท</span>
-                <select class="form-select" name="type">
-                    <option>เสนอแนะ</option>
-                    <option>ร้องเรียน</option>
-                    <option>แจ้งการทุจริต</option>
-                    <option>แจ้งปัญหาหัวหน้างาน</option>
-                </select>
-            </label>
-            <label><span>ส่งถึง</span>
-                <select class="form-select" name="submitted_to">
-                    <option value="hr">HR</option>
-                    <option value="executive">ผู้บริหาร</option>
-                </select>
-            </label>
             <label class="span-2"><span>หัวข้อ</span><input class="form-control" name="subject" required></label>
             <label class="span-3"><span>รายละเอียด</span><textarea class="form-control" name="details" rows="3" required></textarea></label>
-            <label class="form-check span-2">
-                <input class="form-check-input" type="checkbox" name="is_anonymous" value="1">
-                <span class="form-check-label">ไม่เปิดเผยชื่อ</span>
-            </label>
-            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งเรื่อง</button>
+            <div class="alert-panel span-3">
+                <strong>การร้องเรียนนี้จะไม่ระบุผู้ส่ง</strong>
+                <p>ระบบจะส่งเรื่องถึง HR โดยตรง และไม่แสดงชื่อผู้ร้องในรายการ</p>
+            </div>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งเรื่องร้องเรียน</button>
         </form>
     </section>
 @endif

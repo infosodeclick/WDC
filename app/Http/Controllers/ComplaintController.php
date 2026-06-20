@@ -43,27 +43,25 @@ class ComplaintController extends Controller
         abort_unless($request->user()->canAccess('complaints.create'), 403);
 
         $data = $request->validate([
-            'type' => ['required', 'in:เสนอแนะ,ร้องเรียน,แจ้งการทุจริต,แจ้งปัญหาหัวหน้างาน'],
             'subject' => ['required', 'string', 'max:255'],
             'details' => ['required', 'string', 'max:5000'],
-            'is_anonymous' => ['nullable', 'boolean'],
-            'submitted_to' => ['required', 'in:hr,executive'],
         ]);
 
-        $isAnonymous = $request->boolean('is_anonymous');
         $complaint = Complaint::create([
             ...$data,
-            'is_anonymous' => $isAnonymous,
-            'reporter_id' => $isAnonymous ? null : $request->user()->id,
+            'type' => 'ร้องเรียน',
+            'submitted_to' => 'hr',
+            'is_anonymous' => true,
+            'reporter_id' => null,
             'status' => 'submitted',
         ]);
 
         ActivityLog::create([
-            'user_id' => $isAnonymous ? null : $request->user()->id,
+            'user_id' => null,
             'action' => 'create_complaint',
             'subject_type' => Complaint::class,
             'subject_id' => $complaint->id,
-            'description' => 'Submitted complaint or suggestion',
+            'description' => 'Submitted anonymous complaint to HR',
             'ip_address' => $request->ip(),
             'user_agent' => (string) $request->userAgent(),
         ]);
@@ -75,7 +73,7 @@ class ComplaintController extends Controller
             ->each(fn (User $user) => Notification::create([
                 'user_id' => $user->id,
                 'type' => 'complaint',
-                'title' => 'มีเรื่องร้องเรียน/เสนอแนะใหม่',
+                'title' => 'มีเรื่องร้องเรียนใหม่',
                 'body' => $complaint->subject,
                 'url' => route('complaints.index'),
             ]));
