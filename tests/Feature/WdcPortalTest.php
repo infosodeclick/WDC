@@ -94,7 +94,7 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('directory.index', ['q' => 'Chanapon']))
             ->assertOk()
-            ->assertSee('สมุดโทรศัพท์พนักงาน')
+            ->assertSee('รายชื่อพนักงาน')
             ->assertSee('Chanapon Jakkaphan')
             ->assertSee('Information Technology');
     }

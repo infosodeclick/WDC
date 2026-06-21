@@ -1367,6 +1367,26 @@ body.directory-modal-open {
     gap: 14px;
 }
 
+.menu-permission-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.menu-permission-card {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf1;
+}
+
+.menu-permission-card small {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
 .role-template-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1627,6 +1647,7 @@ body.directory-modal-open {
     .meeting-room-grid,
     .role-template-grid,
     .admin-access-grid,
+    .menu-permission-grid,
     .permission-matrix,
     .smartflow-tabs,
     .system-mini-grid,

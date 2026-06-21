@@ -27,6 +27,7 @@ class AdminController extends Controller
             'roles' => Role::withCount('users')->with('permissions')->orderBy('id')->get(),
             'permissions' => Permission::orderBy('sort_order')->get()->groupBy('group'),
             'allPermissions' => Permission::orderBy('sort_order')->get(),
+            'menuPermissions' => $this->sidebarMenuPermissions(),
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
             'logs' => $actor->canAccess('admin.activity.view') ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
@@ -168,6 +169,25 @@ class AdminController extends Controller
             'admin.activity.view',
             'admin.system.manage',
         ]);
+    }
+
+    private function sidebarMenuPermissions(): array
+    {
+        return [
+            ['label' => 'หน้าแรก', 'permissions' => ['portal.dashboard.view']],
+            ['label' => 'โปรไฟล์พนักงาน', 'permissions' => ['profile.view']],
+            ['label' => 'รายชื่อพนักงาน', 'permissions' => ['directory.view']],
+            ['label' => 'ประกาศ', 'permissions' => ['announcements.view']],
+            ['label' => 'เทรนนิ่ง', 'permissions' => ['knowledge.view']],
+            ['label' => 'แจ้งปัญหา IT', 'permissions' => ['tickets.create', 'tickets.manage']],
+            ['label' => 'คำขอ/อนุมัติ', 'permissions' => ['workflows.create', 'workflows.manage']],
+            ['label' => 'ร้องเรียน', 'permissions' => ['complaints.create', 'complaints.review']],
+            ['label' => 'แบบฟอร์ม', 'permissions' => ['documents.view']],
+            ['label' => 'ศูนย์รวมระบบ', 'permissions' => ['systems.view']],
+            ['label' => 'ศูนย์ IT', 'permissions' => ['it.portal.view', 'tickets.manage']],
+            ['label' => 'HR Portal', 'permissions' => ['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']],
+            ['label' => 'Admin', 'permissions' => ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage']],
+        ];
     }
 
     private function ensureRoleAssignable(User $actor, Role $role): void

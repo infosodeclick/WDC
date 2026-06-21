@@ -20,6 +20,21 @@
     <div class="metric-card"><span>Permission</span><strong>{{ $allPermissions->count() }}</strong><small>สิทธิ์ที่ควบคุมเมนูและ backend</small></div>
 </div>
 
+<section class="panel">
+    <div class="section-title">
+        <h2>เมนูด้านซ้ายหน้าบ้าน</h2>
+        <span class="status-pill">ผูกกับ Permission</span>
+    </div>
+    <div class="menu-permission-grid">
+        @foreach($menuPermissions as $menuPermission)
+            <div class="menu-permission-card">
+                <strong>{{ $menuPermission['label'] }}</strong>
+                <small>{{ collect($menuPermission['permissions'])->join(' / ') }}</small>
+            </div>
+        @endforeach
+    </div>
+</section>
+
 @if($canManageUsers)
 <section class="panel">
     <div class="section-title">
