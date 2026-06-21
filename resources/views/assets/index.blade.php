@@ -12,6 +12,7 @@
     <div class="button-row">
         @if($canExportAssets)
             <a class="btn btn-outline-primary" href="{{ route('assets.export') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+            <a class="btn btn-outline-primary" href="{{ route('assets.master-data') }}"><i class="bi bi-download"></i> Master Data</a>
         @endif
         @if($canManageAssets)
             <a class="btn btn-primary" href="#new-asset"><i class="bi bi-plus-circle"></i> เพิ่มทรัพย์สิน</a>
@@ -61,6 +62,46 @@
 </form>
 
 @if($canManageAssets)
+    <div class="content-grid asset-admin-grid">
+        <section class="panel">
+            <div class="section-title">
+                <h2>Sync Offline / Mobile</h2>
+                <span class="tag">Smart Track Workflow</span>
+            </div>
+            <p class="muted">ใช้สำหรับส่งออก Master Data ไปตรวจนับนอกสถานที่ แล้วนำไฟล์ JSON ผลตรวจนับกลับเข้าระบบ WDC</p>
+            <div class="asset-sync-actions">
+                <a class="btn btn-outline-primary" href="{{ route('assets.master-data') }}"><i class="bi bi-download"></i> ดาวน์โหลด Master Data</a>
+                <form method="post" action="{{ route('assets.sync.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <label class="asset-file-button">
+                        <i class="bi bi-upload"></i>
+                        <span>อัปโหลดผลตรวจนับ JSON</span>
+                        <input name="sync_file" type="file" accept="application/json,.json,.txt" required onchange="this.form.submit()">
+                    </label>
+                </form>
+            </div>
+            <ol class="asset-steps">
+                <li>ดาวน์โหลด Master Data จาก WDC</li>
+                <li>นำไปใช้กับมือถือหรือเครื่องตรวจนับภายนอก</li>
+                <li>อัปโหลดไฟล์ JSON กลับมาเพื่ออัปเดตสถานะ/เอกสารตรวจนับ</li>
+            </ol>
+        </section>
+
+        <section class="panel">
+            <div class="section-title">
+                <h2>Scan / QR Lookup</h2>
+                <span class="tag">QR Code</span>
+            </div>
+            <form class="stack-form" method="get" action="{{ route('assets.index') }}">
+                <label>สแกนหรือพิมพ์รหัสทรัพย์สิน
+                    <input class="form-control" name="q" value="{{ $q }}" placeholder="เช่น WDC-NB-0001" autofocus>
+                </label>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-qr-code-scan"></i> ค้นหาทรัพย์สิน</button>
+            </form>
+            <p class="form-help mt-2">บนมือถือสามารถใช้กล้อง/keyboard wedge scanner เพื่อกรอกรหัสเข้าช่องนี้ได้ทันที</p>
+        </section>
+    </div>
+
     <section class="panel" id="new-asset">
         <div class="section-title">
             <h2>เพิ่มทรัพย์สิน IT</h2>
@@ -136,6 +177,70 @@
             </div>
         </form>
     </section>
+
+    <div class="content-grid asset-admin-grid">
+        <section class="panel" id="asset-categories">
+            <div class="section-title">
+                <h2>หมวดหมู่ทรัพย์สิน</h2>
+                <span class="tag">{{ number_format($categories->count()) }} หมวด</span>
+            </div>
+            <form class="form-grid compact-form-grid" method="post" action="{{ route('assets.categories.store') }}">
+                @csrf
+                <label>Code
+                    <input class="form-control" name="code" required placeholder="COM">
+                </label>
+                <label class="span-2">ชื่อหมวดหมู่
+                    <input class="form-control" name="name" required placeholder="Computer / Notebook">
+                </label>
+                <label class="span-3">คำอธิบาย
+                    <input class="form-control" name="description" placeholder="ใช้จัดกลุ่มอุปกรณ์และรายงาน">
+                </label>
+                <div class="span-3 button-row">
+                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-layers"></i> เพิ่มหมวดหมู่</button>
+                </div>
+            </form>
+            <div class="asset-chip-list">
+                @foreach($categories as $category)
+                    <span><strong>{{ $category->code }}</strong> {{ $category->name }} <small>{{ $category->assets_count }} รายการ</small></span>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="panel" id="asset-locations">
+            <div class="section-title">
+                <h2>สถานที่ / GPS</h2>
+                <span class="tag">{{ number_format($locations->count()) }} สถานที่</span>
+            </div>
+            <form class="form-grid compact-form-grid" method="post" action="{{ route('assets.locations.store') }}">
+                @csrf
+                <label>Code
+                    <input class="form-control" name="code" required placeholder="HQ-IT">
+                </label>
+                <label class="span-2">ชื่อสถานที่
+                    <input class="form-control" name="name" required placeholder="สำนักงานใหญ่ - ห้อง IT">
+                </label>
+                <label>บริษัท
+                    <input class="form-control" name="company" value="WDC">
+                </label>
+                <label>Latitude
+                    <input class="form-control" name="latitude" type="number" step="0.0000001">
+                </label>
+                <label>Longitude
+                    <input class="form-control" name="longitude" type="number" step="0.0000001">
+                </label>
+                <label>Radius (m)
+                    <input class="form-control" name="radius_meters" type="number" min="0" placeholder="1000">
+                </label>
+                <label class="small-check">
+                    <input name="has_gps" type="checkbox" value="1">
+                    ใช้พิกัด GPS
+                </label>
+                <div class="button-row">
+                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-geo-alt"></i> เพิ่มสถานที่</button>
+                </div>
+            </form>
+        </section>
+    </div>
 @endif
 
 <section class="panel">
@@ -265,6 +370,30 @@
         </div>
     </section>
 </div>
+
+<section class="panel">
+    <div class="section-title">
+        <h2>แผนที่สถานที่จัดเก็บ</h2>
+        <span class="tag">Location Map</span>
+    </div>
+    <div class="asset-location-grid">
+        @foreach($locations as $location)
+            <article class="asset-location-card">
+                <div>
+                    <strong>{{ $location->code }}</strong>
+                    <span>{{ $location->assets_count }} รายการ</span>
+                </div>
+                <h3>{{ $location->name }}</h3>
+                <p>{{ $location->company }}</p>
+                @if($location->has_gps)
+                    <small><i class="bi bi-geo-alt-fill"></i> {{ $location->latitude }}, {{ $location->longitude }} · {{ $location->radius_meters ?? 0 }} m</small>
+                @else
+                    <small><i class="bi bi-geo-alt"></i> ยังไม่ระบุพิกัด GPS</small>
+                @endif
+            </article>
+        @endforeach
+    </div>
+</section>
 
 <section class="panel">
     <div class="section-title">

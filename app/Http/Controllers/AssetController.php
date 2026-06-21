@@ -166,6 +166,51 @@ class AssetController extends Controller
         return back()->with('status', 'สร้างเอกสารตรวจนับทรัพย์สินแล้ว');
     }
 
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canManageItAssets(), 403);
+
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:40', 'unique:asset_categories,code'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        AssetCategory::create($data);
+
+        $this->logGeneral($request, 'create_asset_category', AssetCategory::class, null, "Created asset category {$data['code']}");
+
+        return back()->with('status', 'เพิ่มหมวดหมู่ทรัพย์สินแล้ว');
+    }
+
+    public function storeLocation(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canManageItAssets(), 403);
+
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:60'],
+            'name' => ['required', 'string', 'max:255'],
+            'company' => ['nullable', 'string', 'max:255'],
+            'has_gps' => ['nullable', 'boolean'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'radius_meters' => ['nullable', 'integer', 'min:0', 'max:100000'],
+        ]);
+
+        $location = AssetLocation::updateOrCreate([
+            'code' => $data['code'],
+            'company' => $data['company'] ?? 'WDC',
+        ], [
+            ...$data,
+            'company' => $data['company'] ?? 'WDC',
+            'has_gps' => $request->boolean('has_gps'),
+        ]);
+
+        $this->logGeneral($request, 'create_asset_location', AssetLocation::class, $location->id, "Saved asset location {$data['code']}");
+
+        return back()->with('status', 'เพิ่มสถานที่จัดเก็บทรัพย์สินแล้ว');
+    }
+
     public function export(Request $request)
     {
         abort_unless($request->user()->canExportItAssets(), 403);
@@ -200,6 +245,107 @@ class AssetController extends Controller
         ]);
     }
 
+    public function exportMaster(Request $request)
+    {
+        abort_unless($request->user()->canExportItAssets(), 403);
+
+        $payload = [
+            'exported_at' => now()->toIso8601String(),
+            'source' => 'WDC Portal IT Asset',
+            'categories' => AssetCategory::withCount('assets')->orderBy('code')->get(),
+            'locations' => AssetLocation::withCount('assets')->orderBy('code')->get(),
+            'assets' => ItAsset::with('category', 'location')->orderBy('code')->get()->map(fn (ItAsset $asset) => [
+                'code' => $asset->code,
+                'name' => $asset->name,
+                'category' => $asset->category?->code,
+                'location' => $asset->location?->code,
+                'company' => $asset->company,
+                'department' => $asset->department,
+                'owner_name' => $asset->owner_name,
+                'status' => $asset->status,
+                'brand' => $asset->brand,
+                'model' => $asset->model,
+                'serial_number' => $asset->serial_number,
+            ]),
+        ];
+
+        return Response::make(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), 200, [
+            'Content-Type' => 'application/json; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="wdc-it-asset-master.json"',
+        ]);
+    }
+
+    public function importSync(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canManageItAssets(), 403);
+
+        $data = $request->validate([
+            'sync_file' => ['required', 'file', 'mimes:json,txt', 'max:4096'],
+        ]);
+
+        $payload = json_decode((string) file_get_contents($data['sync_file']->getRealPath()), true);
+
+        if (! is_array($payload)) {
+            return back()->withErrors(['sync_file' => 'ไฟล์ Sync ต้องเป็น JSON ที่อ่านได้']);
+        }
+
+        $updatedAssets = 0;
+        $createdDocuments = 0;
+        $assets = collect($payload['assets'] ?? [])->filter(fn ($row) => is_array($row));
+
+        foreach ($assets as $incoming) {
+            $code = trim((string) ($incoming['code'] ?? ''));
+
+            if ($code === '') {
+                continue;
+            }
+
+            $asset = ItAsset::where('code', $code)->first();
+
+            if (! $asset) {
+                continue;
+            }
+
+            $before = $asset->only(['status', 'department', 'owner_name', 'notes']);
+            $asset->update([
+                'status' => in_array(($incoming['status'] ?? $asset->status), ItAsset::STATUSES, true) ? $incoming['status'] : $asset->status,
+                'department' => $incoming['department'] ?? $asset->department,
+                'owner_name' => $incoming['owner_name'] ?? ($incoming['owner'] ?? $asset->owner_name),
+                'notes' => $incoming['notes'] ?? $asset->notes,
+            ]);
+
+            $this->logAsset($request, $asset, 'sync_asset', "Synced offline result for {$asset->code}", $before, $asset->only(['status', 'department', 'owner_name', 'notes']));
+            $updatedAssets++;
+        }
+
+        $documents = collect($payload['documents'] ?? [])->filter(fn ($row) => is_array($row));
+
+        foreach ($documents as $document) {
+            $code = trim((string) ($document['code'] ?? ''));
+
+            if ($code === '') {
+                $code = $this->nextInspectionCode();
+            }
+
+            AssetInspectionDocument::updateOrCreate(
+                ['code' => $code],
+                [
+                    'created_by' => $request->user()->id,
+                    'inspection_date' => $document['inspection_date'] ?? $document['date'] ?? today(),
+                    'company' => $document['company'] ?? 'WDC',
+                    'item_count' => (int) ($document['item_count'] ?? $document['count'] ?? 0),
+                    'status' => $document['status'] ?? 'open',
+                    'notes' => $document['notes'] ?? 'Imported from offline sync',
+                ],
+            );
+            $createdDocuments++;
+        }
+
+        $this->logGeneral($request, 'import_asset_sync', null, null, "Imported offline sync: {$updatedAssets} assets, {$createdDocuments} documents");
+
+        return back()->with('status', "นำเข้า Sync สำเร็จ: อัปเดตทรัพย์สิน {$updatedAssets} รายการ, เอกสาร {$createdDocuments} รายการ");
+    }
+
     private function nextInspectionCode(): string
     {
         return 'AST-CHK-'.now()->format('Ymd').'-'.str_pad((string) (AssetInspectionDocument::whereDate('created_at', today())->count() + 1), 4, '0', STR_PAD_LEFT);
@@ -231,6 +377,19 @@ class AssetController extends Controller
             'subject_type' => ItAsset::class,
             'subject_id' => $asset->id,
             'description' => $summary,
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+    }
+
+    private function logGeneral(Request $request, string $action, ?string $subjectType, ?int $subjectId, string $description): void
+    {
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'description' => $description,
             'ip_address' => $request->ip(),
             'user_agent' => (string) $request->userAgent(),
         ]);

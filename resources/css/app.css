@@ -1035,6 +1035,113 @@ body.directory-modal-open {
     margin-bottom: 18px;
 }
 
+.asset-admin-grid {
+    margin-bottom: 18px;
+}
+
+.asset-sync-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.asset-file-button {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 38px;
+    padding: 6px 12px;
+    border: 1px solid #b8a13f;
+    border-radius: 8px;
+    color: var(--wdc-black);
+    background: #ffffff;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.asset-file-button:hover {
+    border-color: var(--wdc-yellow-2);
+    background: #fff8d0;
+}
+
+.asset-file-button input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.asset-steps {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding-left: 20px;
+    color: var(--muted);
+}
+
+.asset-chip-list,
+.asset-location-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.asset-chip-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.asset-chip-list span,
+.asset-location-card {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf1;
+}
+
+.asset-chip-list strong,
+.asset-chip-list small {
+    display: block;
+}
+
+.asset-chip-list small,
+.asset-location-card p,
+.asset-location-card small {
+    color: var(--muted);
+}
+
+.asset-location-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.asset-location-card {
+    display: grid;
+    gap: 8px;
+}
+
+.asset-location-card div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.asset-location-card h3,
+.asset-location-card p {
+    margin: 0;
+}
+
+.asset-location-card span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: var(--wdc-black);
+    background: var(--wdc-yellow-2);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
 .asset-table th {
     color: var(--muted);
     font-size: .82rem;
@@ -1727,6 +1834,7 @@ body.directory-modal-open {
     .metric-grid,
     .meeting-room-grid,
     .asset-metric-grid,
+    .asset-location-grid,
     .role-template-grid,
     .admin-access-grid,
     .menu-permission-grid,
@@ -1766,6 +1874,8 @@ body.directory-modal-open {
     .asset-metric-grid,
     .asset-qr-grid,
     .asset-status-form,
+    .asset-chip-list,
+    .asset-location-grid,
     .role-template-grid,
     .admin-access-grid,
     .permission-matrix,

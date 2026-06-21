@@ -60,8 +60,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
     Route::get('/assets/export', [AssetController::class, 'export'])->name('assets.export');
+    Route::get('/assets/master-data', [AssetController::class, 'exportMaster'])->name('assets.master-data');
     Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
+    Route::post('/assets/categories', [AssetController::class, 'storeCategory'])->name('assets.categories.store');
+    Route::post('/assets/locations', [AssetController::class, 'storeLocation'])->name('assets.locations.store');
     Route::post('/assets/inspections', [AssetController::class, 'storeInspection'])->name('assets.inspections.store');
+    Route::post('/assets/sync', [AssetController::class, 'importSync'])->name('assets.sync.import');
     Route::patch('/assets/{asset}/status', [AssetController::class, 'updateStatus'])->name('assets.status');
 
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
