@@ -127,6 +127,45 @@ class User extends Authenticatable
         return collect($permissionKeys)->contains(fn (string $permissionKey) => $effectivePermissions->contains($permissionKey));
     }
 
+    public function canAccessItAssets(): bool
+    {
+        if ($this->canAccessAny(['assets.view', 'assets.manage', 'assets.reports'])) {
+            return true;
+        }
+
+        if ($this->hasDeniedAny(['assets.view', 'assets.manage', 'assets.reports'])) {
+            return false;
+        }
+
+        return $this->belongsToItDepartment() && $this->canAccessAny(['it.portal.view', 'tickets.manage']);
+    }
+
+    public function canManageItAssets(): bool
+    {
+        if ($this->canAccess('assets.manage')) {
+            return true;
+        }
+
+        if ($this->hasDeniedAny(['assets.manage', 'assets.view'])) {
+            return false;
+        }
+
+        return $this->belongsToItDepartment() && $this->canAccessAny(['it.portal.view', 'tickets.manage']);
+    }
+
+    public function canExportItAssets(): bool
+    {
+        if ($this->canAccess('assets.reports')) {
+            return true;
+        }
+
+        if ($this->hasDeniedAny(['assets.reports', 'assets.view'])) {
+            return false;
+        }
+
+        return $this->belongsToItDepartment() && $this->canAccessAny(['it.portal.view', 'tickets.manage']);
+    }
+
     public function effectivePermissionKeys(): Collection
     {
         if ($this->cachedEffectivePermissionKeys !== null) {
@@ -148,6 +187,29 @@ class User extends Authenticatable
             ->unique()
             ->diff($denies)
             ->values();
+    }
+
+    private function hasDeniedAny(array $permissionKeys): bool
+    {
+        $this->loadMissing('permissionOverrides');
+
+        return $this->permissionOverrides
+            ->whereIn('key', $permissionKeys)
+            ->where('pivot.effect', 'deny')
+            ->isNotEmpty();
+    }
+
+    private function belongsToItDepartment(): bool
+    {
+        $this->loadMissing('employee.department');
+
+        $departmentCode = strtoupper((string) $this->employee?->department?->code);
+        $departmentName = mb_strtolower((string) $this->employee?->department?->name);
+
+        return $departmentCode === 'IT'
+            || str_contains($departmentName, 'เทคโนโลยี')
+            || str_contains($departmentName, 'information technology')
+            || str_contains($departmentName, ' it ');
     }
 
     public function effectiveDataScope(): string

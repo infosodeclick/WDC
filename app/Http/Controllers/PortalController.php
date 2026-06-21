@@ -214,7 +214,7 @@ class PortalController extends Controller
             'announcements' => $q === '' ? collect() : Announcement::where('title', 'like', "%{$q}%")->orWhere('body', 'like', "%{$q}%")->limit(8)->get(),
             'articles' => $q === '' ? collect() : KnowledgeArticle::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
             'videos' => $q === '' ? collect() : KnowledgeVideo::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
-            'assets' => $q === '' || ! $user->canAccessAny(['assets.view', 'assets.manage', 'assets.reports']) ? collect() : ItAsset::with('category', 'location')
+            'assets' => $q === '' || ! $user->canAccessItAssets() ? collect() : ItAsset::with('category', 'location')
                 ->where(function ($query) use ($q) {
                     $query->where('code', 'like', "%{$q}%")
                         ->orWhere('name', 'like', "%{$q}%")

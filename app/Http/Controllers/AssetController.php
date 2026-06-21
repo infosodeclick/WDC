@@ -20,7 +20,7 @@ class AssetController extends Controller
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
-        abort_unless($user->canAccessAny(['assets.view', 'assets.manage', 'assets.reports']), 403);
+        abort_unless($user->canAccessItAssets(), 403);
 
         $query = ItAsset::with('category', 'location', 'owner.employee.department');
         $status = $request->string('status')->toString();
@@ -71,14 +71,14 @@ class AssetController extends Controller
             'repairCount' => (clone $baseAssetQuery)->where('status', 'repair')->count(),
             'lostCount' => (clone $baseAssetQuery)->where('status', 'lost')->count(),
             'totalValue' => (clone $baseAssetQuery)->sum('price'),
-            'canManageAssets' => $user->canAccess('assets.manage'),
-            'canExportAssets' => $user->canAccess('assets.reports'),
+            'canManageAssets' => $user->canManageItAssets(),
+            'canExportAssets' => $user->canExportItAssets(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->canAccess('assets.manage'), 403);
+        abort_unless($request->user()->canManageItAssets(), 403);
 
         $data = $request->validate([
             'code' => ['required', 'string', 'max:80', 'unique:it_assets,code'],
@@ -113,7 +113,7 @@ class AssetController extends Controller
 
     public function updateStatus(ItAsset $asset, Request $request): RedirectResponse
     {
-        abort_unless($request->user()->canAccess('assets.manage'), 403);
+        abort_unless($request->user()->canManageItAssets(), 403);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(ItAsset::STATUSES)],
@@ -133,7 +133,7 @@ class AssetController extends Controller
 
     public function storeInspection(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->canAccess('assets.manage'), 403);
+        abort_unless($request->user()->canManageItAssets(), 403);
 
         $data = $request->validate([
             'code' => ['nullable', 'string', 'max:80', 'unique:asset_inspection_documents,code'],
@@ -168,7 +168,7 @@ class AssetController extends Controller
 
     public function export(Request $request)
     {
-        abort_unless($request->user()->canAccess('assets.reports'), 403);
+        abort_unless($request->user()->canExportItAssets(), 403);
 
         $rows = ItAsset::with('category', 'location')->orderBy('code')->get();
         $csvRows = [
