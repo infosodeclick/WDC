@@ -15,9 +15,11 @@
 </div>
 
 <div class="metric-grid">
-    <div class="metric-card"><span>ผู้ใช้งาน</span><strong>{{ $users->count() }}</strong><small>บัญชีในระบบ WDC</small></div>
+    <div class="metric-card"><span>ผู้ใช้งานทั้งหมด</span><strong>{{ $totalUsers }}</strong><small>บัญชีในระบบ WDC</small></div>
+    <div class="metric-card"><span>ใช้งานอยู่</span><strong>{{ $activeUsers }}</strong><small>ล็อกอินและเปิดเมนูได้ตามสิทธิ์</small></div>
+    <div class="metric-card"><span>ระงับ</span><strong>{{ $suspendedUsers }}</strong><small>บัญชีที่ปิดการใช้งาน</small></div>
     <div class="metric-card"><span>Role</span><strong>{{ $roles->count() }}</strong><small>รวม Super Admin</small></div>
-    <div class="metric-card"><span>Permission</span><strong>{{ $allPermissions->count() }}</strong><small>สิทธิ์ที่ควบคุมเมนูและ backend</small></div>
+    <div class="metric-card"><span>Admin Access</span><strong>{{ $adminCapableUsers }}</strong><small>บัญชีที่แตะหลังบ้านได้</small></div>
 </div>
 
 <section class="panel">
@@ -80,10 +82,34 @@
 <section class="panel">
     <div class="section-title">
         <h2>สิทธิ์รายผู้ใช้</h2>
-        <span class="status-pill">Role + Override + Data Scope</span>
+        <span class="status-pill">{{ $users->count() }} รายการที่แสดง</span>
     </div>
+    <form method="get" action="{{ route('admin.index') }}" class="form-grid admin-filter">
+        <label class="span-2"><span>ค้นหาผู้ใช้</span>
+            <input class="form-control" name="q" value="{{ $userSearch }}" placeholder="รหัสพนักงาน ชื่อ อีเมล แผนก หรือตำแหน่ง">
+        </label>
+        <label><span>Role</span>
+            <select class="form-select" name="role">
+                <option value="">ทุก Role</option>
+                @foreach($roles as $role)
+                    <option value="{{ $role->slug }}" @selected($roleFilter === $role->slug)>{{ $role->name }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label><span>สถานะ</span>
+            <select class="form-select" name="status">
+                <option value="">ทุกสถานะ</option>
+                <option value="active" @selected($statusFilter === 'active')>ใช้งานอยู่</option>
+                <option value="suspended" @selected($statusFilter === 'suspended')>ระงับ</option>
+            </select>
+        </label>
+        <div class="button-row">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> ค้นหา</button>
+            <a class="btn btn-outline-primary" href="{{ route('admin.index') }}">ล้างตัวกรอง</a>
+        </div>
+    </form>
     <div class="admin-user-list">
-        @foreach($users as $managedUser)
+        @forelse($users as $managedUser)
             @php
                 $overrideMap = $managedUser->permissionOverrides->mapWithKeys(fn ($permission) => [$permission->key => $permission->pivot->effect]);
                 $effectiveKeys = $managedUser->effectivePermissionKeys();
@@ -159,7 +185,9 @@
                     @endif
                 </form>
             </article>
-        @endforeach
+        @empty
+            <div class="empty-state">ไม่พบผู้ใช้ตามตัวกรองที่เลือก</div>
+        @endforelse
     </div>
 </section>
 @endif

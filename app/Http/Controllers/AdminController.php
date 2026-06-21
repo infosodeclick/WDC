@@ -22,15 +22,55 @@ class AdminController extends Controller
 
         abort_unless($this->canOpenAdmin($actor), 403);
 
+        $userSearch = trim($request->string('q')->toString());
+        $roleFilter = $request->string('role')->toString();
+        $statusFilter = $request->string('status')->toString();
+        $usersQuery = User::with('role.permissions', 'employee.department', 'permissionOverrides')->orderBy('employee_code');
+
+        if ($userSearch !== '') {
+            $usersQuery->where(function ($query) use ($userSearch) {
+                $query->where('employee_code', 'like', "%{$userSearch}%")
+                    ->orWhere('name', 'like', "%{$userSearch}%")
+                    ->orWhere('email', 'like', "%{$userSearch}%")
+                    ->orWhereHas('employee.department', fn ($departmentQuery) => $departmentQuery->where('name', 'like', "%{$userSearch}%"))
+                    ->orWhereHas('employee', fn ($employeeQuery) => $employeeQuery->where('position', 'like', "%{$userSearch}%"));
+            });
+        }
+
+        if ($roleFilter !== '') {
+            $usersQuery->whereHas('role', fn ($query) => $query->where('slug', $roleFilter));
+        }
+
+        if (in_array($statusFilter, ['active', 'suspended'], true)) {
+            $usersQuery->where('is_active', $statusFilter === 'active');
+        } else {
+            $statusFilter = '';
+        }
+
+        $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
+        $allPermissions = Permission::orderBy('sort_order')->get();
+        $adminAccessKeys = ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage'];
+        $adminCapableUsers = User::with('role.permissions', 'permissionOverrides')
+            ->get()
+            ->filter(fn (User $user) => $user->canAccessAny($adminAccessKeys))
+            ->count();
+
         return view('admin.index', [
-            'users' => User::with('role.permissions', 'employee.department', 'permissionOverrides')->orderBy('employee_code')->get(),
-            'roles' => Role::withCount('users')->with('permissions')->orderBy('id')->get(),
-            'permissions' => Permission::orderBy('sort_order')->get()->groupBy('group'),
-            'allPermissions' => Permission::orderBy('sort_order')->get(),
+            'users' => $usersQuery->get(),
+            'roles' => $allRoles,
+            'permissions' => $allPermissions->groupBy('group'),
+            'allPermissions' => $allPermissions,
             'menuPermissions' => $this->sidebarMenuPermissions(),
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
             'logs' => $actor->canAccess('admin.activity.view') ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
+            'userSearch' => $userSearch,
+            'roleFilter' => $roleFilter,
+            'statusFilter' => $statusFilter,
+            'totalUsers' => User::count(),
+            'activeUsers' => User::where('is_active', true)->count(),
+            'suspendedUsers' => User::where('is_active', false)->count(),
+            'adminCapableUsers' => $adminCapableUsers,
             'canManageUsers' => $actor->canAccess('admin.users.manage'),
             'canManageRoles' => $actor->canAccess('admin.roles.manage'),
             'canViewLogs' => $actor->canAccess('admin.activity.view'),

@@ -31,7 +31,7 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertSee('สวัสดี คุณสมชาย')
             ->assertSee('ประกาศใหม่')
-            ->assertSee('Ticket ค้าง');
+            ->assertSee('งาน IT ค้าง');
     }
 
     public function test_admin_can_open_admin_portal(): void
@@ -82,6 +82,46 @@ class WdcPortalTest extends TestCase
         $this->actingAs($employee);
 
         $this->get(route('systems.index'))->assertForbidden();
+    }
+
+    public function test_dashboard_hides_shortcuts_for_denied_menu_permissions(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $permissions = Permission::whereIn('key', ['systems.view', 'knowledge.view'])->pluck('id');
+
+        $employee->permissionOverrides()->sync(
+            $permissions->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'deny']])->all(),
+        );
+
+        $this->actingAs($employee);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee(route('systems.index'), false)
+            ->assertDontSee(route('knowledge.index'), false)
+            ->assertDontSee('เข้าระบบเดิม');
+    }
+
+    public function test_search_only_returns_modules_visible_to_current_user(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $permissions = Permission::whereIn('key', ['announcements.view', 'knowledge.view', 'directory.view'])->pluck('id');
+
+        $employee->permissionOverrides()->sync(
+            $permissions->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'deny']])->all(),
+        );
+
+        $this->actingAs($employee);
+
+        $this->get(route('search', ['q' => 'ERP']))
+            ->assertOk()
+            ->assertDontSee('ปรับปรุงระบบ ERP')
+            ->assertDontSee('วิธีเปิดใบสั่งขาย')
+            ->assertDontSee('Chanapon Jakkaphan');
     }
 
     public function test_employee_can_search_imported_directory(): void
@@ -171,9 +211,10 @@ class WdcPortalTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+        $manager = User::where('employee_code', 'EMP00200')->firstOrFail();
         $workflowRequest = WorkflowRequest::create([
             'workflow_template_id' => $template->id,
-            'requester_id' => 1,
+            'requester_id' => $manager->id,
             'current_step_id' => $template->steps()->first()?->id,
             'title' => 'ทดสอบอัปเดต workflow',
             'details' => 'คำขอสำหรับทดสอบสถานะ',
@@ -276,12 +317,12 @@ class WdcPortalTest extends TestCase
             'details' => 'ขอใช้งาน VPN สำหรับงานนอกสถานที่',
             'urgency' => 'normal',
             'legacy_document_ref' => 'REF: #2606815',
-        ])->assertRedirect(route('tickets.index'));
+        ])->assertRedirect(route('workflows.index', ['template' => WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail()->id]));
 
-        $ticket = Ticket::where('title', 'ขอใช้งาน VPN')->firstOrFail();
+        $ticket = WorkflowRequest::where('title', 'ขอใช้งาน VPN')->firstOrFail();
 
-        $this->assertSame('vpn_access', $ticket->request_type);
-        $this->assertSame('REF: #2606815', $ticket->legacy_document_ref);
+        $this->assertContains('vpn_access', $ticket->form_payload);
+        $this->assertSame('REF: #2606815', $ticket->legacy_reference);
     }
 
     public function test_anonymous_complaint_does_not_store_reporter_id(): void

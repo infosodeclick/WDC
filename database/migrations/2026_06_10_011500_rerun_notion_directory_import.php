@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (app()->environment('testing')) {
+            return;
+        }
+
         Artisan::call('portal:import-notion-directory');
         Log::info('Notion directory import rerun completed.', [
             'output' => trim(Artisan::output()),

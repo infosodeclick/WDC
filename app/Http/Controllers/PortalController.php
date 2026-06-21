@@ -185,12 +185,12 @@ class PortalController extends Controller
 
         return view('search.index', [
             'q' => $q,
-            'employees' => $q === '' ? collect() : Employee::with('user', 'department')
+            'employees' => $q === '' || ! $user->canAccess('directory.view') ? collect() : Employee::with('user', 'department')
                 ->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$q}%")->orWhere('employee_code', 'like', "%{$q}%"))
                 ->orWhere('position', 'like', "%{$q}%")
                 ->limit(8)
                 ->get(),
-            'directoryEntries' => $q === '' ? collect() : EmployeeDirectoryEntry::where('is_active', true)
+            'directoryEntries' => $q === '' || ! $user->canAccess('directory.view') ? collect() : EmployeeDirectoryEntry::where('is_active', true)
                 ->where(function ($query) use ($q) {
                     $query->where('display_name', 'like', "%{$q}%")
                         ->orWhere('thai_name', 'like', "%{$q}%")
@@ -202,7 +202,7 @@ class PortalController extends Controller
                 })
                 ->limit(8)
                 ->get(),
-            'workflowRequests' => $q === '' ? collect() : WorkflowRequest::with('template')
+            'workflowRequests' => $q === '' || ! $user->canAccessAny(['workflows.create', 'workflows.manage']) ? collect() : WorkflowRequest::with('template')
                 ->where('requester_id', $request->user()->id)
                 ->where(function ($query) use ($q) {
                     $query->where('title', 'like', "%{$q}%")
@@ -211,9 +211,9 @@ class PortalController extends Controller
                 })
                 ->limit(8)
                 ->get(),
-            'announcements' => $q === '' ? collect() : Announcement::where('title', 'like', "%{$q}%")->orWhere('body', 'like', "%{$q}%")->limit(8)->get(),
-            'articles' => $q === '' ? collect() : KnowledgeArticle::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
-            'videos' => $q === '' ? collect() : KnowledgeVideo::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
+            'announcements' => $q === '' || ! $user->canAccess('announcements.view') ? collect() : Announcement::where('title', 'like', "%{$q}%")->orWhere('body', 'like', "%{$q}%")->limit(8)->get(),
+            'articles' => $q === '' || ! $user->canAccess('knowledge.view') ? collect() : KnowledgeArticle::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
+            'videos' => $q === '' || ! $user->canAccess('knowledge.view') ? collect() : KnowledgeVideo::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
             'assets' => $q === '' || ! $user->canAccessItAssets() ? collect() : ItAsset::with('category', 'location')
                 ->where(function ($query) use ($q) {
                     $query->where('code', 'like', "%{$q}%")
