@@ -33,7 +33,15 @@ Local development database:
 - Password: `wdc_local_dev`
 - Host: `127.0.0.1`
 
-Railway should provide database credentials through environment variables instead of committed files.
+Railway or any future host should provide database credentials through environment variables instead of committed files.
+
+Supported production variable formats:
+
+- `DB_CONNECTION=mysql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+- `DB_URL`, `DATABASE_URL`, or `MYSQL_URL`
+- Railway MySQL aliases: `MYSQLHOST`, `MYSQLPORT`, `MYSQLDATABASE`, `MYSQLUSER`, `MYSQLPASSWORD`
+
+The app start command runs `php artisan migrate --force`, so production schema changes and default system records are applied during deploy.
 
 Important identity rules:
 

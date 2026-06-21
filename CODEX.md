@@ -25,6 +25,8 @@ WDC is a Laravel 12 internal company portal for about 200 employees. It combines
 - After an approved WDC change is implemented and verified locally, commit and push it to `infosodeclick/WDC` on GitHub.
 - Let Railway build/deploy the pushed source, or redeploy from source when needed.
 - Use the Railway MySQL database for production data. Create and link the Railway database service when it is missing.
+- Keep database connectivity portable: support normal Laravel `DB_*` vars, URL-style vars, and Railway MySQL `MYSQL*` vars.
+- For a real domain, set `APP_URL` to the HTTPS domain, keep `APP_DEBUG=false`, and verify `/up` after deploy.
 - Verify the live Railway URL after deployment with a real browser or HTTP workflow, including login when the change touches authenticated pages.
 - Report the Git commit, Railway deployment status, production URL, and verification result.
 
