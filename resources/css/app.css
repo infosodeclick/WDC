@@ -1027,6 +1027,69 @@ body.directory-modal-open {
     margin-top: 12px;
 }
 
+.asset-metric-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.asset-filter {
+    margin-bottom: 18px;
+}
+
+.asset-table th {
+    color: var(--muted);
+    font-size: .82rem;
+    text-transform: uppercase;
+}
+
+.asset-table td {
+    vertical-align: top;
+}
+
+.asset-status-form {
+    display: grid;
+    grid-template-columns: minmax(120px, .8fr) minmax(160px, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    min-width: 420px;
+}
+
+.asset-qr-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.asset-qr-card {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf1;
+}
+
+.asset-qr-card strong,
+.asset-qr-card span {
+    overflow-wrap: anywhere;
+}
+
+.asset-qr-code {
+    display: grid;
+    min-height: 86px;
+    place-items: center;
+    padding: 10px;
+    border: 1px dashed #86712a;
+    border-radius: 8px;
+    color: var(--wdc-black);
+    background:
+        linear-gradient(45deg, rgba(34, 31, 32, .08) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(34, 31, 32, .08) 25%, transparent 25%),
+        #ffffff;
+    font-size: .76rem;
+    font-weight: 800;
+    text-align: center;
+}
+
 .quick-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1160,10 +1223,28 @@ body.directory-modal-open {
     background: #ecfdf3;
 }
 
+.status-active,
+.status-closed {
+    color: #067647;
+    background: #ecfdf3;
+}
+
+.status-repair,
+.status-open {
+    color: var(--warning);
+    background: #fff7e6;
+}
+
 .status-rejected,
-.status-cancelled {
+.status-cancelled,
+.status-lost {
     color: var(--danger);
     background: #fdecec;
+}
+
+.status-retired {
+    color: #344054;
+    background: #eef2f7;
 }
 
 .status-primary {
@@ -1645,6 +1726,7 @@ body.directory-modal-open {
     .content-grid,
     .metric-grid,
     .meeting-room-grid,
+    .asset-metric-grid,
     .role-template-grid,
     .admin-access-grid,
     .menu-permission-grid,
@@ -1681,6 +1763,9 @@ body.directory-modal-open {
     .directory-filter,
     .form-grid,
     .metric-grid,
+    .asset-metric-grid,
+    .asset-qr-grid,
+    .asset-status-form,
     .role-template-grid,
     .admin-access-grid,
     .permission-matrix,

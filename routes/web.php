@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DirectoryController;
@@ -56,6 +57,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/hr/employees/{user}/status', [HrController::class, 'updateEmployeeStatus'])->name('hr.employees.status');
 
     Route::get('/it', [TicketController::class, 'itDashboard'])->name('it.index');
+
+    Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
+    Route::get('/assets/export', [AssetController::class, 'export'])->name('assets.export');
+    Route::post('/assets', [AssetController::class, 'store'])->name('assets.store');
+    Route::post('/assets/inspections', [AssetController::class, 'storeInspection'])->name('assets.inspections.store');
+    Route::patch('/assets/{asset}/status', [AssetController::class, 'updateStatus'])->name('assets.status');
 
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
     Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');

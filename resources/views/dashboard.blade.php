@@ -48,6 +48,9 @@
     <a class="btn btn-outline-primary" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i> ร้องเรียน</a>
     <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> เทรนนิ่ง</a>
     <a class="btn btn-outline-primary" href="#meeting-room"><i class="bi bi-calendar2-week"></i> ห้องประชุม</a>
+    @if($user->canAccessAny(['assets.view', 'assets.manage', 'assets.reports']))
+        <a class="btn btn-outline-primary" href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i> ทรัพย์สิน IT</a>
+    @endif
     <a class="btn btn-outline-primary" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i> เข้าระบบเดิม</a>
 </div>
 

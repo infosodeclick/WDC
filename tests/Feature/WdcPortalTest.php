@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Complaint;
+use App\Models\ItAsset;
 use App\Models\Permission;
 use App\Models\Ticket;
 use App\Models\User;
@@ -303,5 +304,50 @@ class WdcPortalTest extends TestCase
         $this->assertNull($complaint->reporter_id);
         $this->assertSame('ร้องเรียน', $complaint->type);
         $this->assertSame('hr', $complaint->submitted_to);
+    }
+
+    public function test_it_user_can_manage_it_assets(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00200',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('assets.index'))
+            ->assertOk()
+            ->assertSee('ทรัพย์สิน IT')
+            ->assertSee('WDC-NB-0001');
+
+        $this->post(route('assets.store'), [
+            'code' => 'WDC-NB-TEST',
+            'name' => 'Test Notebook',
+            'status' => 'active',
+            'department' => 'IT',
+            'owner_name' => 'IT Test',
+            'price' => 25000,
+        ])->assertRedirect();
+
+        $asset = ItAsset::where('code', 'WDC-NB-TEST')->firstOrFail();
+
+        $this->patch(route('assets.status', $asset), [
+            'status' => 'repair',
+            'notes' => 'Send to vendor',
+        ])->assertRedirect();
+
+        $this->assertSame('repair', $asset->fresh()->status);
+    }
+
+    public function test_employee_without_asset_permission_cannot_open_assets(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('assets.index'))->assertForbidden();
     }
 }

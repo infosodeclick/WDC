@@ -146,7 +146,7 @@ class DatabaseSeeder extends Seeder
         });
 
         if (isset($users['EMP00200'])) {
-            $itPermissionIds = Permission::whereIn('key', ['tickets.manage', 'it.portal.view'])->pluck('id');
+            $itPermissionIds = Permission::whereIn('key', ['tickets.manage', 'it.portal.view', 'assets.view', 'assets.manage', 'assets.reports'])->pluck('id');
             $users['EMP00200']->permissionOverrides()->syncWithoutDetaching(
                 $itPermissionIds->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'grant']])->all(),
             );
@@ -414,6 +414,9 @@ class DatabaseSeeder extends Seeder
                     'tickets.create',
                     'tickets.manage',
                     'it.portal.view',
+                    'assets.view',
+                    'assets.manage',
+                    'assets.reports',
                     'workflows.create',
                     'workflows.manage',
                     'complaints.create',

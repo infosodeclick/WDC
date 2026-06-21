@@ -8,6 +8,7 @@ use App\Models\Complaint;
 use App\Models\Employee;
 use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeDocument;
+use App\Models\ItAsset;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
 use App\Models\LegacySystem;
@@ -180,6 +181,7 @@ class PortalController extends Controller
     public function search(Request $request): View
     {
         $q = trim($request->string('q')->toString());
+        $user = $request->user()->loadMissing('role.permissions', 'permissionOverrides');
 
         return view('search.index', [
             'q' => $q,
@@ -212,6 +214,17 @@ class PortalController extends Controller
             'announcements' => $q === '' ? collect() : Announcement::where('title', 'like', "%{$q}%")->orWhere('body', 'like', "%{$q}%")->limit(8)->get(),
             'articles' => $q === '' ? collect() : KnowledgeArticle::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
             'videos' => $q === '' ? collect() : KnowledgeVideo::where('title', 'like', "%{$q}%")->orWhere('summary', 'like', "%{$q}%")->limit(8)->get(),
+            'assets' => $q === '' || ! $user->canAccessAny(['assets.view', 'assets.manage', 'assets.reports']) ? collect() : ItAsset::with('category', 'location')
+                ->where(function ($query) use ($q) {
+                    $query->where('code', 'like', "%{$q}%")
+                        ->orWhere('name', 'like', "%{$q}%")
+                        ->orWhere('brand', 'like', "%{$q}%")
+                        ->orWhere('model', 'like', "%{$q}%")
+                        ->orWhere('serial_number', 'like', "%{$q}%")
+                        ->orWhere('owner_name', 'like', "%{$q}%");
+                })
+                ->limit(8)
+                ->get(),
         ]);
     }
 

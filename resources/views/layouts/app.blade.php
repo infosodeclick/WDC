@@ -62,6 +62,9 @@
             @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
                 <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>ศูนย์ IT</span></a>
             @endif
+            @if($currentUser?->canAccessAny(['assets.view', 'assets.manage', 'assets.reports']))
+                <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i><span>ทรัพย์สิน IT</span></a>
+            @endif
             @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>
             @endif

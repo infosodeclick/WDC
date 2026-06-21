@@ -18,5 +18,8 @@
     <section class="panel"><h2>ประกาศ</h2>@include('search.partials.simple-list', ['items' => $announcements, 'titleField' => 'title', 'subtitleField' => 'category'])</section>
     <section class="panel"><h2>คู่มือ</h2>@include('search.partials.simple-list', ['items' => $articles, 'titleField' => 'title', 'subtitleField' => 'category'])</section>
     <section class="panel"><h2>วิดีโอ</h2>@include('search.partials.simple-list', ['items' => $videos, 'titleField' => 'title', 'subtitleField' => 'category'])</section>
+    @if(auth()->user()?->canAccessAny(['assets.view', 'assets.manage', 'assets.reports']))
+        <section class="panel"><h2>ทรัพย์สิน IT</h2>@include('search.partials.simple-list', ['items' => $assets, 'titleField' => 'code', 'subtitleField' => 'name'])</section>
+    @endif
 </div>
 @endsection
