@@ -34,14 +34,8 @@ class PortalController extends Controller
 
         return view('dashboard', [
             'user' => $user,
-            'newAnnouncements' => Announcement::where('published_at', '>=', now()->subDays(7))->count(),
-            'pendingTickets' => (clone $itRequests)->whereIn('status', ItHelpdeskWorkflow::ACTIVE_STATUSES)->count(),
-            'newVideos' => KnowledgeVideo::where('published_at', '>=', now()->subDays(14))->count(),
-            'directoryCount' => EmployeeDirectoryEntry::where('is_active', true)->count(),
-            'workflowPending' => (clone $workflowRequests)->whereIn('status', ItHelpdeskWorkflow::ACTIVE_STATUSES)->count(),
             'pinnedAnnouncements' => Announcement::with('department')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
             'itRequests' => (clone $itRequests)->take(4)->get(),
-            'videos' => KnowledgeVideo::latest('published_at')->take(3)->get(),
             'workflowRequests' => (clone $workflowRequests)->take(4)->get(),
             'featuredSystems' => LegacySystem::where('is_featured', true)->orderBy('sort_order')->take(4)->get(),
             'itHelpdeskUrl' => $helpdesk->route(),

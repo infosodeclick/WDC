@@ -31,9 +31,14 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertDontSee('Dashboard')
             ->assertDontSee('search-box', false)
+            ->assertDontSee('metric-grid', false)
+            ->assertDontSee('ประกาศใหม่')
+            ->assertDontSee('งาน IT ค้าง')
+            ->assertDontSee('วิดีโอเทรนนิ่งใหม่')
+            ->assertDontSee('ข้อมูลติดต่อ')
+            ->assertDontSee('คำขอของฉัน')
             ->assertSee('สวัสดี คุณสมชาย')
-            ->assertSee('ประกาศใหม่')
-            ->assertSee('งาน IT ค้าง');
+            ->assertSee('โปรไฟล์พนักงาน');
     }
 
     public function test_admin_can_open_admin_portal(): void

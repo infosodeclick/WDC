@@ -12,44 +12,6 @@
     @endif
 </div>
 
-<div class="metric-grid">
-    @if($user->canAccess('announcements.view'))
-        <a class="metric-card" href="{{ route('announcements.index') }}">
-            <span>ประกาศใหม่</span>
-            <strong>{{ $newAnnouncements }}</strong>
-            <small>รายการใน 7 วันล่าสุด</small>
-        </a>
-    @endif
-    @if($user->canAccessAny(['tickets.create', 'tickets.manage', 'workflows.create', 'workflows.manage']))
-        <a class="metric-card" href="{{ $itHelpdeskUrl }}">
-            <span>งาน IT ค้าง</span>
-            <strong>{{ $pendingTickets }}</strong>
-            <small>จาก SmartFlow Workflow เดียว</small>
-        </a>
-    @endif
-    @if($user->canAccess('knowledge.view'))
-        <a class="metric-card" href="{{ route('knowledge.index') }}">
-            <span>วิดีโอเทรนนิ่งใหม่</span>
-            <strong>{{ $newVideos }}</strong>
-            <small>อัปเดตใน 14 วันล่าสุด</small>
-        </a>
-    @endif
-    @if($user->canAccess('directory.view'))
-        <a class="metric-card" href="{{ route('directory.index') }}">
-            <span>ข้อมูลติดต่อ</span>
-            <strong>{{ $directoryCount }}</strong>
-            <small>นำเข้าจาก Directory เดิม</small>
-        </a>
-    @endif
-    @if($user->canAccessAny(['workflows.create', 'workflows.manage']))
-        <a class="metric-card" href="{{ route('workflows.index') }}">
-            <span>คำขอของฉัน</span>
-            <strong>{{ $workflowPending }}</strong>
-            <small>ยังไม่ปิดงาน</small>
-        </a>
-    @endif
-</div>
-
 <div class="quick-actions">
     @if($user->canAccess('announcements.view'))
         <a class="btn btn-primary" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i> ดูประกาศ</a>
