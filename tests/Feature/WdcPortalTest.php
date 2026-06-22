@@ -114,8 +114,7 @@ class WdcPortalTest extends TestCase
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertSee('mobile-bottom-nav', false)
-            ->assertSee('employee-profile', false)
-            ->assertSee(route('dashboard').'#employee-profile', false)
+            ->assertSee(route('profile'), false)
             ->assertDontSee(route('assets.index'), false);
 
         $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
@@ -127,14 +126,21 @@ class WdcPortalTest extends TestCase
             ->assertSee(route('assets.index'), false);
     }
 
-    public function test_profile_route_redirects_to_dashboard_profile_section(): void
+    public function test_dashboard_has_profile_button_and_profile_page_opens(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
         $this->actingAs($employee);
 
-        $this->get(route('profile'))->assertRedirect(route('dashboard').'#employee-profile');
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee(route('profile'), false);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Employee Profile')
+            ->assertSee('EMP00125');
     }
 
     public function test_search_only_returns_modules_visible_to_current_user(): void

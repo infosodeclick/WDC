@@ -520,96 +520,6 @@ a {
     color: var(--muted);
 }
 
-.profile-summary-panel {
-    scroll-margin-top: 92px;
-}
-
-.profile-summary-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, .86fr);
-    gap: 18px;
-    align-items: start;
-}
-
-.profile-summary-grid h3 {
-    margin: 0;
-    font-size: 1.4rem;
-    font-weight: 800;
-}
-
-.profile-summary-grid p {
-    margin: 4px 0 16px;
-    color: var(--muted);
-}
-
-.compact-detail-list {
-    padding: 14px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fffdf1;
-}
-
-.profile-side-stack {
-    display: grid;
-    gap: 12px;
-}
-
-.profile-action-card,
-.profile-mini-card {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #ffffff;
-}
-
-.profile-action-card {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 14px;
-    color: var(--ink);
-}
-
-.profile-action-card i {
-    display: grid;
-    width: 42px;
-    height: 42px;
-    place-items: center;
-    border-radius: 8px;
-    color: var(--wdc-black);
-    background: var(--wdc-yellow-2);
-    font-size: 1.25rem;
-}
-
-.profile-action-card strong,
-.profile-action-card small {
-    display: block;
-}
-
-.profile-action-card small {
-    color: var(--muted);
-}
-
-.profile-action-card:hover,
-.profile-action-card:focus-visible {
-    border-color: var(--wdc-yellow-3);
-    background: #fff9d8;
-}
-
-.profile-mini-card {
-    display: grid;
-    gap: 10px;
-    padding: 14px;
-}
-
-.compact-document-row {
-    box-shadow: none;
-}
-
-.compact-account-table > div:not(.empty-state) {
-    grid-template-columns: 1fr;
-    gap: 4px;
-}
-
 .system-mini-card,
 .system-card {
     border: 1px solid var(--line);
@@ -2054,7 +1964,6 @@ body.directory-modal-open {
     .meeting-room-grid,
     .asset-metric-grid,
     .asset-location-grid,
-    .profile-summary-grid,
     .role-template-grid,
     .admin-access-grid,
     .menu-permission-grid,
@@ -2254,7 +2163,6 @@ body.directory-modal-open {
 
     .mini-detail-list,
     .account-table > div:not(.empty-state),
-    .compact-detail-list,
     .directory-modal-profile {
         grid-template-columns: 1fr;
     }

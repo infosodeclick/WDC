@@ -25,13 +25,7 @@ class PortalController extends Controller
 {
     public function dashboard(Request $request, ItHelpdeskWorkflow $helpdesk): View
     {
-        $user = $request->user()->load(
-            'role.permissions',
-            'permissionOverrides',
-            'employee.department',
-            'employee.documents',
-            'externalAccounts.legacySystem',
-        );
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
         abort_unless($user->canAccess('portal.dashboard.view'), 403);
 
@@ -54,11 +48,13 @@ class PortalController extends Controller
         ]);
     }
 
-    public function profile(Request $request): RedirectResponse
+    public function profile(Request $request): View
     {
         abort_unless($request->user()->canAccess('profile.view'), 403);
 
-        return redirect()->route('dashboard')->withFragment('employee-profile');
+        return view('profile.show', [
+            'user' => $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department', 'employee.documents', 'externalAccounts.legacySystem'),
+        ]);
     }
 
     public function systems(Request $request): View

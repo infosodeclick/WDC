@@ -27,9 +27,6 @@
             @if($currentUser?->canAccess('portal.dashboard.view'))
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
             @endif
-            @if($currentUser?->canAccess('profile.view'))
-                <a class="nav-link {{ request()->routeIs('dashboard', 'profile') ? 'active' : '' }}" href="{{ route('dashboard') }}#employee-profile"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
-            @endif
             @if($currentUser?->canAccess('directory.view'))
                 <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
             @endif
@@ -145,12 +142,6 @@
         <a class="mobile-nav-item {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}">
             <i class="bi bi-kanban"></i>
             <span>คำขอ</span>
-        </a>
-    @endif
-    @if($currentUser?->canAccess('profile.view'))
-        <a class="mobile-nav-item {{ request()->routeIs('dashboard', 'profile') ? 'active' : '' }}" href="{{ route('dashboard') }}#employee-profile">
-            <i class="bi bi-person-badge"></i>
-            <span>โปรไฟล์</span>
         </a>
     @endif
     <button class="mobile-nav-item mobile-nav-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMoreMenu" aria-controls="mobileMoreMenu">
