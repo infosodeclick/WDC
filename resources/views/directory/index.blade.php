@@ -11,6 +11,26 @@
     </div>
 </div>
 
+@php($directoryViewOptions = [
+    'location' => ['label' => 'By location', 'icon' => 'bi-grid-3x3-gap'],
+    'all' => ['label' => 'All team members', 'icon' => 'bi-grid-3x3-gap-fill'],
+    'team' => ['label' => 'By team', 'icon' => 'bi-grid-3x3-gap'],
+    'table' => ['label' => 'Table view', 'icon' => 'bi-table'],
+])
+
+<nav class="directory-view-tabs" aria-label="Directory view">
+    @foreach($directoryViewOptions as $viewKey => $option)
+        <a
+            class="directory-view-tab @if($directoryView === $viewKey) active @endif"
+            href="{{ route('directory.index', array_merge(request()->except(['page', 'view']), ['view' => $viewKey])) }}"
+            @if($directoryView === $viewKey) aria-current="page" @endif
+        >
+            <i class="bi {{ $option['icon'] }}"></i>
+            <span>{{ $option['label'] }}</span>
+        </a>
+    @endforeach
+</nav>
+
 <section class="panel">
     <details class="pdpa-note">
         <summary class="pdpa-note-toggle" title="ข้อมูลการใช้งาน" aria-label="ข้อมูลการใช้งาน">
@@ -19,6 +39,7 @@
         <p>ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท</p>
     </details>
     <form class="directory-filter" method="get" action="{{ route('directory.index') }}">
+        <input type="hidden" name="view" value="{{ $directoryView }}">
         <label class="span-2">
             <span>ค้นหา</span>
             <input class="form-control" name="q" value="{{ $q }}" placeholder="ชื่อไทย อังกฤษ ชื่อเล่น แผนก ทีม อีเมล เบอร์ต่อ">
@@ -63,6 +84,7 @@
     </form>
 </section>
 
+@if($directoryView === 'all')
 <div class="directory-grid">
     @forelse($entries as $entry)
         @php($phoneText = collect([$entry->phone, $entry->extension_number ? 'ต่อ '.$entry->extension_number : null])->filter()->join(' · '))
@@ -244,6 +266,72 @@
 </div>
 
 {{ $entries->links() }}
+@elseif(in_array($directoryView, ['location', 'team'], true))
+    <div class="directory-groups">
+        @forelse($groupedEntries as $groupName => $groupEntries)
+            <details class="directory-group" open>
+                <summary>
+                    <span class="directory-group-caret"><i class="bi bi-caret-right-fill"></i></span>
+                    <span class="directory-group-name">{{ $groupName }}</span>
+                    <span class="directory-group-count">{{ $groupEntries->count() }}</span>
+                </summary>
+                <div class="directory-grid directory-group-grid">
+                    @foreach($groupEntries as $entry)
+                        @include('directory.partials.card', ['entry' => $entry])
+                    @endforeach
+                </div>
+            </details>
+        @empty
+            <div class="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่ค้นหา</div>
+        @endforelse
+    </div>
+@else
+    <div class="table-responsive directory-table-wrap">
+        <table class="table align-middle directory-table">
+            <thead>
+                <tr>
+                    <th>ชื่อ</th>
+                    <th>แผนก/BU</th>
+                    <th>ทีม</th>
+                    <th>ตำแหน่ง</th>
+                    <th>สาขา</th>
+                    <th>อีเมล</th>
+                    <th>โทร</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($viewEntries as $entry)
+                    @php($phoneText = collect([$entry->phone, $entry->extension_number ? 'ต่อ '.$entry->extension_number : null])->filter()->join(' · '))
+                    @php($subtitleText = collect([$entry->thai_name, $entry->nickname ? '('.$entry->nickname.')' : null])->filter()->join(' '))
+                    <tr>
+                        <td>
+                            <strong>{{ $entry->display_name }}</strong>
+                            @if($subtitleText)
+                                <small>{{ $subtitleText }}</small>
+                            @endif
+                        </td>
+                        <td>{{ $entry->department ?? '-' }}</td>
+                        <td>{{ $entry->team ?? '-' }}</td>
+                        <td>{{ $entry->position ?? '-' }}</td>
+                        <td>{{ $entry->location ?? '-' }}</td>
+                        <td>
+                            @if($entry->email)
+                                <a href="mailto:{{ $entry->email }}">{{ $entry->email }}</a>
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td>{{ $phoneText ?: '-' }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7"><div class="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่ค้นหา</div></td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+@endif
 
 <div class="directory-modal" data-directory-modal hidden aria-hidden="true">
     <div class="directory-modal-backdrop" data-directory-close></div>

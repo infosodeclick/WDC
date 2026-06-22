@@ -807,6 +807,34 @@ a {
     background: #f0fdf8;
 }
 
+.directory-view-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: -6px 0 16px;
+}
+
+.directory-view-tab {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 12px;
+    color: var(--muted);
+    border-radius: 999px;
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.directory-view-tab:hover,
+.directory-view-tab:focus-visible,
+.directory-view-tab.active {
+    color: var(--wdc-black);
+    background: #f1f1ef;
+    outline: 0;
+}
+
 .directory-filter {
     display: grid;
     grid-template-columns: 1.4fr repeat(4, minmax(140px, .78fr)) auto;
@@ -825,6 +853,80 @@ a {
     padding-top: 10px;
     border-top: 1px solid var(--line);
     font-size: .9rem;
+}
+
+.directory-groups {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.directory-group > summary {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    min-height: 34px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 750;
+}
+
+.directory-group > summary::-webkit-details-marker {
+    display: none;
+}
+
+.directory-group > summary::marker {
+    content: "";
+}
+
+.directory-group-caret {
+    display: inline-grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    color: var(--wdc-black);
+    border-radius: 6px;
+    background: #f1f1ef;
+    transition: transform .18s ease;
+}
+
+.directory-group[open] .directory-group-caret {
+    transform: rotate(90deg);
+}
+
+.directory-group-name {
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #f5e7b8;
+}
+
+.directory-group-count {
+    color: var(--muted);
+}
+
+.directory-group-grid {
+    margin-top: 0;
+}
+
+.directory-table-wrap {
+    margin-bottom: 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.directory-table {
+    margin: 0;
+}
+
+.directory-table strong,
+.directory-table small {
+    display: block;
+}
+
+.directory-table small {
+    color: var(--muted);
 }
 
 .directory-card-with-photo {

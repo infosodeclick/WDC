@@ -17,8 +17,13 @@ class DirectoryController extends Controller
         $team = $request->string('team')->toString();
         $location = $request->string('location')->toString();
         $entryType = $request->string('type')->toString();
+        $directoryView = $request->string('view')->toString();
 
-        $entries = EmployeeDirectoryEntry::where('is_active', true)
+        if (! in_array($directoryView, ['location', 'all', 'team', 'table'], true)) {
+            $directoryView = 'all';
+        }
+
+        $filteredEntries = EmployeeDirectoryEntry::where('is_active', true)
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($query) use ($q) {
                     $query->where('display_name', 'like', "%{$q}%")
@@ -37,15 +42,32 @@ class DirectoryController extends Controller
             ->when($department !== '', fn ($query) => $query->where('department', $department))
             ->when($team !== '', fn ($query) => $query->where('team', $team))
             ->when($location !== '', fn ($query) => $query->where('location', $location))
-            ->when($entryType !== '', fn ($query) => $query->where('entry_type', $entryType))
+            ->when($entryType !== '', fn ($query) => $query->where('entry_type', $entryType));
+
+        $orderedEntries = fn ($query) => $query
             ->orderByRaw("CASE entry_type WHEN 'employee' THEN 1 WHEN 'mail_group' THEN 2 ELSE 3 END")
             ->orderBy('department')
-            ->orderBy('display_name')
-            ->paginate(18)
-            ->withQueryString();
+            ->orderBy('display_name');
+
+        $entries = $directoryView === 'all'
+            ? $orderedEntries(clone $filteredEntries)->paginate(18)->withQueryString()
+            : null;
+
+        $viewEntries = $directoryView === 'all'
+            ? collect()
+            : $orderedEntries(clone $filteredEntries)->get();
+
+        $groupedEntries = match ($directoryView) {
+            'location' => $viewEntries->groupBy(fn ($entry) => $entry->location ?: 'ไม่ระบุสาขา'),
+            'team' => $viewEntries->groupBy(fn ($entry) => $entry->team ?: 'ไม่ระบุทีม'),
+            default => collect(),
+        };
 
         return view('directory.index', [
             'entries' => $entries,
+            'directoryView' => $directoryView,
+            'viewEntries' => $viewEntries,
+            'groupedEntries' => $groupedEntries,
             'q' => $q,
             'department' => $department,
             'team' => $team,

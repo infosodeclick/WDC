@@ -197,6 +197,11 @@ class WdcPortalTest extends TestCase
             ->assertSee('รายชื่อพนักงาน')
             ->assertSee('Chanapon Jakkaphan')
             ->assertSee('Information Technology')
+            ->assertSee('By location')
+            ->assertSee('All team members')
+            ->assertSee('By team')
+            ->assertSee('Table view')
+            ->assertSee('directory-view-tab', false)
             ->assertDontSee('directory-metrics', false)
             ->assertDontSee('role-badge', false)
             ->assertDontSee('ข้อมูลทั้งหมด')
@@ -205,6 +210,37 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('class="tag"', false)
             ->assertSee('pdpa-note-toggle', false)
             ->assertSee('ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท');
+    }
+
+    public function test_employee_can_switch_directory_display_modes(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('directory.index', ['view' => 'team', 'q' => 'Chanapon']))
+            ->assertOk()
+            ->assertSee('By team')
+            ->assertSee('directory-group', false)
+            ->assertSee('directory-group-name', false)
+            ->assertSee('Chanapon Jakkaphan');
+
+        $this->get(route('directory.index', ['view' => 'location', 'q' => 'Chanapon']))
+            ->assertOk()
+            ->assertSee('By location')
+            ->assertSee('directory-group', false)
+            ->assertSee('directory-group-count', false)
+            ->assertSee('Chanapon Jakkaphan');
+
+        $this->get(route('directory.index', ['view' => 'table', 'q' => 'Chanapon']))
+            ->assertOk()
+            ->assertSee('Table view')
+            ->assertSee('directory-table', false)
+            ->assertSee('Chanapon Jakkaphan')
+            ->assertSee('Information Technology');
     }
 
     public function test_employee_can_create_workflow_request_from_smartflow_template(): void
