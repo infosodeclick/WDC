@@ -223,7 +223,6 @@ class AdminController extends Controller
             ['label' => 'คำขอ/อนุมัติ', 'permissions' => ['workflows.create', 'workflows.manage']],
             ['label' => 'ร้องเรียน', 'permissions' => ['complaints.create', 'complaints.review']],
             ['label' => 'แบบฟอร์ม', 'permissions' => ['documents.view']],
-            ['label' => 'ศูนย์รวมระบบ', 'permissions' => ['systems.view']],
             ['label' => 'ศูนย์ IT', 'permissions' => ['it.portal.view', 'tickets.manage']],
             ['label' => 'ทรัพย์สิน IT', 'permissions' => ['assets.view', 'assets.manage', 'assets.reports']],
             ['label' => 'HR Portal', 'permissions' => ['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']],

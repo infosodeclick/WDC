@@ -18,7 +18,6 @@ class Permission extends Model
         ['key' => 'knowledge.view', 'group' => 'Content', 'name' => 'ดูเทรนนิ่ง', 'description' => 'อ่านบทความและดูวิดีโอเทรนนิ่ง', 'sort_order' => 50],
         ['key' => 'documents.view', 'group' => 'Content', 'name' => 'ดู/ดาวน์โหลดแบบฟอร์ม', 'description' => 'เปิดแบบฟอร์มบริษัทและเอกสารของตนเอง', 'sort_order' => 60],
         ['key' => 'documents.manage', 'group' => 'Content', 'name' => 'จัดการเอกสาร HR', 'description' => 'เข้าถึงเอกสารพนักงานตามขอบเขตข้อมูล', 'sort_order' => 70],
-        ['key' => 'systems.view', 'group' => 'Employee Portal', 'name' => 'ดูศูนย์รวมระบบ', 'description' => 'เปิดลิงก์ระบบเดิมและหลักการ migration', 'sort_order' => 80],
         ['key' => 'payroll.link', 'group' => 'Employee Portal', 'name' => 'เปิดลิงก์สลิปเงินเดือน', 'description' => 'ไปยังระบบ Payroll เดิมโดยไม่เก็บข้อมูลเงินเดือนใน WDC', 'sort_order' => 90],
         ['key' => 'tickets.create', 'group' => 'IT Helpdesk', 'name' => 'เปิดคำขอ IT', 'description' => 'แจ้งปัญหา IT ผ่าน SmartFlow Workflow และติดตามงานของตนเอง', 'sort_order' => 100],
         ['key' => 'tickets.manage', 'group' => 'IT Helpdesk', 'name' => 'ดูแล Helpdesk', 'description' => 'เห็นคิว IT Helpdesk และ legacy ticket ตามขอบเขตข้อมูล', 'sort_order' => 110],

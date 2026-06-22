@@ -56,21 +56,4 @@
     </section>
 @endif
 
-<section class="panel">
-    <div class="section-title">
-        <h2>บัญชีระบบที่เกี่ยวข้อง</h2>
-        <a href="{{ route('systems.index') }}">เปิดศูนย์รวมระบบ</a>
-    </div>
-    <div class="account-table">
-        @forelse($user->externalAccounts as $account)
-            <div>
-                <strong>{{ $account->legacySystem->name }}</strong>
-                <span>{{ $account->login_identifier ?? 'ยังไม่ได้ระบุบัญชี' }}</span>
-                <small>{{ $account->credential_note ?? $account->legacySystem->login_method }}</small>
-            </div>
-        @empty
-            <div class="empty-state">ยังไม่ได้ผูกบัญชีระบบเดิม</div>
-        @endforelse
-    </div>
-</section>
 @endsection

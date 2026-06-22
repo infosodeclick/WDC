@@ -9,10 +9,8 @@ use App\Models\Complaint;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
-use App\Models\ExternalSystemAccount;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
-use App\Models\LegacySystem;
 use App\Models\Notification;
 use App\Models\Permission;
 use App\Models\Role;
@@ -202,42 +200,6 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
-        $legacySystems = LegacySystem::all()->keyBy('key');
-        $users->each(function (User $user) use ($legacySystems) {
-            $accountRows = [
-                'wdc-portal' => [
-                    'login_identifier' => $user->employee_code,
-                    'credential_note' => 'ใช้รหัสผ่าน WDC Portal',
-                ],
-                'employee-directory' => [
-                    'login_identifier' => $user->email,
-                    'credential_note' => 'เปิดอ่านจากลิงก์เดิม ระหว่างย้าย directory เข้าระบบใหม่',
-                ],
-                'smartflow-helpdesk' => [
-                    'login_identifier' => $user->email,
-                    'credential_note' => 'ใช้รหัสผ่าน SmartFlow เดิม และจะค่อย ๆ ย้ายประเภทคำขอเข้าระบบใหม่',
-                ],
-                'payroll' => [
-                    'login_identifier' => $user->employee_code,
-                    'credential_note' => 'ใช้เลขบัตรประชาชนในระบบเงินเดือนเดิม ไม่เก็บเลขบัตรใน WDC Portal',
-                ],
-            ];
-
-            foreach ($accountRows as $systemKey => $account) {
-                if (! isset($legacySystems[$systemKey])) {
-                    continue;
-                }
-
-                ExternalSystemAccount::create([
-                    'user_id' => $user->id,
-                    'legacy_system_id' => $legacySystems[$systemKey]->id,
-                    ...$account,
-                    'last_verified_at' => now(),
-                    'is_active' => true,
-                ]);
-            }
-        });
-
         AnnouncementFile::create([
             'announcement_id' => $announcements[1]->id,
             'file_name' => 'holiday-calendar.pdf',
@@ -353,7 +315,6 @@ class DatabaseSeeder extends Seeder
                     'announcements.view',
                     'knowledge.view',
                     'documents.view',
-                    'systems.view',
                     'payroll.link',
                     'tickets.create',
                     'workflows.create',
@@ -369,7 +330,6 @@ class DatabaseSeeder extends Seeder
                     'announcements.view',
                     'knowledge.view',
                     'documents.view',
-                    'systems.view',
                     'payroll.link',
                     'tickets.create',
                     'workflows.create',
@@ -387,7 +347,6 @@ class DatabaseSeeder extends Seeder
                     'knowledge.view',
                     'documents.view',
                     'documents.manage',
-                    'systems.view',
                     'payroll.link',
                     'tickets.create',
                     'workflows.create',
@@ -409,7 +368,6 @@ class DatabaseSeeder extends Seeder
                     'knowledge.view',
                     'documents.view',
                     'documents.manage',
-                    'systems.view',
                     'payroll.link',
                     'tickets.create',
                     'tickets.manage',

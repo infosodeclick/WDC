@@ -64,22 +64,14 @@ class WdcPortalTest extends TestCase
             ->assertSee('EMP00125');
     }
 
-    public function test_employee_can_open_systems_hub(): void
+    public function test_legacy_systems_hub_is_removed(): void
     {
         $this->seed(DatabaseSeeder::class);
 
-        $this->post(route('login.store'), [
-            'employee_code' => 'EMP00125',
-            'password' => 'password123',
-        ]);
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
 
-        $this->get(route('systems.index'))
-            ->assertOk()
-            ->assertSee('ศูนย์รวมระบบ WDC')
-            ->assertSee('WDC Information Directory')
-            ->assertSee('SmartFlow IT Helpdesk')
-            ->assertSee('ระบบสลิปเงินเดือน')
-            ->assertDontSee('Qa741852');
+        $this->get('/systems')->assertNotFound();
     }
 
     public function test_user_permission_override_can_block_frontend_route(): void
@@ -87,7 +79,7 @@ class WdcPortalTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
-        $permission = Permission::where('key', 'systems.view')->firstOrFail();
+        $permission = Permission::where('key', 'knowledge.view')->firstOrFail();
 
         $employee->permissionOverrides()->sync([
             $permission->id => ['effect' => 'deny'],
@@ -95,7 +87,7 @@ class WdcPortalTest extends TestCase
 
         $this->actingAs($employee);
 
-        $this->get(route('systems.index'))->assertForbidden();
+        $this->get(route('knowledge.index'))->assertForbidden();
     }
 
     public function test_dashboard_hides_shortcuts_for_denied_menu_permissions(): void
@@ -103,7 +95,7 @@ class WdcPortalTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
-        $permissions = Permission::whereIn('key', ['systems.view', 'knowledge.view'])->pluck('id');
+        $permissions = Permission::whereIn('key', ['knowledge.view'])->pluck('id');
 
         $employee->permissionOverrides()->sync(
             $permissions->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'deny']])->all(),
@@ -113,7 +105,6 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee(route('systems.index'), false)
             ->assertDontSee(route('knowledge.index'), false)
             ->assertDontSee('เข้าระบบเดิม');
     }

@@ -11,8 +11,6 @@ use App\Models\EmployeeDocument;
 use App\Models\ItAsset;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
-use App\Models\LegacySystem;
-use App\Models\LegacySystemSnapshot;
 use App\Models\Notification;
 use App\Models\WorkflowRequest;
 use App\Services\ItHelpdeskWorkflow;
@@ -44,22 +42,7 @@ class PortalController extends Controller
         abort_unless($request->user()->canAccess('profile.view'), 403);
 
         return view('profile.show', [
-            'user' => $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department', 'employee.documents', 'externalAccounts.legacySystem'),
-        ]);
-    }
-
-    public function systems(Request $request): View
-    {
-        $user = $request->user()->load('externalAccounts.legacySystem');
-
-        abort_unless($user->canAccess('systems.view'), 403);
-
-        return view('systems.index', [
-            'systems' => LegacySystem::with(['accounts' => fn ($query) => $query->where('user_id', $user->id)])
-                ->orderBy('sort_order')
-                ->get(),
-            'snapshots' => LegacySystemSnapshot::latest('captured_at')->get(),
-            'user' => $user,
+            'user' => $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department', 'employee.documents'),
         ]);
     }
 

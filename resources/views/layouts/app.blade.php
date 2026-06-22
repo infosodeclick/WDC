@@ -48,9 +48,6 @@
             @if($currentUser?->canAccess('documents.view'))
                 <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>แบบฟอร์ม</span></a>
             @endif
-            @if($currentUser?->canAccess('systems.view'))
-                <a class="nav-link {{ request()->routeIs('systems.*') ? 'active' : '' }}" href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
-            @endif
         </nav>
 
         <div class="portal-divider"></div>
@@ -178,9 +175,6 @@
                 @endif
                 @if($currentUser?->canAccess('documents.view'))
                     <a href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>แบบฟอร์ม</span></a>
-                @endif
-                @if($currentUser?->canAccess('systems.view'))
-                    <a href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
                 @endif
             </div>
         </div>

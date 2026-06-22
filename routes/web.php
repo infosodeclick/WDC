@@ -26,7 +26,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/knowledge', [PortalController::class, 'knowledge'])->name('knowledge.index');
     Route::get('/documents', [PortalController::class, 'documents'])->name('documents.index');
     Route::get('/documents/{document}/download', [PortalController::class, 'downloadDocument'])->name('documents.download');
-    Route::get('/systems', [PortalController::class, 'systems'])->name('systems.index');
     Route::get('/payroll', [PortalController::class, 'payroll'])->name('payroll');
     Route::get('/search', [PortalController::class, 'search'])->name('search');
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
