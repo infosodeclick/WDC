@@ -42,6 +42,8 @@ body {
         linear-gradient(135deg, rgba(255, 222, 70, .18), rgba(255, 222, 70, 0) 32%),
         var(--portal-bg);
     font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    overscroll-behavior-y: contain;
+    touch-action: manipulation;
 }
 
 a {
@@ -109,6 +111,29 @@ a {
 .brand-lockup small {
     color: #cfc9b8;
     font-size: .78rem;
+}
+
+.mobile-topbar-brand {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+}
+
+.mobile-topbar-brand .brand-mark {
+    width: 52px;
+    height: 40px;
+    font-size: .86rem;
+}
+
+.mobile-topbar-brand strong,
+.mobile-topbar-brand small {
+    display: block;
+}
+
+.mobile-topbar-brand small {
+    color: var(--muted);
+    font-size: .76rem;
 }
 
 .portal-nav {
@@ -266,6 +291,89 @@ a {
 
 .content-wrap {
     padding: 28px;
+}
+
+.mobile-bottom-nav,
+.mobile-more-menu {
+    display: none;
+}
+
+.mobile-nav-item {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px 4px;
+    border: 0;
+    color: #eee8da;
+    background: transparent;
+    font-size: .72rem;
+    font-weight: 750;
+    line-height: 1.15;
+}
+
+.mobile-nav-item i {
+    font-size: 1.15rem;
+}
+
+.mobile-nav-item span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-nav-item.active {
+    color: var(--wdc-yellow-1);
+}
+
+.mobile-more-menu {
+    --bs-offcanvas-height: min(78vh, 620px);
+    color: var(--ink);
+    border-radius: 8px 8px 0 0;
+}
+
+.mobile-more-menu .offcanvas-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.mobile-more-section + .mobile-more-section {
+    margin-top: 22px;
+}
+
+.mobile-more-section h3 {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: .84rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.mobile-more-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.mobile-more-grid a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 10px 12px;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    font-weight: 750;
+}
+
+.mobile-more-grid a:hover,
+.mobile-more-grid a:focus-visible {
+    border-color: var(--wdc-yellow-3);
+    background: #fff9d8;
 }
 
 .page-heading {
@@ -1820,13 +1928,7 @@ body.directory-modal-open {
     }
 
     .portal-sidebar {
-        position: static;
-        height: auto;
-    }
-
-    .portal-nav {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: none;
     }
 
     .topbar,
@@ -1853,10 +1955,41 @@ body.directory-modal-open {
     .topbar {
         align-items: stretch;
         flex-direction: column;
+        padding: 12px 18px;
     }
 
     .topbar-actions {
         justify-content: space-between;
+    }
+
+    .mobile-topbar-brand {
+        display: flex;
+    }
+
+    .mobile-bottom-nav {
+        position: fixed;
+        right: max(10px, env(safe-area-inset-right));
+        bottom: max(10px, env(safe-area-inset-bottom));
+        left: max(10px, env(safe-area-inset-left));
+        z-index: 1040;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        min-height: 64px;
+        padding: 6px;
+        border: 1px solid rgba(255, 222, 70, .25);
+        border-radius: 8px;
+        background: rgba(34, 31, 32, .96);
+        box-shadow: 0 18px 36px rgba(34, 31, 32, .30);
+        backdrop-filter: blur(12px);
+    }
+
+    .mobile-more-menu {
+        display: flex;
+    }
+
+    .content-wrap {
+        padding-bottom: 104px;
     }
 }
 
@@ -1864,7 +1997,28 @@ body.directory-modal-open {
     .content-wrap,
     .login-panel,
     .login-hero {
-        padding: 22px;
+        padding: 18px;
+    }
+
+    .content-wrap {
+        padding-bottom: 104px;
+    }
+
+    .search-box {
+        max-width: none;
+        width: 100%;
+    }
+
+    .user-chip {
+        max-width: 52vw;
+        overflow: hidden;
+    }
+
+    .user-chip span,
+    .user-chip small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .portal-nav,

@@ -104,6 +104,28 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('เข้าระบบเดิม');
     }
 
+    public function test_mobile_navigation_respects_user_permissions(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('mobile-bottom-nav', false)
+            ->assertSee(route('profile'), false)
+            ->assertDontSee(route('assets.index'), false);
+
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $this->actingAs($itUser);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('mobile-bottom-nav', false)
+            ->assertSee(route('assets.index'), false);
+    }
+
     public function test_search_only_returns_modules_visible_to_current_user(): void
     {
         $this->seed(DatabaseSeeder::class);

@@ -76,6 +76,14 @@
 
     <main class="portal-main">
         <header class="topbar">
+            <a class="mobile-topbar-brand" href="{{ route('dashboard') }}" aria-label="WDC Portal">
+                <span class="brand-mark">WDC</span>
+                <span>
+                    <strong>WDC Portal</strong>
+                    <small>ระบบภายในบริษัท</small>
+                </span>
+            </a>
+
             <form class="search-box" action="{{ route('search') }}" method="get">
                 <i class="bi bi-search"></i>
                 <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ เทรนนิ่ง" aria-label="ค้นหา">
@@ -119,6 +127,91 @@
         </section>
     </main>
 </div>
+
+<nav class="mobile-bottom-nav" aria-label="เมนูหลักบนมือถือ">
+    @if($currentUser?->canAccess('portal.dashboard.view'))
+        <a class="mobile-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+            <i class="bi bi-house-door"></i>
+            <span>หน้าแรก</span>
+        </a>
+    @endif
+    @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage']))
+        <a class="mobile-nav-item {{ request()->routeIs('tickets.*') || $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ $itHelpdeskNavUrl ?? route('tickets.index') }}">
+            <i class="bi bi-life-preserver"></i>
+            <span>แจ้ง IT</span>
+        </a>
+    @endif
+    @if($currentUser?->canAccessAny(['workflows.create', 'workflows.manage']))
+        <a class="mobile-nav-item {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}">
+            <i class="bi bi-kanban"></i>
+            <span>คำขอ</span>
+        </a>
+    @endif
+    @if($currentUser?->canAccess('profile.view'))
+        <a class="mobile-nav-item {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}">
+            <i class="bi bi-person-badge"></i>
+            <span>โปรไฟล์</span>
+        </a>
+    @endif
+    <button class="mobile-nav-item mobile-nav-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMoreMenu" aria-controls="mobileMoreMenu">
+        <i class="bi bi-three-dots"></i>
+        <span>เพิ่มเติม</span>
+    </button>
+</nav>
+
+<div class="offcanvas offcanvas-bottom mobile-more-menu" tabindex="-1" id="mobileMoreMenu" aria-labelledby="mobileMoreMenuLabel">
+    <div class="offcanvas-header">
+        <div>
+            <p class="eyebrow mb-1">WDC Portal</p>
+            <h2 class="offcanvas-title" id="mobileMoreMenuLabel">เมนูทั้งหมด</h2>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="ปิด"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mobile-more-section">
+            <h3>งานประจำวัน</h3>
+            <div class="mobile-more-grid">
+                @if($currentUser?->canAccess('directory.view'))
+                    <a href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
+                @endif
+                @if($currentUser?->canAccess('announcements.view'))
+                    <a href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ประกาศ</span></a>
+                @endif
+                @if($currentUser?->canAccess('knowledge.view'))
+                    <a href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>เทรนนิ่ง</span></a>
+                @endif
+                @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
+                    <a href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน</span></a>
+                @endif
+                @if($currentUser?->canAccess('documents.view'))
+                    <a href="{{ route('documents.index') }}"><i class="bi bi-file-earmark-arrow-down"></i><span>แบบฟอร์ม</span></a>
+                @endif
+                @if($currentUser?->canAccess('systems.view'))
+                    <a href="{{ route('systems.index') }}"><i class="bi bi-diagram-3"></i><span>ศูนย์รวมระบบ</span></a>
+                @endif
+            </div>
+        </div>
+
+        <div class="mobile-more-section">
+            <h3>หลังบ้าน</h3>
+            <div class="mobile-more-grid">
+                @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
+                    <a href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>ศูนย์ IT</span></a>
+                @endif
+                @if($currentUser?->canAccessItAssets())
+                    <a href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i><span>ทรัพย์สิน IT</span></a>
+                @endif
+                @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
+                    <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>
+                @endif
+                @if($currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage']))
+                    <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span></a>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
