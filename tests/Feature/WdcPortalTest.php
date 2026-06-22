@@ -196,7 +196,13 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertSee('รายชื่อพนักงาน')
             ->assertSee('Chanapon Jakkaphan')
-            ->assertSee('Information Technology');
+            ->assertSee('Information Technology')
+            ->assertDontSee('directory-metrics', false)
+            ->assertDontSee('role-badge', false)
+            ->assertDontSee('ข้อมูลทั้งหมด')
+            ->assertDontSee('นำเข้าจาก Notion')
+            ->assertDontSee('อัปเดตล่าสุด')
+            ->assertDontSee('class="tag"', false);
     }
 
     public function test_employee_can_create_workflow_request_from_smartflow_template(): void

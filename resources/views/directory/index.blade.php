@@ -9,25 +9,6 @@
         <h1>รายชื่อพนักงาน</h1>
         <p>ข้อมูลจาก Notion เดิมถูกนำเข้ามาไว้ใน WDC Portal เพื่อให้ค้นหาพนักงาน กลุ่มอีเมล ทีม และสาขาได้จากที่เดียว</p>
     </div>
-    <div class="role-badge">{{ $totalEntries }} รายการ</div>
-</div>
-
-<div class="metric-grid directory-metrics">
-    <div class="metric-card">
-        <span>ข้อมูลทั้งหมด</span>
-        <strong>{{ $totalEntries }}</strong>
-        <small>พนักงาน กลุ่มอีเมล และโชว์รูม</small>
-    </div>
-    <div class="metric-card">
-        <span>นำเข้าจาก Notion</span>
-        <strong>{{ $importedEntries }}</strong>
-        <small>มี source record พร้อม sync ซ้ำได้</small>
-    </div>
-    <div class="metric-card">
-        <span>อัปเดตล่าสุด</span>
-        <strong class="metric-date">{{ $lastImportedAt ? \Illuminate\Support\Carbon::parse($lastImportedAt)->format('d/m/Y H:i') : '-' }}</strong>
-        <small>เวลาประเทศไทย</small>
-    </div>
 </div>
 
 <section class="panel">
@@ -95,7 +76,6 @@
                 </button>
                 <div class="directory-card-title">
                     <div class="meta-row compact-meta">
-                        <span class="tag">{{ $entry->entryTypeLabel() }}</span>
                         <span class="copy-line compact-copy">
                             <span>{{ $entry->location ?? 'ไม่ระบุสาขา' }}</span>
                             @if($entry->location)
@@ -182,7 +162,6 @@
                         @endif
                     </div>
                     <div class="directory-modal-summary">
-                        <span class="tag">{{ $entry->entryTypeLabel() }}</span>
                         <h2 class="directory-name-line">
                             <span>{{ $entry->display_name }}</span>
                             <button class="copy-button" type="button" data-copy="{{ $entry->display_name }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>

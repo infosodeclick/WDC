@@ -59,9 +59,6 @@ class DirectoryController extends Controller
                 'mail_group' => 'กลุ่มอีเมล',
                 'showroom' => 'สาขา/โชว์รูม',
             ],
-            'totalEntries' => EmployeeDirectoryEntry::where('is_active', true)->count(),
-            'importedEntries' => EmployeeDirectoryEntry::where('is_active', true)->whereNotNull('source_record_id')->count(),
-            'lastImportedAt' => EmployeeDirectoryEntry::whereNotNull('imported_at')->max('imported_at'),
         ]);
     }
 }
