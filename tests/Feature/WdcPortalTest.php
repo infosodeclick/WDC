@@ -137,7 +137,9 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertSee(route('profile'), false);
+            ->assertSee(route('profile'), false)
+            ->assertSee('page-profile-button', false)
+            ->assertDontSee('role-badge', false);
 
         $this->get(route('profile'))
             ->assertOk()

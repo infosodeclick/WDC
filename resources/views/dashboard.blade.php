@@ -7,7 +7,9 @@
     <div>
         <h1>สวัสดี คุณ{{ $user->name }}</h1>
     </div>
-    <div class="role-badge">{{ $user->role?->name }}</div>
+    @if($user->canAccess('profile.view'))
+        <a class="btn btn-primary page-profile-button" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i> โปรไฟล์พนักงาน</a>
+    @endif
 </div>
 
 <div class="metric-grid">
@@ -49,9 +51,6 @@
 </div>
 
 <div class="quick-actions">
-    @if($user->canAccess('profile.view'))
-        <a class="btn btn-primary" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i> โปรไฟล์พนักงาน</a>
-    @endif
     @if($user->canAccess('announcements.view'))
         <a class="btn btn-primary" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i> ดูประกาศ</a>
     @endif
