@@ -12,10 +12,12 @@
 </div>
 
 <section class="panel">
-    <div class="pdpa-note">
-        <i class="bi bi-shield-lock"></i>
-        <span>ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท</span>
-    </div>
+    <details class="pdpa-note">
+        <summary class="pdpa-note-toggle" title="ข้อมูลการใช้งาน" aria-label="ข้อมูลการใช้งาน">
+            <i class="bi bi-shield-lock"></i>
+        </summary>
+        <p>ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท</p>
+    </details>
     <form class="directory-filter" method="get" action="{{ route('directory.index') }}">
         <label class="span-2">
             <span>ค้นหา</span>

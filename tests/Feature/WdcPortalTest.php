@@ -202,7 +202,9 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('ข้อมูลทั้งหมด')
             ->assertDontSee('นำเข้าจาก Notion')
             ->assertDontSee('อัปเดตล่าสุด')
-            ->assertDontSee('class="tag"', false);
+            ->assertDontSee('class="tag"', false)
+            ->assertSee('pdpa-note-toggle', false)
+            ->assertSee('ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท');
     }
 
     public function test_employee_can_create_workflow_request_from_smartflow_template(): void

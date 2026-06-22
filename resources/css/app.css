@@ -765,8 +765,43 @@ a {
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    padding: 12px 14px;
     margin-bottom: 14px;
+}
+
+.pdpa-note-toggle {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+    color: #0f766e;
+    border: 1px solid #9ed8cc;
+    border-radius: 50%;
+    background: #f0fdf8;
+    cursor: pointer;
+    list-style: none;
+}
+
+.pdpa-note-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.pdpa-note-toggle::marker {
+    content: "";
+}
+
+.pdpa-note-toggle:hover,
+.pdpa-note-toggle:focus-visible {
+    color: var(--wdc-black);
+    border-color: #68bdae;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, .14);
+}
+
+.pdpa-note p {
+    margin: 0;
+    padding: 10px 12px;
     border: 1px solid #b7e4d7;
     border-radius: 8px;
     background: #f0fdf8;
