@@ -37,6 +37,13 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('วิดีโอเทรนนิ่งใหม่')
             ->assertDontSee('ข้อมูลติดต่อ')
             ->assertDontSee('คำขอของฉัน')
+            ->assertDontSee('คำขอ/อนุมัติของฉัน')
+            ->assertDontSee('ระบบที่ใช้งานบ่อย')
+            ->assertDontSee('เปิดศูนย์คำขอ')
+            ->assertDontSee('ดูศูนย์รวมระบบ')
+            ->assertDontSee('ส่งคำขออนุมัติ')
+            ->assertDontSee('เข้าระบบเดิม')
+            ->assertDontSee('system-mini-grid', false)
             ->assertSee('สวัสดี คุณสมชาย')
             ->assertSee('โปรไฟล์พนักงาน');
     }

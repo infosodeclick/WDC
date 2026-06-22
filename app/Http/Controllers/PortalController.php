@@ -30,14 +30,11 @@ class PortalController extends Controller
         abort_unless($user->canAccess('portal.dashboard.view'), 403);
 
         $itRequests = $helpdesk->queryFor($user, false);
-        $workflowRequests = $helpdesk->nonItWorkflowQueryFor($user, $user->canAccess('workflows.manage'));
 
         return view('dashboard', [
             'user' => $user,
             'pinnedAnnouncements' => Announcement::with('department')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
             'itRequests' => (clone $itRequests)->take(4)->get(),
-            'workflowRequests' => (clone $workflowRequests)->take(4)->get(),
-            'featuredSystems' => LegacySystem::where('is_featured', true)->orderBy('sort_order')->take(4)->get(),
             'itHelpdeskUrl' => $helpdesk->route(),
         ]);
     }
