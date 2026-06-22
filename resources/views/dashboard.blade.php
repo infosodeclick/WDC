@@ -78,6 +78,78 @@
     @endif
 </div>
 
+@if($user->canAccess('profile.view'))
+    <section class="panel profile-summary-panel" id="employee-profile">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Employee Profile</p>
+                <h2>โปรไฟล์พนักงาน</h2>
+            </div>
+            <span class="role-badge">{{ $user->employee_code }}</span>
+        </div>
+
+        <div class="profile-summary-grid">
+            <div>
+                <h3>{{ $user->name }}</h3>
+                <p>{{ $user->employee?->position ?? '-' }} · {{ $user->employee?->department?->name ?? '-' }}</p>
+                <dl class="detail-list compact-detail-list">
+                    <dt>รหัสพนักงาน</dt><dd>{{ $user->employee_code }}</dd>
+                    <dt>ชื่ออังกฤษ</dt><dd>{{ $user->employee?->english_name ?? '-' }}</dd>
+                    <dt>ชื่อเล่น</dt><dd>{{ $user->employee?->nickname ?? '-' }}</dd>
+                    <dt>BU / ทีม</dt><dd>{{ collect([$user->employee?->business_unit, $user->employee?->team])->filter()->join(' · ') ?: '-' }}</dd>
+                    <dt>สาขา</dt><dd>{{ $user->employee?->location ?? '-' }}</dd>
+                    <dt>เบอร์โทร</dt><dd>{{ $user->employee?->phone ?? '-' }}</dd>
+                    <dt>เบอร์ต่อ</dt><dd>{{ $user->employee?->extension_number ?? '-' }}</dd>
+                    <dt>อีเมล</dt><dd>{{ $user->email ?? '-' }}</dd>
+                    <dt>วันเริ่มงาน</dt><dd>{{ $user->employee?->start_date?->format('d/m/Y') ?? '-' }}</dd>
+                </dl>
+            </div>
+
+            <div class="profile-side-stack">
+                @if($user->canAccess('payroll.link'))
+                    <a class="profile-action-card" href="{{ route('payroll') }}" target="_blank" rel="noopener">
+                        <i class="bi bi-receipt"></i>
+                        <span>
+                            <strong>สลิปเงินเดือน</strong>
+                            <small>เปิดระบบ Payroll เดิม</small>
+                        </span>
+                    </a>
+                @endif
+
+                <div class="profile-mini-card">
+                    <strong>เอกสารของฉัน</strong>
+                    <div class="item-list">
+                        @forelse($user->employee?->documents ?? [] as $document)
+                            <a class="document-row compact-document-row" href="{{ route('documents.download', $document) }}">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <span>{{ $document->title }}<small>{{ $document->category }}</small></span>
+                                <i class="bi bi-download"></i>
+                            </a>
+                        @empty
+                            <div class="empty-state">ยังไม่มีเอกสารเฉพาะบุคคล</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="profile-mini-card">
+                    <strong>บัญชีระบบที่เกี่ยวข้อง</strong>
+                    <div class="account-table compact-account-table">
+                        @forelse($user->externalAccounts as $account)
+                            <div>
+                                <strong>{{ $account->legacySystem->name }}</strong>
+                                <span>{{ $account->login_identifier ?? 'ยังไม่ได้ระบุบัญชี' }}</span>
+                                <small>{{ $account->credential_note ?? $account->legacySystem->login_method }}</small>
+                            </div>
+                        @empty
+                            <div class="empty-state">ยังไม่ได้ผูกบัญชีระบบเดิม</div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endif
+
 <section class="panel meeting-room-panel" id="meeting-room">
     <div class="section-title">
         <h2>ห้องประชุม</h2>

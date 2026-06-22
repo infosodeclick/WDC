@@ -28,7 +28,7 @@
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
             @endif
             @if($currentUser?->canAccess('profile.view'))
-                <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
+                <a class="nav-link {{ request()->routeIs('dashboard', 'profile') ? 'active' : '' }}" href="{{ route('dashboard') }}#employee-profile"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
             @endif
             @if($currentUser?->canAccess('directory.view'))
                 <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
@@ -148,7 +148,7 @@
         </a>
     @endif
     @if($currentUser?->canAccess('profile.view'))
-        <a class="mobile-nav-item {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}">
+        <a class="mobile-nav-item {{ request()->routeIs('dashboard', 'profile') ? 'active' : '' }}" href="{{ route('dashboard') }}#employee-profile">
             <i class="bi bi-person-badge"></i>
             <span>โปรไฟล์</span>
         </a>
