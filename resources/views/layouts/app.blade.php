@@ -81,15 +81,17 @@
                 </span>
             </a>
 
-            <form class="search-box" action="{{ route('search') }}" method="get">
-                <i class="bi bi-search"></i>
-                <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ เทรนนิ่ง" aria-label="ค้นหา">
-            </form>
+            @unless(request()->routeIs('dashboard'))
+                <form class="search-box" action="{{ route('search') }}" method="get">
+                    <i class="bi bi-search"></i>
+                    <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ เทรนนิ่ง" aria-label="ค้นหา">
+                </form>
+            @endunless
 
             <div class="topbar-actions">
                 <form action="{{ route('notifications.read') }}" method="post">
                     @csrf
-                    <button class="icon-button" type="submit" title="อ่านแจ้งเตือนทั้งหมด">
+                    <button class="icon-button" type="submit" title="แจ้งเตือน" aria-label="แจ้งเตือน">
                         <i class="bi bi-bell"></i>
                         @if($unreadNotificationCount > 0)
                             <span class="notification-pill">{{ $unreadNotificationCount }}</span>

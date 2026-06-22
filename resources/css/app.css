@@ -37,6 +37,8 @@
 
 html {
     overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: auto;
 }
 
 body {
@@ -46,9 +48,11 @@ body {
         linear-gradient(135deg, rgba(255, 222, 70, .18), rgba(255, 222, 70, 0) 32%),
         var(--portal-bg);
     font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    overscroll-behavior-y: contain;
-    touch-action: manipulation;
+    min-height: 100%;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y manipulation;
     overflow-x: hidden;
+    overflow-y: auto;
 }
 
 a {

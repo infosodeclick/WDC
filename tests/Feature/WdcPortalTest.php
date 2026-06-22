@@ -29,6 +29,8 @@ class WdcPortalTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertDontSee('Dashboard')
+            ->assertDontSee('search-box', false)
             ->assertSee('สวัสดี คุณสมชาย')
             ->assertSee('ประกาศใหม่')
             ->assertSee('งาน IT ค้าง');
@@ -139,8 +141,21 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('profile'))
             ->assertOk()
-            ->assertSee('Employee Profile')
+            ->assertDontSee('Employee Profile')
             ->assertSee('EMP00125');
+    }
+
+    public function test_marking_notifications_read_does_not_flash_message(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $response = $this->post(route('notifications.read'));
+
+        $response->assertRedirect();
+        $this->assertFalse(session()->has('status'));
     }
 
     public function test_search_only_returns_modules_visible_to_current_user(): void

@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Employee Profile</p>
+        <p class="eyebrow">โปรไฟล์พนักงาน</p>
         <h1>{{ $user->name }}</h1>
         <p>{{ $user->employee?->position }} · {{ $user->employee?->department?->name }}</p>
     </div>

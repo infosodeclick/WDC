@@ -232,7 +232,7 @@ class PortalController extends Controller
     {
         Notification::where('user_id', $request->user()->id)->whereNull('read_at')->update(['read_at' => now()]);
 
-        return back()->with('status', 'อ่านแจ้งเตือนทั้งหมดแล้ว');
+        return back();
     }
 
     private function canManageDocument($user, EmployeeDocument $document): bool

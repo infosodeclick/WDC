@@ -1,13 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard | WDC Portal')
+@section('title', 'หน้าแรก | WDC Portal')
 
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Dashboard</p>
         <h1>สวัสดี คุณ{{ $user->name }}</h1>
-        <p>ภาพรวมงานสำคัญของวันนี้สำหรับ {{ $user->employee?->department?->name }}</p>
     </div>
     <div class="role-badge">{{ $user->role?->name }}</div>
 </div>
