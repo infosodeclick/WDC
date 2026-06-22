@@ -35,6 +35,10 @@
     box-sizing: border-box;
 }
 
+html {
+    overflow-x: hidden;
+}
+
 body {
     margin: 0;
     color: var(--ink);
@@ -44,6 +48,7 @@ body {
     font-family: "Segoe UI", Tahoma, Arial, sans-serif;
     overscroll-behavior-y: contain;
     touch-action: manipulation;
+    overflow-x: hidden;
 }
 
 a {
@@ -169,6 +174,7 @@ a {
 
 .portal-main {
     min-width: 0;
+    max-width: 100%;
 }
 
 .topbar {
@@ -289,8 +295,29 @@ a {
     box-shadow: 0 0 0 .22rem rgba(251, 214, 71, .28);
 }
 
+.form-control,
+.form-select,
+.btn {
+    min-height: 42px;
+}
+
 .content-wrap {
     padding: 28px;
+    max-width: 100%;
+}
+
+.table-responsive {
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th,
+.table td {
+    overflow-wrap: anywhere;
 }
 
 .mobile-bottom-nav,
@@ -1962,6 +1989,28 @@ body.directory-modal-open {
         justify-content: space-between;
     }
 
+    .button-row,
+    .quick-actions,
+    .filter-row,
+    .asset-sync-actions {
+        align-items: stretch;
+    }
+
+    .smartflow-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+        scroll-snap-type: x proximity;
+    }
+
+    .smartflow-tab {
+        flex: 0 0 auto;
+        min-width: 148px;
+        scroll-snap-align: start;
+    }
+
     .mobile-topbar-brand {
         display: flex;
     }
@@ -1991,6 +2040,15 @@ body.directory-modal-open {
     .content-wrap {
         padding-bottom: 104px;
     }
+
+    .table-responsive {
+        border: 1px solid var(--line);
+        background: #ffffff;
+    }
+
+    .table {
+        min-width: 720px;
+    }
 }
 
 @media (max-width: 680px) {
@@ -2007,6 +2065,14 @@ body.directory-modal-open {
     .search-box {
         max-width: none;
         width: 100%;
+        padding: 9px 12px;
+    }
+
+    .search-box input,
+    .form-control,
+    .form-select,
+    textarea {
+        font-size: 16px;
     }
 
     .user-chip {
@@ -2037,6 +2103,47 @@ body.directory-modal-open {
     .workflow-payload,
     .comment-form {
         grid-template-columns: 1fr;
+    }
+
+    .asset-status-form {
+        min-width: 0;
+    }
+
+    .button-row,
+    .quick-actions,
+    .filter-row,
+    .asset-sync-actions,
+    .inline-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-content: stretch;
+    }
+
+    .button-row > *,
+    .quick-actions > *,
+    .filter-row > *,
+    .asset-sync-actions > *,
+    .inline-form > * {
+        width: 100%;
+    }
+
+    .mobile-more-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mobile-bottom-nav {
+        right: max(6px, env(safe-area-inset-right));
+        bottom: max(6px, env(safe-area-inset-bottom));
+        left: max(6px, env(safe-area-inset-left));
+        min-height: 60px;
+    }
+
+    .mobile-nav-item {
+        font-size: .68rem;
+    }
+
+    .mobile-nav-item i {
+        font-size: 1.05rem;
     }
 
     .span-2,
