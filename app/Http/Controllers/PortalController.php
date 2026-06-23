@@ -11,6 +11,7 @@ use App\Models\EmployeeDocument;
 use App\Models\ItAsset;
 use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
+use App\Models\MeetingRoomBooking;
 use App\Models\Notification;
 use App\Models\WorkflowRequest;
 use App\Services\ItHelpdeskWorkflow;
@@ -121,13 +122,56 @@ class PortalController extends Controller
 
     public function meetingRooms(Request $request): View
     {
-        abort_unless($request->user()->canAccess('meeting_rooms.view'), 403);
+        $user = $request->user()->loadMissing('role.permissions', 'permissionOverrides');
+
+        abort_unless($user->canAccess('meeting_rooms.view'), 403);
+
+        $bookingQuery = MeetingRoomBooking::with('user')->latest('start_at');
+
+        if (! $user->canSeeAllData()) {
+            $bookingQuery->where('user_id', $user->id);
+        }
 
         return view('meeting-rooms.index', [
             'sheetUrl' => config('services.meeting_rooms.sheet_url'),
             'sheetEmbedUrl' => config('services.meeting_rooms.sheet_embed_url'),
             'bookingUrl' => config('services.meeting_rooms.booking_url'),
+            'bookings' => $bookingQuery->take(10)->get(),
         ]);
+    }
+
+    public function storeMeetingRoomBooking(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canAccess('meeting_rooms.view'), 403);
+
+        $data = $request->validate([
+            'room_name' => ['required', 'string', 'max:120'],
+            'title' => ['required', 'string', 'max:160'],
+            'start_at' => ['required', 'date'],
+            'end_at' => ['required', 'date', 'after:start_at'],
+            'attendees' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $booking = MeetingRoomBooking::create([
+            ...$data,
+            'user_id' => $request->user()->id,
+            'status' => 'submitted',
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'create_meeting_room_booking',
+            'subject_type' => MeetingRoomBooking::class,
+            'subject_id' => $booking->id,
+            'description' => "Booked {$booking->room_name}: {$booking->title}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return redirect()
+            ->route('meeting-rooms.index')
+            ->with('status', 'ส่งคำขอจองห้องประชุมแล้ว');
     }
 
     public function downloadDocument(EmployeeDocument $document, Request $request)

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Complaint;
 use App\Models\ItAsset;
+use App\Models\MeetingRoomBooking;
 use App\Models\Permission;
 use App\Models\Ticket;
 use App\Models\User;
@@ -130,9 +131,13 @@ class WdcPortalTest extends TestCase
             ->assertSee('Google Calendar')
             ->assertSee('ตารางจองห้องประชุม')
             ->assertSee('จองห้องประชุม')
+            ->assertSee('meetingRoomBookingModal', false)
+            ->assertSee('room_name', false)
+            ->assertSee('start_at', false)
+            ->assertSee('end_at', false)
             ->assertSee('calendar.google.com/calendar/u/0/embed', false)
             ->assertSee('641a219d5e8a0c60b9107fff5f155eba12e1d82d03809d7df47bc8aa656ea1e6', false)
-            ->assertSee('calendar.google.com/calendar/u/0/r/eventedit', false);
+            ->assertDontSee('calendar.google.com/calendar/u/0/r/eventedit', false);
     }
 
     public function test_meeting_room_page_respects_permission_override(): void
@@ -153,6 +158,35 @@ class WdcPortalTest extends TestCase
             ->assertDontSee(route('meeting-rooms.index'), false);
 
         $this->get(route('meeting-rooms.index'))->assertForbidden();
+    }
+
+    public function test_employee_can_submit_meeting_room_booking_in_modal_flow(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $this->post(route('meeting-rooms.store'), [
+            'room_name' => 'ห้องประชุมใหญ่',
+            'title' => 'ประชุมทดสอบระบบจอง',
+            'start_at' => now()->addDay()->format('Y-m-d H:i:s'),
+            'end_at' => now()->addDay()->addHour()->format('Y-m-d H:i:s'),
+            'attendees' => 8,
+            'notes' => 'ขอใช้จอประชุม',
+        ])->assertRedirect(route('meeting-rooms.index'));
+
+        $booking = MeetingRoomBooking::where('title', 'ประชุมทดสอบระบบจอง')->firstOrFail();
+
+        $this->assertSame($employee->id, $booking->user_id);
+        $this->assertSame('ห้องประชุมใหญ่', $booking->room_name);
+        $this->assertSame('submitted', $booking->status);
+
+        $this->get(route('meeting-rooms.index'))
+            ->assertOk()
+            ->assertSee('ประชุมทดสอบระบบจอง')
+            ->assertSee('ห้องประชุมใหญ่')
+            ->assertSee('รอซิงค์');
     }
 
     public function test_mobile_navigation_respects_user_permissions(): void
