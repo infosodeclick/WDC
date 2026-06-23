@@ -438,9 +438,11 @@ class WdcPortalTest extends TestCase
         $this->get(route('directory.index'))
             ->assertOk()
             ->assertSeeInOrder(['Newest WDC Member', 'Aiyada Supso'])
+            ->assertSee('Newest WDC Member (ใหม่)')
             ->assertSee('new-hire-badge', false)
             ->assertSee('directory-card-detail', false)
             ->assertSee('directory-modal-source', false)
+            ->assertSee('directory-modal-highlight-list', false)
             ->assertDontSee('mini-detail-list', false);
     }
 

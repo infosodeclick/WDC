@@ -1,6 +1,6 @@
 @php($employeeCode = $entry->employeeCode())
 @php($deskPhone = $entry->extension_number)
-@php($subtitleText = collect([$entry->thai_name, $entry->nickname ? '('.$entry->nickname.')' : null])->filter()->join(' '))
+@php($modalDisplayName = $entry->nickname ? "{$entry->display_name} ({$entry->nickname})" : $entry->display_name)
 @php($isNewHire = $entry->isNewHireThisMonth())
 
 <article class="directory-card directory-card-with-photo {{ $isNewHire ? 'is-new-hire' : '' }}" data-directory-card>
@@ -55,23 +55,25 @@
                     <span class="new-hire-badge modal-new-hire-badge">พนักงานใหม่</span>
                 @endif
                 <h2 class="directory-name-line">
-                    <span>{{ $entry->display_name }}</span>
-                    <button class="copy-button" type="button" data-copy="{{ $entry->display_name }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>
+                    <span>{{ $modalDisplayName }}</span>
+                    <button class="copy-button" type="button" data-copy="{{ $modalDisplayName }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>
                 </h2>
-                @if($subtitleText)
-                    <p>{{ $subtitleText }}</p>
+                @if($entry->thai_name)
+                    <p class="directory-modal-thai-name">{{ $entry->thai_name }}</p>
                 @endif
+                <dl class="directory-modal-highlight-list">
+                    <dt>ตำแหน่ง</dt>
+                    <dd>{{ $entry->position ?? '-' }}</dd>
+                    <dt>แผนก/BU</dt>
+                    <dd>{{ $entry->department ?? '-' }}</dd>
+                </dl>
             </div>
         </div>
         <dl class="detail-list directory-modal-details">
             <dt>รหัสพนักงาน</dt>
             <dd><span>{{ $employeeCode ?? '-' }}</span></dd>
-            <dt>แผนก/BU</dt>
-            <dd><span>{{ $entry->department ?? '-' }}</span></dd>
             <dt>ทีม</dt>
             <dd><span>{{ $entry->team ?? '-' }}</span></dd>
-            <dt>ตำแหน่ง</dt>
-            <dd><span>{{ $entry->position ?? '-' }}</span></dd>
             <dt>สาขา</dt>
             <dd><span>{{ $entry->location ?? '-' }}</span></dd>
             <dt>อีเมล</dt>
