@@ -1998,6 +1998,142 @@ body.directory-modal-open {
     margin-left: auto;
 }
 
+.announcement-profile-row .bi-chevron-right,
+.document-row .bi-chevron-right {
+    margin-left: auto;
+}
+
+.profile-contact-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+.profile-contact-form label {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+}
+
+.document-category-grid {
+    display: grid;
+    gap: 18px;
+}
+
+.announcement-detail-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.announcement-body {
+    color: var(--ink);
+    font-size: 1.02rem;
+    line-height: 1.75;
+}
+
+.announcement-attachments {
+    display: grid;
+    gap: 12px;
+}
+
+.attachment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.attachment-card {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf4;
+    color: var(--ink);
+}
+
+.attachment-card img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #eef2f7;
+}
+
+.attachment-card > i {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--wdc-yellow-1);
+    color: var(--wdc-black);
+    font-size: 1.55rem;
+}
+
+.attachment-card span,
+.attachment-card small {
+    display: block;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.announcement-entry-modal .modal-body {
+    padding: 0;
+}
+
+.announcement-popup-slide {
+    display: grid;
+    gap: 14px;
+    min-height: 280px;
+    padding: 26px 64px 32px;
+}
+
+.announcement-popup-slide h3 {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 850;
+}
+
+.announcement-popup-slide p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.announcement-entry-modal .carousel-control-prev-icon,
+.announcement-entry-modal .carousel-control-next-icon {
+    filter: invert(1);
+}
+
+.placeholder-link-panel {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+}
+
+.placeholder-link-panel > i {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--wdc-yellow-2);
+    color: var(--wdc-black);
+    font-size: 1.7rem;
+}
+
+.placeholder-link-panel h1 {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 850;
+}
+
 .video-card {
     display: grid;
     grid-template-columns: 96px minmax(0, 1fr);
@@ -2525,6 +2661,16 @@ body.directory-modal-open {
     .asset-sync-actions > *,
     .inline-form > * {
         width: 100%;
+    }
+
+    .profile-contact-form,
+    .attachment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .announcement-popup-slide {
+        min-height: 260px;
+        padding: 22px 42px 28px;
     }
 
     .mobile-more-grid {

@@ -21,8 +21,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
+    Route::patch('/profile/contact', [PortalController::class, 'updateProfileContact'])->name('profile.contact.update');
     Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index');
     Route::get('/announcements', [PortalController::class, 'announcements'])->name('announcements.index');
+    Route::get('/announcements/files/{file}', [PortalController::class, 'announcementFile'])->name('announcements.files.show');
+    Route::get('/announcements/{announcement}', [PortalController::class, 'showAnnouncement'])->name('announcements.show');
     Route::get('/knowledge', [PortalController::class, 'knowledge'])->name('knowledge.index');
     Route::get('/documents', [PortalController::class, 'documents'])->name('documents.index');
     Route::get('/documents/{document}/download', [PortalController::class, 'downloadDocument'])->name('documents.download');
@@ -30,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/meeting-rooms', [PortalController::class, 'storeMeetingRoomBooking'])->name('meeting-rooms.store');
     Route::patch('/meeting-rooms/{booking}/cancel', [PortalController::class, 'cancelMeetingRoomBooking'])->name('meeting-rooms.cancel');
     Route::get('/payroll', [PortalController::class, 'payroll'])->name('payroll');
+    Route::get('/time-attendance', [PortalController::class, 'timeAttendance'])->name('time-attendance');
     Route::get('/search', [PortalController::class, 'search'])->name('search');
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
 
@@ -56,6 +60,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
     Route::post('/hr/announcements', [HrController::class, 'storeAnnouncement'])->name('hr.announcements.store');
+    Route::patch('/hr/profile-requests/{profileChangeRequest}', [HrController::class, 'reviewProfileChangeRequest'])->name('hr.profile-requests.review');
     Route::patch('/hr/employees/{user}/status', [HrController::class, 'updateEmployeeStatus'])->name('hr.employees.status');
 
     Route::get('/it', [TicketController::class, 'itDashboard'])->name('it.index');

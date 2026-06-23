@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Announcement;
+use App\Models\AnnouncementFile;
 use App\Models\Complaint;
 use App\Models\Department;
 use App\Models\Notification;
+use App\Models\ProfileChangeRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,8 +41,11 @@ class HrController extends Controller
         return view('hr.index', [
             'employees' => $employees->get(),
             'departments' => Department::orderBy('name')->get(),
-            'announcements' => Announcement::with('department')->latest()->take(8)->get(),
+            'announcements' => Announcement::with('files')->latest()->take(8)->get(),
             'complaints' => $complaints->get(),
+            'profileChangeRequests' => $actor->canAccess('hr.employees.manage')
+                ? ProfileChangeRequest::with('user.employee.department')->where('status', 'pending')->latest()->take(10)->get()
+                : collect(),
             'canManageAnnouncements' => $actor->canAccess('hr.announcements.manage'),
             'canManageEmployees' => $actor->canAccess('hr.employees.manage'),
             'canReviewComplaints' => $actor->canAccess('complaints.review'),
@@ -52,29 +57,50 @@ class HrController extends Controller
         abort_unless($request->user()->canAccess('hr.announcements.manage'), 403);
 
         $data = $request->validate([
+            'announcement_no' => ['nullable', 'string', 'max:80'],
             'title' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'in:นโยบาย,ประกาศ'],
+            'category' => ['required', 'in:นโยบาย,ประกาศ,กิจกรรม'],
             'body' => ['required', 'string', 'max:5000'],
-            'department_id' => ['nullable', 'exists:departments,id'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:10240'],
             'is_pinned' => ['nullable', 'boolean'],
             'is_urgent' => ['nullable', 'boolean'],
+            'popup_enabled' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
         ]);
 
+        $announcementData = collect($data)->except('files')->all();
+
         $announcement = Announcement::create([
-            ...$data,
+            ...$announcementData,
+            'announcement_no' => ($data['announcement_no'] ?? null) ?: $this->nextAnnouncementNo(),
             'created_by' => $request->user()->id,
+            'department_id' => null,
             'is_pinned' => $request->boolean('is_pinned'),
             'is_urgent' => $request->boolean('is_urgent'),
+            'popup_enabled' => $request->boolean('popup_enabled'),
             'published_at' => now(),
         ]);
+
+        foreach ($request->file('files', []) as $file) {
+            $path = $file->store('announcement-files');
+            $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'file');
+
+            AnnouncementFile::create([
+                'announcement_id' => $announcement->id,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $extension,
+                'file_size_kb' => (int) ceil($file->getSize() / 1024),
+                'file_path' => $path,
+            ]);
+        }
 
         User::where('is_active', true)->get()->each(fn (User $user) => Notification::create([
             'user_id' => $user->id,
             'type' => 'announcement',
             'title' => 'ประกาศใหม่',
             'body' => $announcement->title,
-            'url' => route('announcements.index'),
+            'url' => route('announcements.show', $announcement),
         ]));
 
         ActivityLog::create([
@@ -88,6 +114,52 @@ class HrController extends Controller
         ]);
 
         return back()->with('status', 'สร้างประกาศเรียบร้อยแล้ว');
+    }
+
+    public function reviewProfileChangeRequest(ProfileChangeRequest $profileChangeRequest, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($actor->canAccess('hr.employees.manage'), 403);
+        abort_unless($profileChangeRequest->status === 'pending', 422);
+
+        $data = $request->validate([
+            'status' => ['required', 'in:approved,rejected'],
+            'review_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $profileChangeRequest->update([
+            'status' => $data['status'],
+            'review_note' => $data['review_note'] ?? null,
+            'reviewed_by' => $actor->id,
+            'reviewed_at' => now(),
+        ]);
+
+        if ($data['status'] === 'approved' && $profileChangeRequest->field === 'phone') {
+            $profileChangeRequest->user->employee()->update([
+                'phone' => $profileChangeRequest->requested_value,
+            ]);
+        }
+
+        Notification::create([
+            'user_id' => $profileChangeRequest->user_id,
+            'type' => 'profile_change',
+            'title' => $data['status'] === 'approved' ? 'HR อนุมัติการแก้เบอร์โทรแล้ว' : 'HR ไม่อนุมัติการแก้เบอร์โทร',
+            'body' => $profileChangeRequest->requested_value,
+            'url' => route('profile'),
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $actor->id,
+            'action' => 'review_profile_change',
+            'subject_type' => ProfileChangeRequest::class,
+            'subject_id' => $profileChangeRequest->id,
+            'description' => "Reviewed {$profileChangeRequest->field}: {$data['status']}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return back()->with('status', 'บันทึกผลอนุมัติข้อมูลพนักงานแล้ว');
     }
 
     public function updateEmployeeStatus(User $user, Request $request): RedirectResponse
@@ -115,5 +187,10 @@ class HrController extends Controller
         ]);
 
         return back()->with('status', 'อัปเดตสถานะพนักงานแล้ว');
+    }
+
+    private function nextAnnouncementNo(): string
+    {
+        return 'WDC-ANN-'.now()->format('Ymd-His');
     }
 }

@@ -14,26 +14,22 @@
 @if($canManageAnnouncements)
     <section class="panel">
         <h2>สร้างประกาศ</h2>
-        <form method="post" action="{{ route('hr.announcements.store') }}" class="form-grid">
+        <form method="post" action="{{ route('hr.announcements.store') }}" class="form-grid" enctype="multipart/form-data">
             @csrf
+            <label><span>เลขที่ประกาศ</span><input class="form-control" name="announcement_no" placeholder="เช่น HR-2026-001"></label>
             <label class="span-2"><span>หัวข้อ</span><input class="form-control" name="title" required></label>
             <label><span>หมวด</span>
                 <select class="form-select" name="category" required>
                     <option>ประกาศ</option>
+                    <option>กิจกรรม</option>
                     <option>นโยบาย</option>
                 </select>
             </label>
-            <label><span>แผนก</span>
-                <select class="form-select" name="department_id">
-                    <option value="">ทุกแผนก</option>
-                    @foreach($departments as $department)
-                        <option value="{{ $department->id }}">{{ $department->name }}</option>
-                    @endforeach
-                </select>
-            </label>
             <label class="span-3"><span>รายละเอียด</span><textarea class="form-control" name="body" rows="3" required></textarea></label>
+            <label class="span-2"><span>อัปโหลดไฟล์ PDF / JPG / PNG / ไฟล์ที่เกี่ยวข้อง</span><input class="form-control" type="file" name="files[]" multiple></label>
             <label class="form-check"><input class="form-check-input" type="checkbox" name="is_pinned" value="1"><span class="form-check-label">ปักหมุด</span></label>
             <label class="form-check"><input class="form-check-input" type="checkbox" name="is_urgent" value="1"><span class="form-check-label">ด่วน</span></label>
+            <label class="form-check"><input class="form-check-input" type="checkbox" name="popup_enabled" value="1"><span class="form-check-label">แสดง Popup ตอนเข้าใช้งานครั้งแรก</span></label>
             <button class="btn btn-primary" type="submit"><i class="bi bi-megaphone"></i> สร้างประกาศ</button>
         </form>
     </section>
@@ -42,6 +38,32 @@
 <div class="content-grid">
     @if($canManageEmployees)
         <section class="panel">
+            <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
+            <div class="item-list mb-4">
+                @forelse($profileChangeRequests as $profileRequest)
+                    <div class="result-row">
+                        <strong>{{ $profileRequest->user?->employee_code }} · {{ $profileRequest->user?->name }}</strong>
+                        <small>ขอแก้ {{ $profileRequest->field }} จาก {{ $profileRequest->current_value ?: '-' }} เป็น {{ $profileRequest->requested_value ?: '-' }}</small>
+                        <div class="button-row">
+                            <form method="post" action="{{ route('hr.profile-requests.review', $profileRequest) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="status" value="approved">
+                                <button class="btn btn-sm btn-primary" type="submit">อนุมัติ</button>
+                            </form>
+                            <form method="post" action="{{ route('hr.profile-requests.review', $profileRequest) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="status" value="rejected">
+                                <button class="btn btn-sm btn-outline-primary" type="submit">ไม่อนุมัติ</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state">ไม่มีคำขอแก้ข้อมูลที่รออนุมัติ</div>
+                @endforelse
+            </div>
+
             <h2>พนักงาน</h2>
             <div class="table-responsive">
                 <table class="table align-middle">

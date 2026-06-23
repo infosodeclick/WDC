@@ -8,6 +8,7 @@ use App\Models\AssetCategory;
 use App\Models\AssetInspectionDocument;
 use App\Models\AssetLocation;
 use App\Models\ItAsset;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -73,6 +74,7 @@ class AssetController extends Controller
             'totalValue' => (clone $baseAssetQuery)->sum('price'),
             'canManageAssets' => $user->canManageItAssets(),
             'canExportAssets' => $user->canExportItAssets(),
+            'manageableUsers' => $user->canManageItAssets() ? User::with('employee.department')->where('is_active', true)->orderBy('name')->get() : collect(),
         ]);
     }
 
@@ -85,6 +87,7 @@ class AssetController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'asset_category_id' => ['nullable', 'exists:asset_categories,id'],
             'asset_location_id' => ['nullable', 'exists:asset_locations,id'],
+            'owner_id' => ['nullable', 'exists:users,id'],
             'company' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
             'owner_name' => ['nullable', 'string', 'max:255'],
@@ -99,9 +102,13 @@ class AssetController extends Controller
             'notes' => ['nullable', 'string', 'max:3000'],
         ]);
 
+        $owner = ! empty($data['owner_id']) ? User::with('employee.department')->find($data['owner_id']) : null;
+
         $asset = ItAsset::create([
             ...$data,
             'company' => $data['company'] ?? 'WDC',
+            'owner_name' => $owner?->name ?? ($data['owner_name'] ?? null),
+            'department' => $owner?->employee?->department?->name ?? ($data['department'] ?? null),
             'price' => $data['price'] ?? 0,
             'book_value' => $data['book_value'] ?? ($data['price'] ?? 0),
         ]);

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Announcement extends Model
@@ -14,11 +15,13 @@ class Announcement extends Model
     protected $fillable = [
         'created_by',
         'department_id',
+        'announcement_no',
         'category',
         'title',
         'body',
         'is_pinned',
         'is_urgent',
+        'popup_enabled',
         'published_at',
         'expires_at',
     ];
@@ -28,6 +31,7 @@ class Announcement extends Model
         return [
             'is_pinned' => 'boolean',
             'is_urgent' => 'boolean',
+            'popup_enabled' => 'boolean',
             'published_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
@@ -46,5 +50,15 @@ class Announcement extends Model
     public function files(): HasMany
     {
         return $this->hasMany(AnnouncementFile::class);
+    }
+
+    public function reads(): HasMany
+    {
+        return $this->hasMany(AnnouncementRead::class);
+    }
+
+    public function readByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'announcement_reads')->withPivot('read_at')->withTimestamps();
     }
 }

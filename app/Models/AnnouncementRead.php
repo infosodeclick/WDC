@@ -6,19 +6,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class AnnouncementFile extends Model
+class AnnouncementRead extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['announcement_id', 'file_name', 'file_type', 'file_size_kb', 'file_path'];
+    protected $fillable = ['announcement_id', 'user_id', 'read_at'];
+
+    protected function casts(): array
+    {
+        return ['read_at' => 'datetime'];
+    }
 
     public function announcement(): BelongsTo
     {
         return $this->belongsTo(Announcement::class);
     }
 
-    public function isImage(): bool
+    public function user(): BelongsTo
     {
-        return in_array(strtolower($this->file_type), ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
+        return $this->belongsTo(User::class);
     }
 }

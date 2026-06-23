@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
@@ -74,6 +75,16 @@ class User extends Authenticatable
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
+    }
+
+    public function profileChangeRequests(): HasMany
+    {
+        return $this->hasMany(ProfileChangeRequest::class);
+    }
+
+    public function itAssets(): HasMany
+    {
+        return $this->hasMany(ItAsset::class, 'owner_id');
     }
 
     public function favoriteWorkflowTemplates(): BelongsToMany

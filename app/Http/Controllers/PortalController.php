@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Announcement;
+use App\Models\AnnouncementFile;
+use App\Models\AnnouncementRead;
 use App\Models\Complaint;
 use App\Models\Employee;
 use App\Models\EmployeeDirectoryEntry;
@@ -13,12 +15,15 @@ use App\Models\KnowledgeArticle;
 use App\Models\KnowledgeVideo;
 use App\Models\MeetingRoomBooking;
 use App\Models\Notification;
+use App\Models\ProfileChangeRequest;
+use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Services\GoogleCalendarService;
 use App\Services\ItHelpdeskWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 use Illuminate\View\View;
@@ -32,34 +37,111 @@ class PortalController extends Controller
         abort_unless($user->canAccess('portal.dashboard.view'), 403);
 
         $itRequests = $helpdesk->queryFor($user, false);
+        $popupAnnouncements = collect();
+        $showAnnouncementPopup = false;
+
+        if (! $request->session()->has('announcement_popup_seen')) {
+            $popupAnnouncements = $this->activeAnnouncementsQuery()
+                ->where(function ($query) {
+                    $query->where('popup_enabled', true)
+                        ->orWhere('is_urgent', true)
+                        ->orWhere('category', 'กิจกรรม');
+                })
+                ->with('files')
+                ->latest('published_at')
+                ->take(5)
+                ->get();
+
+            $showAnnouncementPopup = $popupAnnouncements->isNotEmpty();
+            $request->session()->put('announcement_popup_seen', true);
+        }
 
         return view('dashboard', [
             'user' => $user,
-            'pinnedAnnouncements' => Announcement::with('department')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
+            'pinnedAnnouncements' => $this->activeAnnouncementsQuery()->with('files')->where('is_pinned', true)->latest('published_at')->take(4)->get(),
             'itRequests' => (clone $itRequests)->take(4)->get(),
             'itHelpdeskUrl' => $helpdesk->route(),
+            'popupAnnouncements' => $popupAnnouncements,
+            'showAnnouncementPopup' => $showAnnouncementPopup,
         ]);
     }
 
     public function profile(Request $request): View
     {
-        abort_unless($request->user()->canAccess('profile.view'), 403);
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department', 'employee.documents', 'itAssets.category', 'itAssets.location');
+
+        abort_unless($user->canAccess('profile.view'), 403);
 
         return view('profile.show', [
-            'user' => $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department', 'employee.documents'),
+            'user' => $user,
+            'profileAnnouncements' => $this->profileAnnouncementsFor($user),
+            'unreadAnnouncementCount' => $this->unreadAnnouncementCountFor($user),
+            'pendingProfileChange' => ProfileChangeRequest::where('user_id', $user->id)
+                ->where('field', 'phone')
+                ->where('status', 'pending')
+                ->latest()
+                ->first(),
+            'assets' => $user->itAssets()->with('category', 'location')->latest()->get(),
         ]);
+    }
+
+    public function updateProfileContact(Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('employee');
+
+        abort_unless($user->canAccess('profile.view'), 403);
+
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'max:50'],
+        ]);
+
+        $currentPhone = $user->employee?->phone;
+        $requestedPhone = trim($data['phone']);
+
+        if ($requestedPhone === (string) $currentPhone) {
+            return back()->with('status', 'เบอร์โทรนี้ตรงกับข้อมูลปัจจุบันแล้ว');
+        }
+
+        $requestRow = ProfileChangeRequest::create([
+            'user_id' => $user->id,
+            'field' => 'phone',
+            'current_value' => $currentPhone,
+            'requested_value' => $requestedPhone,
+            'status' => 'pending',
+        ]);
+
+        User::with('role.permissions', 'permissionOverrides')
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $hrUser) => $hrUser->canAccessAny(['hr.employees.manage', 'hr.portal.view']))
+            ->each(fn (User $hrUser) => Notification::create([
+                'user_id' => $hrUser->id,
+                'type' => 'profile_change',
+                'title' => 'รออนุมัติแก้เบอร์โทร',
+                'body' => "{$user->employee_code} {$user->name} ขอแก้เบอร์โทรเป็น {$requestedPhone}",
+                'url' => route('hr.index'),
+            ]));
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'request_profile_phone_change',
+            'subject_type' => ProfileChangeRequest::class,
+            'subject_id' => $requestRow->id,
+            'description' => "Requested phone change from {$currentPhone} to {$requestedPhone}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return back()->with('status', 'ส่งคำขอแก้เบอร์โทรให้ HR อนุมัติแล้ว');
     }
 
     public function announcements(Request $request): View
     {
         abort_unless($request->user()->canAccess('announcements.view'), 403);
 
-        $categories = collect(['นโยบาย', 'ประกาศ']);
+        $categories = collect(['นโยบาย', 'ประกาศ', 'กิจกรรม']);
         $activeCategory = $request->string('category')->toString();
-        $query = Announcement::with('department', 'files', 'creator')
-            ->where(function ($query) {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>=', now());
-            });
+        $query = $this->activeAnnouncementsQuery()->with('files', 'creator');
 
         if ($activeCategory !== '' && $categories->contains($activeCategory)) {
             $query->where('category', $activeCategory);
@@ -68,9 +150,42 @@ class PortalController extends Controller
         }
 
         return view('announcements.index', [
-            'announcements' => $query->orderByDesc('is_pinned')->latest('published_at')->paginate(10)->withQueryString(),
+            'announcements' => $query->orderByDesc('is_pinned')->orderByDesc('is_urgent')->latest('published_at')->paginate(10)->withQueryString(),
             'categories' => $categories,
             'activeCategory' => $activeCategory,
+        ]);
+    }
+
+    public function showAnnouncement(Announcement $announcement, Request $request): View
+    {
+        abort_unless($request->user()->canAccess('announcements.view'), 403);
+        abort_unless($announcement->expires_at === null || $announcement->expires_at->isFuture(), 404);
+
+        AnnouncementRead::updateOrCreate(
+            ['announcement_id' => $announcement->id, 'user_id' => $request->user()->id],
+            ['read_at' => now()],
+        );
+
+        return view('announcements.show', [
+            'announcement' => $announcement->load('files', 'creator'),
+        ]);
+    }
+
+    public function announcementFile(AnnouncementFile $file, Request $request)
+    {
+        abort_unless($request->user()->canAccess('announcements.view'), 403);
+
+        if ($file->file_path && Storage::disk('local')->exists($file->file_path)) {
+            $disposition = $file->isImage() || strtolower($file->file_type) === 'pdf' ? 'inline' : 'attachment';
+
+            return Storage::disk('local')->response($file->file_path, $file->file_name, [], $disposition);
+        }
+
+        $content = "WDC Announcement Attachment\n\nFile: {$file->file_name}\nType: {$file->file_type}\n\nThis placeholder proves the attachment link works.";
+
+        return Response::make($content, 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Disposition' => 'inline; filename="'.$file->file_name.'.txt"',
         ]);
     }
 
@@ -118,8 +233,11 @@ class PortalController extends Controller
             });
         }
 
+        $documents = $documents->latest()->get();
+
         return view('documents.index', [
-            'documents' => $documents->latest()->get(),
+            'documents' => $documents,
+            'documentGroups' => $documents->groupBy(fn (EmployeeDocument $document) => Str::before($document->category, '/')),
         ]);
     }
 
@@ -270,11 +388,26 @@ class PortalController extends Controller
         ]);
     }
 
-    public function payroll(): RedirectResponse
+    public function payroll(): View
     {
         abort_unless(request()->user()?->canAccess('payroll.link'), 403);
 
-        return redirect()->away(config('services.payroll.url', 'https://example.com/payroll'));
+        return view('profile.external-link-placeholder', [
+            'title' => 'สลิปเงินเดือน',
+            'description' => 'เตรียมเชื่อมลิงก์ระบบ Payroll เดิม ภายหลังสามารถใส่ URL จริงในระบบได้',
+            'icon' => 'bi-receipt',
+        ]);
+    }
+
+    public function timeAttendance(): View
+    {
+        abort_unless(request()->user()?->canAccess('profile.view'), 403);
+
+        return view('profile.external-link-placeholder', [
+            'title' => 'ลงเวลางาน',
+            'description' => 'เตรียมเชื่อมลิงก์ระบบลงเวลางาน ภายหลังสามารถใส่ URL จริงในระบบได้',
+            'icon' => 'bi-clock-history',
+        ]);
     }
 
     public function search(Request $request): View
@@ -352,5 +485,35 @@ class PortalController extends Controller
         }
 
         return false;
+    }
+
+    private function activeAnnouncementsQuery()
+    {
+        return Announcement::query()
+            ->where(function ($query) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>=', now());
+            });
+    }
+
+    private function profileAnnouncementsFor($user)
+    {
+        return $this->activeAnnouncementsQuery()
+            ->with('files')
+            ->where(function ($query) use ($user) {
+                $query->where('is_urgent', true)
+                    ->orWhereDoesntHave('reads', fn ($readQuery) => $readQuery->where('user_id', $user->id));
+            })
+            ->orderByDesc('is_urgent')
+            ->orderByDesc('is_pinned')
+            ->latest('published_at')
+            ->take(8)
+            ->get();
+    }
+
+    private function unreadAnnouncementCountFor($user): int
+    {
+        return $this->activeAnnouncementsQuery()
+            ->whereDoesntHave('reads', fn ($readQuery) => $readQuery->where('user_id', $user->id))
+            ->count();
     }
 }

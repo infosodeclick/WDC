@@ -49,7 +49,8 @@
                         </div>
                         <h3>{{ $announcement->title }}</h3>
                         <p>{{ $announcement->body }}</p>
-                        <small>{{ $announcement->department?->name ?? 'ทุกแผนก' }}</small>
+                        <small>{{ $announcement->announcement_no ?? 'ไม่ระบุเลขที่' }}</small>
+                        <a class="btn btn-sm btn-outline-primary" href="{{ route('announcements.show', $announcement) }}">ดูประกาศ</a>
                     </article>
                 @endforeach
             </div>
@@ -76,5 +77,49 @@
         </section>
     @endif
 </div>
+
+@if($showAnnouncementPopup)
+    <div class="modal fade" id="announcementEntryModal" tabindex="-1" aria-labelledby="announcementEntryModalLabel" aria-hidden="true" data-auto-open-announcement-modal>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content announcement-entry-modal">
+                <div class="modal-header">
+                    <div>
+                        <p class="eyebrow mb-1">ประกาศและกิจกรรม</p>
+                        <h2 class="modal-title fs-4" id="announcementEntryModalLabel">ข่าวสำคัญล่าสุด</h2>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="announcementEntryCarousel" class="carousel slide" data-bs-ride="false">
+                        <div class="carousel-inner">
+                            @foreach($popupAnnouncements as $announcement)
+                                <div class="carousel-item {{ $loop->first ? 'active' : '' }}">
+                                    <article class="announcement-popup-slide">
+                                        <div class="meta-row">
+                                            <span class="tag">{{ $announcement->category }}</span>
+                                            @if($announcement->is_urgent)<span class="tag tag-danger">ด่วน</span>@endif
+                                            @if($announcement->is_pinned)<span class="tag">ปักหมุด</span>@endif
+                                        </div>
+                                        <h3>{{ $announcement->title }}</h3>
+                                        <p>{{ $announcement->body }}</p>
+                                        <a class="btn btn-primary" href="{{ route('announcements.show', $announcement) }}">อ่านประกาศ</a>
+                                    </article>
+                                </div>
+                            @endforeach
+                        </div>
+                        @if($popupAnnouncements->count() > 1)
+                            <button class="carousel-control-prev" type="button" data-bs-target="#announcementEntryCarousel" data-bs-slide="prev" aria-label="ก่อนหน้า">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#announcementEntryCarousel" data-bs-slide="next" aria-label="ถัดไป">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
 @endsection

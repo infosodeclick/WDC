@@ -108,3 +108,13 @@ if (smartflowTemplateSelect && smartflowFieldsets.length > 0) {
     smartflowTemplateSelect.addEventListener('change', syncSmartflowFieldsets);
     syncSmartflowFieldsets();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const announcementModal = document.querySelector('[data-auto-open-announcement-modal]');
+
+    if (! announcementModal || ! window.bootstrap?.Modal) {
+        return;
+    }
+
+    window.bootstrap.Modal.getOrCreateInstance(announcementModal).show();
+});

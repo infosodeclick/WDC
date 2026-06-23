@@ -145,6 +145,14 @@
             <label>แผนก
                 <input class="form-control" name="department" placeholder="IT, Accounting, Warehouse">
             </label>
+            <label>ผูกกับพนักงาน
+                <select class="form-select" name="owner_id">
+                    <option value="">ไม่ระบุ</option>
+                    @foreach($manageableUsers as $managedUser)
+                        <option value="{{ $managedUser->id }}">{{ $managedUser->employee_code }} - {{ $managedUser->name }}</option>
+                    @endforeach
+                </select>
+            </label>
             <label>ผู้ถือครอง
                 <input class="form-control" name="owner_name" placeholder="ชื่อพนักงานหรือทีม">
             </label>

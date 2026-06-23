@@ -158,43 +158,53 @@ class DatabaseSeeder extends Seeder
 
         $announcements = collect([
             [
+                'announcement_no' => 'IT-2026-001',
                 'category' => 'ประกาศ',
                 'title' => 'ปรับปรุงระบบ ERP คืนวันศุกร์นี้',
                 'body' => 'ระบบ ERP จะปิดปรับปรุงเวลา 22:00-23:30 น. กรุณาบันทึกงานก่อนเวลาดังกล่าว',
                 'is_pinned' => true,
                 'is_urgent' => true,
+                'popup_enabled' => true,
                 'department_id' => $departments['IT']->id,
             ],
             [
+                'announcement_no' => 'HR-2026-001',
                 'category' => 'ประกาศ',
                 'title' => 'ประกาศวันหยุดประจำไตรมาส',
                 'body' => 'บริษัทประกาศวันหยุดเพิ่มเติมสำหรับกิจกรรมประจำปี สามารถดาวน์โหลดปฏิทินได้จากไฟล์แนบ',
                 'is_pinned' => true,
                 'is_urgent' => false,
+                'popup_enabled' => true,
                 'department_id' => null,
             ],
             [
+                'announcement_no' => 'POL-2026-001',
                 'category' => 'นโยบาย',
                 'title' => 'นโยบายการใช้งานอีเมลบริษัท',
                 'body' => 'ห้ามส่งข้อมูลลูกค้าออกนอกระบบโดยไม่ได้รับอนุญาต และต้องเปิดใช้งาน MFA สำหรับบัญชีสำคัญ',
                 'is_pinned' => false,
                 'is_urgent' => false,
+                'popup_enabled' => false,
                 'department_id' => null,
             ],
             [
-                'category' => 'ประกาศ',
+                'announcement_no' => 'HR-ACT-2026-001',
+                'category' => 'กิจกรรม',
                 'title' => 'กิจกรรมอบรมความปลอดภัยในที่ทำงาน',
                 'body' => 'พนักงานทุกคนลงทะเบียนเข้าร่วมอบรมผ่านฝ่าย HR ภายในสัปดาห์นี้',
                 'is_pinned' => false,
                 'is_urgent' => false,
+                'popup_enabled' => true,
                 'department_id' => $departments['HR']->id,
             ],
             [
+                'announcement_no' => 'WDC-2026-001',
                 'category' => 'ประกาศ',
                 'title' => 'เปิดตัว Employee Portal รุ่นทดลอง',
                 'body' => 'บริษัทเริ่มทดลองใช้งาน WDC Portal สำหรับประกาศ เทรนนิ่ง แจ้งปัญหา และร้องเรียนในเว็บเดียว',
                 'is_pinned' => true,
                 'is_urgent' => false,
+                'popup_enabled' => false,
                 'department_id' => null,
             ],
         ])->map(function (array $announcement) use ($users) {
@@ -211,6 +221,7 @@ class DatabaseSeeder extends Seeder
             'file_name' => 'holiday-calendar.pdf',
             'file_type' => 'pdf',
             'file_size_kb' => 248,
+            'file_path' => null,
         ]);
 
         collect([
@@ -238,7 +249,8 @@ class DatabaseSeeder extends Seeder
         collect([
             ['employee_id' => $users['EMP00125']->employee->id, 'category' => 'สัญญาจ้าง', 'title' => 'สัญญาจ้างงาน', 'file_name' => 'employment-contract-EMP00125.pdf', 'is_company_wide' => false],
             ['employee_id' => $users['EMP00125']->employee->id, 'category' => 'หนังสือรับรอง', 'title' => 'หนังสือรับรองการทำงาน', 'file_name' => 'certificate-EMP00125.pdf', 'is_company_wide' => false],
-            ['employee_id' => null, 'category' => 'แบบฟอร์ม HR', 'title' => 'แบบฟอร์มใบลา', 'file_name' => 'leave-form.pdf', 'is_company_wide' => true],
+            ['employee_id' => null, 'category' => 'HR/ใบลา', 'title' => 'แบบฟอร์มใบลา', 'file_name' => 'leave-form.pdf', 'is_company_wide' => true],
+            ['employee_id' => null, 'category' => 'บัญชี/เบิกเงินสดย่อย', 'title' => 'แบบฟอร์มเบิกเงินสดย่อย', 'file_name' => 'petty-cash-form.pdf', 'is_company_wide' => true],
             ['employee_id' => null, 'category' => 'ระเบียบบริษัท', 'title' => 'คู่มือพนักงาน', 'file_name' => 'employee-handbook.pdf', 'is_company_wide' => true],
         ])->each(fn (array $document) => EmployeeDocument::create([
             ...$document,

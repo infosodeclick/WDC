@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Complaint;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\Announcement;
+use App\Models\AnnouncementFile;
 use App\Models\ItAsset;
 use App\Models\MeetingRoomBooking;
 use App\Models\Permission;
+use App\Models\ProfileChangeRequest;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WorkflowRequest;
@@ -15,6 +18,7 @@ use App\Services\GoogleCalendarService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class WdcPortalTest extends TestCase
@@ -51,6 +55,114 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('href="#meeting-room"', false)
             ->assertSee('สวัสดี คุณสมชาย')
             ->assertSee('โปรไฟล์พนักงาน');
+    }
+
+    public function test_profile_phone_change_is_approved_by_hr_before_updating_employee(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $this->actingAs($employee);
+
+        $this->patch(route('profile.contact.update'), [
+            'phone' => '099-111-2222',
+        ])->assertRedirect();
+
+        $profileRequest = ProfileChangeRequest::where('user_id', $employee->id)
+            ->where('field', 'phone')
+            ->firstOrFail();
+
+        $this->assertSame('pending', $profileRequest->status);
+        $this->assertSame('099-111-2222', $profileRequest->requested_value);
+        $this->assertNotSame('099-111-2222', $employee->employee->fresh()->phone);
+
+        $this->actingAs($hr);
+
+        $this->patch(route('hr.profile-requests.review', $profileRequest), [
+            'status' => 'approved',
+        ])->assertRedirect();
+
+        $profileRequest->refresh();
+
+        $this->assertSame('approved', $profileRequest->status);
+        $this->assertSame('099-111-2222', $employee->employee->fresh()->phone);
+    }
+
+    public function test_profile_announcements_track_reads_and_keep_urgent_items_visible(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $urgent = Announcement::where('is_urgent', true)->firstOrFail();
+        $general = Announcement::where('is_urgent', false)->where('category', 'ประกาศ')->firstOrFail();
+
+        $this->actingAs($employee);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee($urgent->title)
+            ->assertSee($general->title)
+            ->assertSee(route('payroll'), false)
+            ->assertSee(route('time-attendance'), false);
+
+        $this->get(route('announcements.show', $general))->assertOk();
+
+        $this->assertDatabaseHas('announcement_reads', [
+            'announcement_id' => $general->id,
+            'user_id' => $employee->id,
+        ]);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee($urgent->title)
+            ->assertDontSee($general->title);
+
+        $this->get(route('announcements.show', $urgent))->assertOk();
+
+        $this->assertDatabaseHas('announcement_reads', [
+            'announcement_id' => $urgent->id,
+            'user_id' => $employee->id,
+        ]);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee($urgent->title);
+    }
+
+    public function test_hr_can_create_announcement_with_uploaded_attachment(): void
+    {
+        Storage::fake('local');
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $this->actingAs($hr);
+
+        $this->post(route('hr.announcements.store'), [
+            'announcement_no' => 'HR-ACT-TEST-001',
+            'title' => 'Activity Upload Test',
+            'category' => 'กิจกรรม',
+            'body' => 'Attachment smoke test',
+            'files' => [UploadedFile::fake()->image('activity.png')],
+            'is_pinned' => '1',
+            'is_urgent' => '1',
+            'popup_enabled' => '1',
+        ])->assertRedirect();
+
+        $announcement = Announcement::where('announcement_no', 'HR-ACT-TEST-001')->firstOrFail();
+        $file = AnnouncementFile::where('announcement_id', $announcement->id)->firstOrFail();
+
+        Storage::disk('local')->assertExists($file->file_path);
+        $this->assertTrue($announcement->is_pinned);
+        $this->assertTrue($announcement->is_urgent);
+        $this->assertTrue($announcement->popup_enabled);
+        $this->assertSame('activity.png', $file->file_name);
+
+        $this->get(route('announcements.show', $announcement))
+            ->assertOk()
+            ->assertSee('Activity Upload Test')
+            ->assertSee('activity.png')
+            ->assertSee(route('announcements.files.show', $file), false);
     }
 
     public function test_admin_can_open_admin_portal(): void
@@ -366,6 +478,20 @@ class WdcPortalTest extends TestCase
 
         $response->assertRedirect();
         $this->assertFalse(session()->has('status'));
+    }
+
+    public function test_forms_page_groups_documents_by_business_category(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $this->get(route('documents.index'))
+            ->assertOk()
+            ->assertSee('document-category-grid', false)
+            ->assertSee('leave-form.pdf')
+            ->assertSee('petty-cash-form.pdf');
     }
 
     public function test_search_only_returns_modules_visible_to_current_user(): void
@@ -716,6 +842,8 @@ class WdcPortalTest extends TestCase
             'password' => 'password123',
         ]);
 
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
         $this->get(route('assets.index'))
             ->assertOk()
             ->assertSee('ทรัพย์สิน IT')
@@ -727,10 +855,14 @@ class WdcPortalTest extends TestCase
             'status' => 'active',
             'department' => 'IT',
             'owner_name' => 'IT Test',
+            'owner_id' => $employee->id,
             'price' => 25000,
         ])->assertRedirect();
 
         $asset = ItAsset::where('code', 'WDC-NB-TEST')->firstOrFail();
+
+        $this->assertSame($employee->id, $asset->owner_id);
+        $this->assertSame($employee->name, $asset->owner_name);
 
         $this->patch(route('assets.status', $asset), [
             'status' => 'repair',
@@ -738,6 +870,13 @@ class WdcPortalTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame('repair', $asset->fresh()->status);
+
+        $this->actingAs($employee);
+
+        $this->get(route('profile'))
+            ->assertOk()
+            ->assertSee('WDC-NB-TEST')
+            ->assertSee('Test Notebook');
     }
 
     public function test_employee_without_asset_permission_cannot_open_assets(): void
