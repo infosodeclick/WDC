@@ -11,7 +11,7 @@
         <p>ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท</p>
     </details>
     <form class="directory-filter" method="get" action="{{ route('directory.index') }}">
-        <label class="span-2">
+        <label class="directory-filter-search">
             <span>ค้นหา</span>
             <input class="form-control" name="q" value="{{ $q }}" placeholder="ชื่อไทย อังกฤษ ชื่อเล่น แผนก ทีม อีเมล เบอร์ต่อ">
         </label>
@@ -53,6 +53,16 @@
         </label>
         <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> ค้นหา</button>
     </form>
+    <div class="directory-quick-links" aria-label="ตัวกรองข้อมูลเพิ่มเติม">
+        <a class="directory-quick-link {{ $entryType === 'mail_group' ? 'active' : '' }}" href="{{ route('directory.index', ['type' => 'mail_group']) }}">
+            <i class="bi bi-envelope-at"></i>
+            <span>Group Mail</span>
+        </a>
+        <a class="directory-quick-link {{ $entryType === 'showroom' ? 'active' : '' }}" href="{{ route('directory.index', ['type' => 'showroom']) }}">
+            <i class="bi bi-geo-alt"></i>
+            <span>สาขา</span>
+        </a>
+    </div>
 </section>
 
 <div class="directory-grid">

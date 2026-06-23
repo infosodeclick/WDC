@@ -539,6 +539,11 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('Table view')
             ->assertDontSee('directory-view-tab', false)
             ->assertDontSee('directory-metrics', false)
+            ->assertSee('directory-filter-search', false)
+            ->assertSee('directory-quick-links', false)
+            ->assertSee(route('directory.index', ['type' => 'mail_group']), false)
+            ->assertSee(route('directory.index', ['type' => 'showroom']), false)
+            ->assertSee('Group Mail')
             ->assertDontSee('role-badge', false)
             ->assertDontSee('ข้อมูลทั้งหมด')
             ->assertDontSee('นำเข้าจาก Notion')
@@ -549,6 +554,30 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('class="tag"', false)
             ->assertSee('pdpa-note-toggle', false)
             ->assertSee('ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท');
+    }
+
+    public function test_directory_quick_links_show_mail_groups_and_branch_entries(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('directory.index', ['type' => 'mail_group']))
+            ->assertOk()
+            ->assertSee('directory-quick-link active', false)
+            ->assertSee('accountwdc@wdc.co.th')
+            ->assertSee('all@wdc.co.th')
+            ->assertDontSee('Flagship Showroom');
+
+        $this->get(route('directory.index', ['type' => 'showroom']))
+            ->assertOk()
+            ->assertSee('directory-quick-link active', false)
+            ->assertSee('Flagship Showroom')
+            ->assertSee('02-407-9085')
+            ->assertDontSee('accountwdc@wdc.co.th');
     }
 
     public function test_employee_can_switch_directory_display_modes(): void
