@@ -524,6 +524,13 @@ a {
     color: var(--muted);
 }
 
+.page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
 .meeting-sheet-frame {
     overflow: hidden;
     min-height: 560px;

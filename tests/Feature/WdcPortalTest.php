@@ -127,10 +127,12 @@ class WdcPortalTest extends TestCase
         $this->get(route('meeting-rooms.index'))
             ->assertOk()
             ->assertSee('ห้องประชุม')
-            ->assertSee('Google Sheet')
+            ->assertSee('Google Calendar')
             ->assertSee('ตารางจองห้องประชุม')
             ->assertSee('จองห้องประชุม')
-            ->assertSee('MEETING_ROOM_GOOGLE_SHEET_EMBED_URL');
+            ->assertSee('calendar.google.com/calendar/u/0/embed', false)
+            ->assertSee('641a219d5e8a0c60b9107fff5f155eba12e1d82d03809d7df47bc8aa656ea1e6', false)
+            ->assertSee('calendar.google.com/calendar/u/0/r/eventedit', false);
     }
 
     public function test_meeting_room_page_respects_permission_override(): void
