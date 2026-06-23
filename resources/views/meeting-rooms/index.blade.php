@@ -25,9 +25,9 @@
     <div class="section-title">
         <div>
             <h2>การจองใน WDC</h2>
-            <p class="section-subtitle">รายการนี้แสดงทันทีหลังส่งคำขอจอง และใช้ตรวจเวลาห้องประชุมก่อนซิงค์เข้า Google Calendar</p>
+            <p class="section-subtitle">แสดงเฉพาะรายการที่คุณเป็นผู้จอง เพื่อให้ตรวจสถานะและยกเลิกได้ง่าย</p>
         </div>
-        <span class="tag">WDC Booking</span>
+        <span class="tag">การจองของฉัน</span>
     </div>
 
     <div class="table-responsive meeting-table-wrap">
@@ -37,8 +37,8 @@
                     <th>วันเวลา</th>
                     <th>ห้องประชุม</th>
                     <th>หัวข้อ</th>
-                    <th>ผู้จอง</th>
                     <th>สถานะ</th>
+                    <th>จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,8 +55,25 @@
                                 <small>{{ $booking->attendees }} คน</small>
                             @endif
                         </td>
-                        <td>{{ $booking->user?->name ?? '-' }}</td>
-                        <td><span class="status-pill status-submitted">รอซิงค์</span></td>
+                        <td>
+                            <span class="status-pill {{ $booking->statusClass() }}">{{ $booking->statusLabel() }}</span>
+                            @if($booking->sync_error && $booking->status !== 'cancelled')
+                                <small class="sync-error">{{ $booking->sync_error }}</small>
+                            @endif
+                        </td>
+                        <td>
+                            @if($booking->status !== 'cancelled')
+                                <form method="post" action="{{ route('meeting-rooms.cancel', $booking) }}" onsubmit="return confirm('ยืนยันยกเลิกการจองนี้?')">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">
+                                        <i class="bi bi-x-circle"></i> ยกเลิก
+                                    </button>
+                                </form>
+                            @else
+                                <small>{{ $booking->cancelled_at?->format('d/m/Y H:i') }}</small>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
@@ -102,7 +119,7 @@
     <div class="meeting-room-grid">
         <div>
             <strong>Google Calendar</strong>
-            <p>ระบบหน้านี้แสดงปฏิทินห้องประชุมที่มีผู้ใช้งานแล้ว ส่วนคำขอที่จองใน WDC จะพร้อมนำไปซิงค์กับ Google Calendar ในขั้นถัดไป</p>
+            <p>เมื่อกำหนด Google Service Account แล้ว การจองจาก WDC จะสร้างรายการใน Google Calendar ทันที และเมื่อยกเลิกจะลบรายการออกจากปฏิทินด้วย</p>
         </div>
         <span class="status-pill status-in_progress">เชื่อมต่อแล้ว</span>
     </div>
@@ -149,7 +166,7 @@
                         <textarea class="form-control" name="notes" rows="4" maxlength="1000" placeholder="อุปกรณ์ที่ต้องใช้ หรือหมายเหตุอื่น ๆ"></textarea>
                     </label>
                 </div>
-                <p class="form-help mt-3">คำขอนี้จะบันทึกใน WDC ก่อน และเตรียมซิงค์ไป Google Calendar ในขั้นถัดไป</p>
+                <p class="form-help mt-3">ระบบจะบันทึกใน WDC และพยายามซิงค์เข้า Google Calendar ทันที หากยังไม่ได้ตั้งค่า Google จะแสดงสถานะซิงค์ไม่สำเร็จให้ตรวจสอบ</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">ยกเลิก</button>

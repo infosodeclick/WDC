@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/documents/{document}/download', [PortalController::class, 'downloadDocument'])->name('documents.download');
     Route::get('/meeting-rooms', [PortalController::class, 'meetingRooms'])->name('meeting-rooms.index');
     Route::post('/meeting-rooms', [PortalController::class, 'storeMeetingRoomBooking'])->name('meeting-rooms.store');
+    Route::patch('/meeting-rooms/{booking}/cancel', [PortalController::class, 'cancelMeetingRoomBooking'])->name('meeting-rooms.cancel');
     Route::get('/payroll', [PortalController::class, 'payroll'])->name('payroll');
     Route::get('/search', [PortalController::class, 'search'])->name('search');
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');

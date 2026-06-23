@@ -1665,6 +1665,19 @@ body.directory-modal-open {
     background: #eef2f7;
 }
 
+.status-cancelled {
+    color: #667085;
+    background: #f2f4f7;
+}
+
+.sync-error {
+    display: block;
+    max-width: 420px;
+    margin-top: 6px;
+    color: var(--danger);
+    white-space: normal;
+}
+
 .status-in_review {
     color: var(--warning);
     background: #fff7e6;

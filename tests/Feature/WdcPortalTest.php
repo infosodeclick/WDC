@@ -10,6 +10,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Models\WorkflowTemplate;
+use App\Services\GoogleCalendarService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -163,6 +164,7 @@ class WdcPortalTest extends TestCase
     public function test_employee_can_submit_meeting_room_booking_in_modal_flow(): void
     {
         $this->seed(DatabaseSeeder::class);
+        $this->fakeGoogleCalendarSync();
 
         $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
         $this->actingAs($employee);
@@ -180,22 +182,84 @@ class WdcPortalTest extends TestCase
 
         $this->assertSame($employee->id, $booking->user_id);
         $this->assertSame('ห้องประชุมใหญ่', $booking->room_name);
-        $this->assertSame('submitted', $booking->status);
+        $this->assertSame('synced', $booking->status);
+        $this->assertSame('google-event-1', $booking->google_event_id);
 
         $this->get(route('meeting-rooms.index'))
             ->assertOk()
             ->assertSee('wdc-bookings', false)
             ->assertSee('ประชุมทดสอบระบบจอง')
             ->assertSee('ห้องประชุมใหญ่')
-            ->assertSee('รอซิงค์');
+            ->assertSee('ซิงค์แล้ว')
+            ->assertSee(route('meeting-rooms.cancel', $booking), false)
+            ->assertDontSee('รอซิงค์');
 
         $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
         $this->actingAs($itUser);
 
         $this->get(route('meeting-rooms.index'))
             ->assertOk()
-            ->assertSee('ประชุมทดสอบระบบจอง')
-            ->assertSee('ห้องประชุมใหญ่');
+            ->assertDontSee('ประชุมทดสอบระบบจอง');
+    }
+
+    public function test_employee_can_cancel_own_meeting_room_booking_and_remove_google_event(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $calendar = $this->fakeGoogleCalendarSync();
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $booking = MeetingRoomBooking::create([
+            'user_id' => $employee->id,
+            'room_name' => 'ห้องประชุมใหญ่',
+            'title' => 'ยกเลิกประชุมทดสอบ',
+            'start_at' => now()->addDay(),
+            'end_at' => now()->addDay()->addHour(),
+            'attendees' => 4,
+            'status' => 'synced',
+            'google_event_id' => 'google-event-cancel',
+            'synced_at' => now(),
+        ]);
+
+        $this->patch(route('meeting-rooms.cancel', $booking))
+            ->assertRedirect(route('meeting-rooms.index').'#wdc-bookings');
+
+        $booking->refresh();
+
+        $this->assertSame('cancelled', $booking->status);
+        $this->assertSame($employee->id, $booking->cancelled_by);
+        $this->assertNotNull($booking->cancelled_at);
+
+        $this->assertContains('google-event-cancel', $calendar->deletedEvents);
+
+        $this->get(route('meeting-rooms.index'))
+            ->assertOk()
+            ->assertSee('ยกเลิกประชุมทดสอบ')
+            ->assertSee('ยกเลิกแล้ว')
+            ->assertDontSee('ยืนยันยกเลิกการจองนี้?');
+    }
+
+    private function fakeGoogleCalendarSync(): object
+    {
+        $calendar = new class extends GoogleCalendarService
+        {
+            public array $deletedEvents = [];
+
+            public function createEvent(MeetingRoomBooking $booking): string
+            {
+                return 'google-event-1';
+            }
+
+            public function deleteEvent(string $eventId): void
+            {
+                $this->deletedEvents[] = $eventId;
+            }
+        };
+
+        $this->app->instance(GoogleCalendarService::class, $calendar);
+
+        return $calendar;
     }
 
     public function test_mobile_navigation_respects_user_permissions(): void

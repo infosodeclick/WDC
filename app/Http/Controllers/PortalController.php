@@ -14,10 +14,13 @@ use App\Models\KnowledgeVideo;
 use App\Models\MeetingRoomBooking;
 use App\Models\Notification;
 use App\Models\WorkflowRequest;
+use App\Services\GoogleCalendarService;
 use App\Services\ItHelpdeskWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Str;
+use Throwable;
 use Illuminate\View\View;
 
 class PortalController extends Controller
@@ -127,6 +130,7 @@ class PortalController extends Controller
         abort_unless($user->canAccess('meeting_rooms.view'), 403);
 
         $bookingQuery = MeetingRoomBooking::with('user')
+            ->where('user_id', $user->id)
             ->where('end_at', '>=', now()->subDay())
             ->orderBy('start_at')
             ->orderByDesc('created_at');
@@ -139,7 +143,7 @@ class PortalController extends Controller
         ]);
     }
 
-    public function storeMeetingRoomBooking(Request $request): RedirectResponse
+    public function storeMeetingRoomBooking(Request $request, GoogleCalendarService $calendar): RedirectResponse
     {
         abort_unless($request->user()->canAccess('meeting_rooms.view'), 403);
 
@@ -158,6 +162,28 @@ class PortalController extends Controller
             'status' => 'submitted',
         ]);
 
+        $statusMessage = 'จองห้องประชุมแล้ว และซิงค์เข้า Google Calendar แล้ว';
+
+        try {
+            $eventId = $calendar->createEvent($booking->loadMissing('user'));
+
+            $booking->update([
+                'status' => 'synced',
+                'google_event_id' => $eventId,
+                'synced_at' => now(),
+                'sync_error' => null,
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            $booking->update([
+                'status' => 'sync_failed',
+                'sync_error' => Str::limit($exception->getMessage(), 1000),
+            ]);
+
+            $statusMessage = 'บันทึกการจองใน WDC แล้ว แต่ยังซิงค์เข้า Google Calendar ไม่สำเร็จ กรุณาตรวจสอบการตั้งค่า Google';
+        }
+
         ActivityLog::create([
             'user_id' => $request->user()->id,
             'action' => 'create_meeting_room_booking',
@@ -170,7 +196,52 @@ class PortalController extends Controller
 
         return redirect()
             ->to(route('meeting-rooms.index').'#wdc-bookings')
-            ->with('status', 'ส่งคำขอจองห้องประชุมแล้ว');
+            ->with('status', $statusMessage);
+    }
+
+    public function cancelMeetingRoomBooking(MeetingRoomBooking $booking, Request $request, GoogleCalendarService $calendar): RedirectResponse
+    {
+        $user = $request->user()->loadMissing('role.permissions', 'permissionOverrides');
+
+        abort_unless($user->canAccess('meeting_rooms.view'), 403);
+        abort_unless($booking->user_id === $user->id || $user->canSeeAllData(), 403);
+
+        $syncError = null;
+
+        if ($booking->google_event_id) {
+            try {
+                $calendar->deleteEvent($booking->google_event_id);
+            } catch (Throwable $exception) {
+                report($exception);
+
+                $syncError = Str::limit($exception->getMessage(), 1000);
+            }
+        }
+
+        $booking->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancelled_by' => $user->id,
+            'sync_error' => $syncError,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'cancel_meeting_room_booking',
+            'subject_type' => MeetingRoomBooking::class,
+            'subject_id' => $booking->id,
+            'description' => "Cancelled {$booking->room_name}: {$booking->title}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        $message = $syncError
+            ? 'ยกเลิกการจองใน WDC แล้ว แต่ลบออกจาก Google Calendar ไม่สำเร็จ กรุณาตรวจสอบการตั้งค่า Google'
+            : 'ยกเลิกการจองห้องประชุมแล้ว';
+
+        return redirect()
+            ->to(route('meeting-rooms.index').'#wdc-bookings')
+            ->with('status', $message);
     }
 
     public function downloadDocument(EmployeeDocument $document, Request $request)
