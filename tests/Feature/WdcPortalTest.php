@@ -65,8 +65,59 @@ class WdcPortalTest extends TestCase
         $this->get(route('admin.index'))
             ->assertOk()
             ->assertSee('Super Admin Console')
+            ->assertSee('ชื่อเล่นอังกฤษ')
+            ->assertSee('ชื่อเล่นไทย')
             ->assertSee('Role Template')
             ->assertSee('EMP00125');
+    }
+
+    public function test_admin_can_create_employee_with_language_specific_nicknames_for_directory(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::where('employee_code', 'EMP09999')->firstOrFail();
+        $departmentId = $admin->employee->department_id;
+        $roleId = $admin->role_id;
+        $this->actingAs($admin);
+
+        $this->post(route('admin.users.store'), [
+            'employee_code' => 'EMP08888',
+            'name' => 'ณัฐวดี ทดสอบ',
+            'email' => 'nattawadee.test@wdc.co.th',
+            'password' => 'password123',
+            'role_id' => $roleId,
+            'data_scope' => '',
+            'department_id' => $departmentId,
+            'english_name' => 'Nattawadee Test',
+            'english_nickname' => 'Nat',
+            'thai_name' => 'ณัฐวดี ทดสอบ',
+            'thai_nickname' => 'นัท',
+            'position' => 'HR Officer',
+            'phone' => '080-888-8888',
+            'extension_number' => '1888',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('employees', [
+            'english_name' => 'Nattawadee Test',
+            'english_nickname' => 'Nat',
+            'thai_name' => 'ณัฐวดี ทดสอบ',
+            'thai_nickname' => 'นัท',
+        ]);
+
+        $this->assertDatabaseHas('employee_directory_entries', [
+            'source_system' => 'wdc',
+            'source_record_id' => 'EMP08888',
+            'english_name' => 'Nattawadee Test',
+            'english_nickname' => 'Nat',
+            'thai_name' => 'ณัฐวดี ทดสอบ',
+            'thai_nickname' => 'นัท',
+        ]);
+
+        $this->get(route('directory.index', ['q' => 'Nattawadee']))
+            ->assertOk()
+            ->assertSee('Nattawadee Test (Nat)')
+            ->assertSee('ณัฐวดี ทดสอบ (นัท)')
+            ->assertDontSee('Nattawadee Test (นัท)');
     }
 
     public function test_legacy_systems_hub_is_removed(): void
@@ -415,8 +466,9 @@ class WdcPortalTest extends TestCase
             'entry_type' => 'employee',
             'display_name' => 'Newest WDC Member',
             'english_name' => 'Newest WDC Member',
+            'english_nickname' => 'New',
             'thai_name' => 'สมาชิกใหม่ ดับบลิวดีซี',
-            'nickname' => 'ใหม่',
+            'thai_nickname' => 'ใหม่',
             'department' => 'Human Resources',
             'position' => 'HR Officer',
             'location' => 'Lumpini',
@@ -438,7 +490,9 @@ class WdcPortalTest extends TestCase
         $this->get(route('directory.index'))
             ->assertOk()
             ->assertSeeInOrder(['Newest WDC Member', 'Aiyada Supso'])
-            ->assertSee('Newest WDC Member (ใหม่)')
+            ->assertSee('Newest WDC Member (New)')
+            ->assertSee('สมาชิกใหม่ ดับบลิวดีซี (ใหม่)')
+            ->assertDontSee('Newest WDC Member (ใหม่)')
             ->assertSee('new-hire-badge', false)
             ->assertSee('directory-card-detail', false)
             ->assertSee('directory-modal-source', false)

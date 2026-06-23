@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\EmployeeDirectoryEntry;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -92,8 +93,13 @@ class AdminController extends Controller
             'role_id' => ['required', 'exists:roles,id'],
             'data_scope' => ['nullable', Rule::in(array_keys(Permission::DATA_SCOPE_LABELS))],
             'department_id' => ['required', 'exists:departments,id'],
+            'english_name' => ['nullable', 'string', 'max:255'],
+            'thai_name' => ['nullable', 'string', 'max:255'],
+            'english_nickname' => ['nullable', 'string', 'max:120'],
+            'thai_nickname' => ['nullable', 'string', 'max:120'],
             'position' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'extension_number' => ['nullable', 'string', 'max:50'],
             'start_date' => ['nullable', 'date'],
         ]);
 
@@ -113,10 +119,18 @@ class AdminController extends Controller
         Employee::create([
             'user_id' => $user->id,
             'department_id' => $data['department_id'],
+            'english_name' => $data['english_name'] ?? null,
+            'thai_name' => $data['thai_name'] ?? $data['name'],
+            'nickname' => $data['thai_nickname'] ?? $data['english_nickname'] ?? null,
+            'english_nickname' => $data['english_nickname'] ?? null,
+            'thai_nickname' => $data['thai_nickname'] ?? null,
             'position' => $data['position'],
             'phone' => $data['phone'] ?? null,
+            'extension_number' => $data['extension_number'] ?? null,
             'start_date' => $data['start_date'] ?? null,
         ]);
+
+        $this->syncDirectoryEntry($user->load('employee.department'));
 
         $this->log($request, 'create_user', User::class, $user->id, "Created {$user->employee_code}");
 
@@ -136,9 +150,20 @@ class AdminController extends Controller
         $this->ensureUserEditable($actor, $user->load('role'));
 
         $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role_id' => ['required', 'exists:roles,id'],
             'data_scope' => ['nullable', Rule::in(array_keys(Permission::DATA_SCOPE_LABELS))],
             'is_active' => ['nullable', 'boolean'],
+            'department_id' => ['sometimes', 'required', 'exists:departments,id'],
+            'english_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'thai_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'english_nickname' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'thai_nickname' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'position' => ['sometimes', 'required', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'extension_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'start_date' => ['sometimes', 'nullable', 'date'],
             'permission_grants' => ['nullable', 'array'],
             'permission_grants.*' => ['string', Rule::in(Permission::catalogKeys())],
             'permission_denies' => ['nullable', 'array'],
@@ -156,11 +181,56 @@ class AdminController extends Controller
             return back()->withErrors(['is_active' => 'ไม่สามารถระงับบัญชีของตนเองได้']);
         }
 
-        $user->update([
+        $userPayload = [
             'role_id' => $role->id,
             'data_scope' => $data['data_scope'] ?? null,
             'is_active' => $request->boolean('is_active'),
-        ]);
+        ];
+
+        foreach (['name', 'email'] as $field) {
+            if ($request->has($field)) {
+                $userPayload[$field] = $data[$field] ?? null;
+            }
+        }
+
+        $user->update($userPayload);
+
+        if ($request->hasAny([
+            'department_id',
+            'english_name',
+            'thai_name',
+            'english_nickname',
+            'thai_nickname',
+            'position',
+            'phone',
+            'extension_number',
+            'start_date',
+        ])) {
+            $employee = $user->employee;
+            $fallbackDepartmentId = $employee?->department_id ?: Department::query()->value('id');
+
+            $employeePayload = [
+                'department_id' => $request->has('department_id') ? $data['department_id'] : $fallbackDepartmentId,
+                'english_name' => $request->has('english_name') ? ($data['english_name'] ?? null) : $employee?->english_name,
+                'thai_name' => $request->has('thai_name') ? ($data['thai_name'] ?? null) : $employee?->thai_name,
+                'nickname' => $request->has('thai_nickname') || $request->has('english_nickname')
+                    ? ($data['thai_nickname'] ?? $data['english_nickname'] ?? null)
+                    : $employee?->nickname,
+                'english_nickname' => $request->has('english_nickname') ? ($data['english_nickname'] ?? null) : $employee?->english_nickname,
+                'thai_nickname' => $request->has('thai_nickname') ? ($data['thai_nickname'] ?? null) : $employee?->thai_nickname,
+                'position' => $request->has('position') ? $data['position'] : ($employee?->position ?? '-'),
+                'phone' => $request->has('phone') ? ($data['phone'] ?? null) : $employee?->phone,
+                'extension_number' => $request->has('extension_number') ? ($data['extension_number'] ?? null) : $employee?->extension_number,
+                'start_date' => $request->has('start_date') ? ($data['start_date'] ?? null) : $employee?->start_date,
+            ];
+
+            $user->employee()->updateOrCreate(
+                ['user_id' => $user->id],
+                $employeePayload,
+            );
+
+            $this->syncDirectoryEntry($user->fresh(['employee.department']));
+        }
 
         if ($actor->canAccess('admin.roles.manage')) {
             $this->syncUserPermissionOverrides(
@@ -261,6 +331,67 @@ class AdminController extends Controller
         }
 
         $user->permissionOverrides()->sync($syncPayload);
+    }
+
+    private function syncDirectoryEntry(User $user): void
+    {
+        $user->loadMissing('employee.department');
+
+        if (! $user->employee) {
+            return;
+        }
+
+        $employee = $user->employee;
+        $displayName = $employee->english_name ?: $user->name;
+        $thaiName = $employee->thai_name ?: $user->name;
+
+        $entry = null;
+
+        if ($user->email) {
+            $entry = EmployeeDirectoryEntry::where('entry_type', 'employee')
+                ->where('email', $user->email)
+                ->first();
+        }
+
+        $entry ??= EmployeeDirectoryEntry::where('source_system', 'wdc')
+            ->where('source_record_id', $user->employee_code)
+            ->first();
+
+        $payload = [
+            'entry_type' => 'employee',
+            'display_name' => $displayName,
+            'english_name' => $employee->english_name,
+            'thai_name' => $thaiName,
+            'nickname' => $employee->thai_nickname ?: $employee->english_nickname ?: $employee->nickname,
+            'english_nickname' => $employee->english_nickname,
+            'thai_nickname' => $employee->thai_nickname,
+            'department' => $employee->department?->name,
+            'team' => $employee->team,
+            'position' => $employee->position,
+            'location' => $employee->location,
+            'email' => $user->email,
+            'phone' => $employee->phone,
+            'extension_number' => $employee->extension_number,
+            'is_active' => $user->is_active,
+            'raw_payload' => [
+                ...($entry?->raw_payload ?? []),
+                'employee_code' => $user->employee_code,
+                'managed_from_admin' => true,
+            ],
+            'imported_at' => now(),
+        ];
+
+        if ($entry) {
+            $entry->update($payload);
+
+            return;
+        }
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'wdc',
+            'source_record_id' => $user->employee_code,
+            ...$payload,
+        ]);
     }
 
     private function log(Request $request, string $action, ?string $subjectType = null, ?int $subjectId = null, ?string $description = null): void

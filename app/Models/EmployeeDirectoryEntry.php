@@ -20,6 +20,8 @@ class EmployeeDirectoryEntry extends Model
         'english_name',
         'thai_name',
         'nickname',
+        'english_nickname',
+        'thai_nickname',
         'department',
         'team',
         'position',
@@ -67,6 +69,52 @@ class EmployeeDirectoryEntry extends Model
             ->implode('');
 
         return $letters !== '' ? $letters : 'W';
+    }
+
+    public function englishNickname(): ?string
+    {
+        if ($this->english_nickname) {
+            return $this->english_nickname;
+        }
+
+        return $this->nickname && ! $this->containsThai($this->nickname)
+            ? $this->nickname
+            : null;
+    }
+
+    public function thaiNickname(): ?string
+    {
+        if ($this->thai_nickname) {
+            return $this->thai_nickname;
+        }
+
+        return $this->nickname && $this->containsThai($this->nickname)
+            ? $this->nickname
+            : null;
+    }
+
+    public function englishDisplayNameWithNickname(): string
+    {
+        $name = $this->english_name ?: $this->display_name;
+        $nickname = $this->englishNickname();
+
+        return $nickname ? "{$name} ({$nickname})" : $name;
+    }
+
+    public function thaiDisplayNameWithNickname(): ?string
+    {
+        $name = $this->thai_name;
+        $nickname = $this->thaiNickname();
+
+        if (! $name && ! $nickname) {
+            return null;
+        }
+
+        if ($name && $nickname) {
+            return "{$name} ({$nickname})";
+        }
+
+        return $name ?: "({$nickname})";
     }
 
     public function employeeCode(): ?string
@@ -149,5 +197,10 @@ class EmployeeDirectoryEntry extends Model
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function containsThai(string $value): bool
+    {
+        return preg_match('/[\x{0E00}-\x{0E7F}]/u', $value) === 1;
     }
 }

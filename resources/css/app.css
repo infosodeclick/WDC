@@ -1358,9 +1358,10 @@ a {
 }
 
 .directory-modal-thai-name {
-    color: var(--muted);
-    font-size: 1.02rem;
-    line-height: 1.45;
+    color: var(--ink);
+    font-size: clamp(1.22rem, 1.7vw, 1.42rem);
+    font-weight: 720;
+    line-height: 1.35;
 }
 
 .directory-modal-highlight-list {

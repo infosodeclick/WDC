@@ -29,6 +29,8 @@ class DirectoryController extends Controller
                         ->orWhere('english_name', 'like', "%{$q}%")
                         ->orWhere('thai_name', 'like', "%{$q}%")
                         ->orWhere('nickname', 'like', "%{$q}%")
+                        ->orWhere('english_nickname', 'like', "%{$q}%")
+                        ->orWhere('thai_nickname', 'like', "%{$q}%")
                         ->orWhere('department', 'like', "%{$q}%")
                         ->orWhere('team', 'like', "%{$q}%")
                         ->orWhere('position', 'like', "%{$q}%")

@@ -17,6 +17,8 @@ class Employee extends Model
         'english_name',
         'thai_name',
         'nickname',
+        'english_nickname',
+        'thai_nickname',
         'position',
         'business_unit',
         'team',

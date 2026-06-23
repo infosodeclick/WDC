@@ -1,6 +1,7 @@
 @php($employeeCode = $entry->employeeCode())
 @php($deskPhone = $entry->extension_number)
-@php($modalDisplayName = $entry->nickname ? "{$entry->display_name} ({$entry->nickname})" : $entry->display_name)
+@php($englishDisplayName = $entry->englishDisplayNameWithNickname())
+@php($thaiDisplayName = $entry->thaiDisplayNameWithNickname())
 @php($isNewHire = $entry->isNewHireThisMonth())
 
 <article class="directory-card directory-card-with-photo {{ $isNewHire ? 'is-new-hire' : '' }}" data-directory-card>
@@ -17,14 +18,10 @@
     </button>
 
     <div class="directory-card-body">
-        <h2>{{ $entry->display_name }}</h2>
+        <h2>{{ $englishDisplayName }}</h2>
 
-        @if($entry->thai_name)
-            <p class="directory-card-thai">{{ $entry->thai_name }}</p>
-        @endif
-
-        @if($entry->nickname)
-            <p class="directory-card-nickname">{{ $entry->nickname }}</p>
+        @if($thaiDisplayName)
+            <p class="directory-card-thai">{{ $thaiDisplayName }}</p>
         @endif
 
         <div class="directory-card-tags">
@@ -55,11 +52,11 @@
                     <span class="new-hire-badge modal-new-hire-badge">พนักงานใหม่</span>
                 @endif
                 <h2 class="directory-name-line">
-                    <span>{{ $modalDisplayName }}</span>
-                    <button class="copy-button" type="button" data-copy="{{ $modalDisplayName }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>
+                    <span>{{ $englishDisplayName }}</span>
+                    <button class="copy-button" type="button" data-copy="{{ $englishDisplayName }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>
                 </h2>
-                @if($entry->thai_name)
-                    <p class="directory-modal-thai-name">{{ $entry->thai_name }}</p>
+                @if($thaiDisplayName)
+                    <p class="directory-modal-thai-name">{{ $thaiDisplayName }}</p>
                 @endif
                 <dl class="directory-modal-highlight-list">
                     <dt>ตำแหน่ง</dt>

@@ -46,7 +46,11 @@
     <form method="post" action="{{ route('admin.users.store') }}" class="form-grid">
         @csrf
         <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" value="{{ old('employee_code') }}" required></label>
-        <label><span>ชื่อ</span><input class="form-control" name="name" value="{{ old('name') }}" required></label>
+        <label><span>ชื่อที่แสดง</span><input class="form-control" name="name" value="{{ old('name') }}" required></label>
+        <label><span>ชื่ออังกฤษ</span><input class="form-control" name="english_name" value="{{ old('english_name') }}"></label>
+        <label><span>ชื่อเล่นอังกฤษ</span><input class="form-control" name="english_nickname" value="{{ old('english_nickname') }}"></label>
+        <label><span>ชื่อไทย</span><input class="form-control" name="thai_name" value="{{ old('thai_name') }}"></label>
+        <label><span>ชื่อเล่นไทย</span><input class="form-control" name="thai_nickname" value="{{ old('thai_nickname') }}"></label>
         <label><span>อีเมล</span><input class="form-control" name="email" type="email" value="{{ old('email') }}"></label>
         <label><span>รหัสผ่าน</span><input class="form-control" name="password" type="password" required></label>
         <label><span>Role</span>
@@ -73,6 +77,7 @@
         </label>
         <label><span>ตำแหน่ง</span><input class="form-control" name="position" value="{{ old('position') }}" required></label>
         <label><span>เบอร์โทร</span><input class="form-control" name="phone" value="{{ old('phone') }}"></label>
+        <label><span>เบอร์ต่อ</span><input class="form-control" name="extension_number" value="{{ old('extension_number') }}"></label>
         <button class="btn btn-primary" type="submit"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้</button>
     </form>
 </section>
@@ -151,6 +156,49 @@
                             <span>สิทธิ์ใช้งานจริง</span>
                         </div>
                     </div>
+
+                    <details class="permission-details">
+                        <summary>ข้อมูลพนักงานสำหรับหน้ารายชื่อ</summary>
+                        <div class="form-grid compact-form-grid">
+                            <label><span>ชื่อที่แสดง</span>
+                                <input class="form-control form-control-sm" name="name" value="{{ old('name', $managedUser->name) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>อีเมล</span>
+                                <input class="form-control form-control-sm" type="email" name="email" value="{{ old('email', $managedUser->email) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>ชื่ออังกฤษ</span>
+                                <input class="form-control form-control-sm" name="english_name" value="{{ old('english_name', $managedUser->employee?->english_name) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>ชื่อเล่นอังกฤษ</span>
+                                <input class="form-control form-control-sm" name="english_nickname" value="{{ old('english_nickname', $managedUser->employee?->english_nickname) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>ชื่อไทย</span>
+                                <input class="form-control form-control-sm" name="thai_name" value="{{ old('thai_name', $managedUser->employee?->thai_name) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>ชื่อเล่นไทย</span>
+                                <input class="form-control form-control-sm" name="thai_nickname" value="{{ old('thai_nickname', $managedUser->employee?->thai_nickname ?? $managedUser->employee?->nickname) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>แผนก</span>
+                                <select class="form-select form-select-sm" name="department_id" @disabled(! $canManageUsers)>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}" @selected($managedUser->employee?->department_id === $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label><span>ตำแหน่ง</span>
+                                <input class="form-control form-control-sm" name="position" value="{{ old('position', $managedUser->employee?->position) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>เบอร์โทร</span>
+                                <input class="form-control form-control-sm" name="phone" value="{{ old('phone', $managedUser->employee?->phone) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>เบอร์ต่อ</span>
+                                <input class="form-control form-control-sm" name="extension_number" value="{{ old('extension_number', $managedUser->employee?->extension_number) }}" @disabled(! $canManageUsers)>
+                            </label>
+                            <label><span>วันเริ่มงาน</span>
+                                <input class="form-control form-control-sm" type="date" name="start_date" value="{{ old('start_date', $managedUser->employee?->start_date?->format('Y-m-d')) }}" @disabled(! $canManageUsers)>
+                            </label>
+                        </div>
+                    </details>
 
                     <details class="permission-details">
                         <summary>ปรับสิทธิ์รายคน</summary>

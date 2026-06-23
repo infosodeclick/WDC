@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\EmployeeDirectoryEntry;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ImportNotionDirectory extends Command
@@ -173,7 +174,14 @@ class ImportNotionDirectory extends Command
         $department = $this->property($block, $schema, 'Department');
         $team = $this->property($block, $schema, 'Team');
         $position = $this->property($block, $schema, 'Job Title');
-        $nickname = $this->property($block, $schema, 'Nickname');
+        $englishNickname = $this->property($block, $schema, 'English Nickname')
+            ?: $this->property($block, $schema, 'Nickname EN')
+            ?: $this->property($block, $schema, 'ชื่อเล่นอังกฤษ');
+        $thaiNickname = $this->property($block, $schema, 'Thai Nickname')
+            ?: $this->property($block, $schema, 'ชื่อเล่น')
+            ?: $this->property($block, $schema, 'Nickname TH')
+            ?: $this->property($block, $schema, 'Nickname');
+        $nickname = $thaiNickname ?: $englishNickname;
         $location = $this->property($block, $schema, 'Location');
         $email = $this->property($block, $schema, 'Email');
         $extensionNumber = $this->property($block, $schema, 'Ext.');
@@ -195,7 +203,7 @@ class ImportNotionDirectory extends Command
             $notes = $notes ? "{$notes}\nTeam: {$team}" : "Team: {$team}";
         }
 
-        return [
+        $row = [
             'source_system' => 'notion',
             'source_record_id' => $block['id'],
             'source_url' => self::HOST.'/'.str_replace('-', '', $block['id']),
@@ -221,6 +229,16 @@ class ImportNotionDirectory extends Command
             'imported_at' => now(),
             'is_active' => true,
         ];
+
+        if (Schema::hasColumn('employee_directory_entries', 'english_nickname')) {
+            $row['english_nickname'] = $this->nullableClean($englishNickname);
+        }
+
+        if (Schema::hasColumn('employee_directory_entries', 'thai_nickname')) {
+            $row['thai_nickname'] = $this->nullableClean($thaiNickname);
+        }
+
+        return $row;
     }
 
     /**

@@ -19,7 +19,9 @@
             <dt>รหัสพนักงาน</dt><dd>{{ $user->employee_code }}</dd>
             <dt>ชื่อ</dt><dd>{{ $user->name }}</dd>
             <dt>ชื่ออังกฤษ</dt><dd>{{ $user->employee?->english_name ?? '-' }}</dd>
-            <dt>ชื่อเล่น</dt><dd>{{ $user->employee?->nickname ?? '-' }}</dd>
+            <dt>ชื่อเล่นอังกฤษ</dt><dd>{{ $user->employee?->english_nickname ?? '-' }}</dd>
+            <dt>ชื่อไทย</dt><dd>{{ $user->employee?->thai_name ?? '-' }}</dd>
+            <dt>ชื่อเล่นไทย</dt><dd>{{ $user->employee?->thai_nickname ?? $user->employee?->nickname ?? '-' }}</dd>
             <dt>แผนก</dt><dd>{{ $user->employee?->department?->name }}</dd>
             <dt>ตำแหน่ง</dt><dd>{{ $user->employee?->position }}</dd>
             <dt>BU / ทีม</dt><dd>{{ collect([$user->employee?->business_unit, $user->employee?->team])->filter()->join(' · ') ?: '-' }}</dd>
