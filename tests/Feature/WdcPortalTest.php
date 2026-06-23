@@ -174,7 +174,7 @@ class WdcPortalTest extends TestCase
             'end_at' => now()->addDay()->addHour()->format('Y-m-d H:i:s'),
             'attendees' => 8,
             'notes' => 'ขอใช้จอประชุม',
-        ])->assertRedirect(route('meeting-rooms.index'));
+        ])->assertRedirect(route('meeting-rooms.index').'#wdc-bookings');
 
         $booking = MeetingRoomBooking::where('title', 'ประชุมทดสอบระบบจอง')->firstOrFail();
 
@@ -184,9 +184,18 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('meeting-rooms.index'))
             ->assertOk()
+            ->assertSee('wdc-bookings', false)
             ->assertSee('ประชุมทดสอบระบบจอง')
             ->assertSee('ห้องประชุมใหญ่')
             ->assertSee('รอซิงค์');
+
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $this->actingAs($itUser);
+
+        $this->get(route('meeting-rooms.index'))
+            ->assertOk()
+            ->assertSee('ประชุมทดสอบระบบจอง')
+            ->assertSee('ห้องประชุมใหญ่');
     }
 
     public function test_mobile_navigation_respects_user_permissions(): void

@@ -21,33 +21,12 @@
     </div>
 </div>
 
-<section class="panel meeting-room-panel">
+<section class="panel" id="wdc-bookings">
     <div class="section-title">
         <div>
-            <h2>ตารางจองห้องประชุม</h2>
-            <p class="section-subtitle">แสดงรายการใช้งานห้องประชุมจาก Google Calendar</p>
+            <h2>การจองใน WDC</h2>
+            <p class="section-subtitle">รายการนี้แสดงทันทีหลังส่งคำขอจอง และใช้ตรวจเวลาห้องประชุมก่อนซิงค์เข้า Google Calendar</p>
         </div>
-        <span class="tag">Google Calendar</span>
-    </div>
-
-    @if($sheetEmbedUrl)
-        <div class="meeting-sheet-frame">
-            <iframe src="{{ $sheetEmbedUrl }}" title="ตารางจองห้องประชุมจาก Google Calendar" loading="lazy"></iframe>
-        </div>
-    @else
-        <div class="meeting-sheet-placeholder">
-            <div>
-                <i class="bi bi-calendar2-week"></i>
-                <strong>ยังไม่ได้เชื่อม Google Calendar</strong>
-                <p>เมื่อตั้งค่า <code>MEETING_ROOM_GOOGLE_SHEET_EMBED_URL</code> ระบบจะแสดงตารางจองห้องประชุมจาก Google Calendar ในหน้านี้ทันที</p>
-            </div>
-        </div>
-    @endif
-</section>
-
-<section class="panel">
-    <div class="section-title">
-        <h2>คำขอจองล่าสุด</h2>
         <span class="tag">WDC Booking</span>
     </div>
 
@@ -87,6 +66,30 @@
             </tbody>
         </table>
     </div>
+</section>
+
+<section class="panel meeting-room-panel">
+    <div class="section-title">
+        <div>
+            <h2>ตารางจองห้องประชุม</h2>
+            <p class="section-subtitle">แสดงรายการใช้งานห้องประชุมจาก Google Calendar</p>
+        </div>
+        <span class="tag">Google Calendar</span>
+    </div>
+
+    @if($sheetEmbedUrl)
+        <div class="meeting-sheet-frame">
+            <iframe src="{{ $sheetEmbedUrl }}" title="ตารางจองห้องประชุมจาก Google Calendar" loading="lazy"></iframe>
+        </div>
+    @else
+        <div class="meeting-sheet-placeholder">
+            <div>
+                <i class="bi bi-calendar2-week"></i>
+                <strong>ยังไม่ได้เชื่อม Google Calendar</strong>
+                <p>เมื่อตั้งค่า <code>MEETING_ROOM_GOOGLE_SHEET_EMBED_URL</code> ระบบจะแสดงตารางจองห้องประชุมจาก Google Calendar ในหน้านี้ทันที</p>
+            </div>
+        </div>
+    @endif
 </section>
 
 <section class="panel meeting-sync-panel">

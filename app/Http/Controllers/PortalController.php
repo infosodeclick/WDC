@@ -126,11 +126,10 @@ class PortalController extends Controller
 
         abort_unless($user->canAccess('meeting_rooms.view'), 403);
 
-        $bookingQuery = MeetingRoomBooking::with('user')->latest('start_at');
-
-        if (! $user->canSeeAllData()) {
-            $bookingQuery->where('user_id', $user->id);
-        }
+        $bookingQuery = MeetingRoomBooking::with('user')
+            ->where('end_at', '>=', now()->subDay())
+            ->orderBy('start_at')
+            ->orderByDesc('created_at');
 
         return view('meeting-rooms.index', [
             'sheetUrl' => config('services.meeting_rooms.sheet_url'),
@@ -170,7 +169,7 @@ class PortalController extends Controller
         ]);
 
         return redirect()
-            ->route('meeting-rooms.index')
+            ->to(route('meeting-rooms.index').'#wdc-bookings')
             ->with('status', 'ส่งคำขอจองห้องประชุมแล้ว');
     }
 
