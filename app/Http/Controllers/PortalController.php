@@ -119,6 +119,17 @@ class PortalController extends Controller
         ]);
     }
 
+    public function meetingRooms(Request $request): View
+    {
+        abort_unless($request->user()->canAccess('meeting_rooms.view'), 403);
+
+        return view('meeting-rooms.index', [
+            'sheetUrl' => config('services.meeting_rooms.sheet_url'),
+            'sheetEmbedUrl' => config('services.meeting_rooms.sheet_embed_url'),
+            'bookingUrl' => config('services.meeting_rooms.booking_url'),
+        ]);
+    }
+
     public function downloadDocument(EmployeeDocument $document, Request $request)
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');

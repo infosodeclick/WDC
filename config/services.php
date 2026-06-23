@@ -39,4 +39,10 @@ return [
         'url' => env('PAYROLL_URL', 'https://example.com/payroll'),
     ],
 
+    'meeting_rooms' => [
+        'sheet_url' => env('MEETING_ROOM_GOOGLE_SHEET_URL'),
+        'sheet_embed_url' => env('MEETING_ROOM_GOOGLE_SHEET_EMBED_URL'),
+        'booking_url' => env('MEETING_ROOM_BOOKING_URL'),
+    ],
+
 ];

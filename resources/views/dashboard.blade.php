@@ -28,25 +28,10 @@
     @if($user->canAccess('knowledge.view'))
         <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> เทรนนิ่ง</a>
     @endif
-    <a class="btn btn-outline-primary" href="#meeting-room"><i class="bi bi-calendar2-week"></i> ห้องประชุม</a>
     @if($user->canAccessItAssets())
         <a class="btn btn-outline-primary" href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i> ทรัพย์สิน IT</a>
     @endif
 </div>
-
-<section class="panel meeting-room-panel" id="meeting-room">
-    <div class="section-title">
-        <h2>ห้องประชุม</h2>
-        <span class="tag">Google Sheet</span>
-    </div>
-    <div class="meeting-room-grid">
-        <div>
-            <strong>ตารางจองห้องประชุม</strong>
-            <p>เตรียมเชื่อมข้อมูลจาก Google Sheet</p>
-        </div>
-        <button class="btn btn-outline-primary" type="button" disabled><i class="bi bi-calendar-check"></i> เปิดตารางจอง</button>
-    </div>
-</section>
 
 <div class="content-grid">
     @if($user->canAccess('announcements.view'))

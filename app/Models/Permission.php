@@ -14,6 +14,7 @@ class Permission extends Model
         ['key' => 'portal.dashboard.view', 'group' => 'Employee Portal', 'name' => 'ดู Dashboard', 'description' => 'เปิดหน้าแรกและข้อมูลสรุปของตนเอง', 'sort_order' => 10],
         ['key' => 'profile.view', 'group' => 'Employee Portal', 'name' => 'ดูโปรไฟล์พนักงาน', 'description' => 'เปิดข้อมูลส่วนตัวและเอกสารของตนเอง', 'sort_order' => 20],
         ['key' => 'directory.view', 'group' => 'Employee Portal', 'name' => 'ดูรายชื่อพนักงาน', 'description' => 'ค้นหาพนักงาน ทีม สาขา อีเมล และเบอร์ต่อ', 'sort_order' => 30],
+        ['key' => 'meeting_rooms.view', 'group' => 'Employee Portal', 'name' => 'ดูห้องประชุม', 'description' => 'เปิดตารางจองห้องประชุมจาก Google Sheet และปุ่มจองห้องประชุม', 'sort_order' => 35],
         ['key' => 'announcements.view', 'group' => 'Content', 'name' => 'ดูประกาศ', 'description' => 'อ่านนโยบายและประกาศบริษัท', 'sort_order' => 40],
         ['key' => 'knowledge.view', 'group' => 'Content', 'name' => 'ดูเทรนนิ่ง', 'description' => 'อ่านบทความและดูวิดีโอเทรนนิ่ง', 'sort_order' => 50],
         ['key' => 'documents.view', 'group' => 'Content', 'name' => 'ดู/ดาวน์โหลดแบบฟอร์ม', 'description' => 'เปิดแบบฟอร์มบริษัทและเอกสารของตนเอง', 'sort_order' => 60],

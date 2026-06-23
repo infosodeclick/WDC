@@ -30,6 +30,9 @@
             @if($currentUser?->canAccess('directory.view'))
                 <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
             @endif
+            @if($currentUser?->canAccess('meeting_rooms.view'))
+                <a class="nav-link {{ request()->routeIs('meeting-rooms.*') ? 'active' : '' }}" href="{{ route('meeting-rooms.index') }}"><i class="bi bi-calendar2-week"></i><span>ห้องประชุม</span></a>
+            @endif
             @if($currentUser?->canAccess('announcements.view'))
                 <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ประกาศ</span></a>
             @endif
@@ -163,6 +166,9 @@
             <div class="mobile-more-grid">
                 @if($currentUser?->canAccess('directory.view'))
                     <a href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
+                @endif
+                @if($currentUser?->canAccess('meeting_rooms.view'))
+                    <a href="{{ route('meeting-rooms.index') }}"><i class="bi bi-calendar2-week"></i><span>ห้องประชุม</span></a>
                 @endif
                 @if($currentUser?->canAccess('announcements.view'))
                     <a href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i><span>ประกาศ</span></a>

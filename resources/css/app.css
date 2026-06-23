@@ -524,6 +524,69 @@ a {
     color: var(--muted);
 }
 
+.meeting-sheet-frame {
+    overflow: hidden;
+    min-height: 560px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.meeting-sheet-frame iframe {
+    width: 100%;
+    height: 620px;
+    border: 0;
+}
+
+.meeting-sheet-placeholder {
+    display: grid;
+    min-height: 220px;
+    margin-bottom: 16px;
+    place-items: center;
+    text-align: center;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    background: #fffdf4;
+}
+
+.meeting-sheet-placeholder > div {
+    max-width: 560px;
+    padding: 24px;
+}
+
+.meeting-sheet-placeholder i {
+    display: inline-grid;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    place-items: center;
+    color: var(--wdc-black);
+    border-radius: 8px;
+    background: var(--wdc-yellow-1);
+    font-size: 1.4rem;
+}
+
+.meeting-sheet-placeholder strong {
+    display: block;
+    font-size: 1.1rem;
+}
+
+.meeting-sheet-placeholder p,
+.section-subtitle {
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.meeting-table-wrap {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.meeting-table {
+    margin: 0;
+}
+
 .system-mini-card,
 .system-card {
     border: 1px solid var(--line);
@@ -2319,6 +2382,14 @@ body.directory-modal-open {
 
     .directory-modal-media {
         min-height: 220px;
+    }
+
+    .meeting-sheet-frame {
+        min-height: 420px;
+    }
+
+    .meeting-sheet-frame iframe {
+        height: 460px;
     }
 
     .video-card {

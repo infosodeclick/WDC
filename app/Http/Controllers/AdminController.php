@@ -217,6 +217,7 @@ class AdminController extends Controller
             ['label' => 'หน้าแรก', 'permissions' => ['portal.dashboard.view']],
             ['label' => 'โปรไฟล์พนักงาน', 'permissions' => ['profile.view']],
             ['label' => 'รายชื่อพนักงาน', 'permissions' => ['directory.view']],
+            ['label' => 'ห้องประชุม', 'permissions' => ['meeting_rooms.view']],
             ['label' => 'ประกาศ', 'permissions' => ['announcements.view']],
             ['label' => 'เทรนนิ่ง', 'permissions' => ['knowledge.view']],
             ['label' => 'แจ้งปัญหา IT', 'permissions' => ['tickets.create', 'tickets.manage']],

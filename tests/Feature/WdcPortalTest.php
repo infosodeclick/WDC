@@ -44,6 +44,8 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('ส่งคำขออนุมัติ')
             ->assertDontSee('เข้าระบบเดิม')
             ->assertDontSee('system-mini-grid', false)
+            ->assertDontSee('meeting-room-panel', false)
+            ->assertDontSee('href="#meeting-room"', false)
             ->assertSee('สวัสดี คุณสมชาย')
             ->assertSee('โปรไฟล์พนักงาน');
     }
@@ -107,6 +109,48 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertDontSee(route('knowledge.index'), false)
             ->assertDontSee('เข้าระบบเดิม');
+    }
+
+    public function test_employee_can_open_meeting_room_menu_page(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee(route('meeting-rooms.index'), false)
+            ->assertDontSee('href="#meeting-room"', false)
+            ->assertDontSee('meeting-room-panel', false);
+
+        $this->get(route('meeting-rooms.index'))
+            ->assertOk()
+            ->assertSee('ห้องประชุม')
+            ->assertSee('Google Sheet')
+            ->assertSee('ตารางจองห้องประชุม')
+            ->assertSee('จองห้องประชุม')
+            ->assertSee('MEETING_ROOM_GOOGLE_SHEET_EMBED_URL');
+    }
+
+    public function test_meeting_room_page_respects_permission_override(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $permission = Permission::where('key', 'meeting_rooms.view')->firstOrFail();
+
+        $employee->permissionOverrides()->sync([
+            $permission->id => ['effect' => 'deny'],
+        ]);
+
+        $this->actingAs($employee);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee(route('meeting-rooms.index'), false);
+
+        $this->get(route('meeting-rooms.index'))->assertForbidden();
     }
 
     public function test_mobile_navigation_respects_user_permissions(): void
