@@ -60,14 +60,30 @@ a {
 }
 
 .portal-shell {
+    position: relative;
+    isolation: isolate;
     min-height: 100vh;
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
 }
 
+.portal-shell::before {
+    content: "";
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 0;
+    width: 280px;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(251, 214, 71, .12), rgba(251, 214, 71, 0) 32%),
+        var(--sidebar);
+    border-right: 4px solid var(--wdc-yellow-2);
+}
+
 .portal-sidebar {
     position: sticky;
     top: 0;
+    z-index: 1;
     height: 100vh;
     overflow-y: auto;
     padding: 24px 18px;
@@ -177,6 +193,8 @@ a {
 }
 
 .portal-main {
+    position: relative;
+    z-index: 1;
     min-width: 0;
     max-width: 100%;
 }
@@ -831,11 +849,19 @@ a {
     color: var(--muted);
 }
 
+.directory-search-panel {
+    position: relative;
+}
+
 .pdpa-note {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 2;
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    margin-bottom: 14px;
+    margin: 0;
 }
 
 .pdpa-note-toggle {
@@ -870,6 +896,11 @@ a {
 }
 
 .pdpa-note p {
+    position: absolute;
+    top: 44px;
+    right: 0;
+    z-index: 3;
+    width: min(520px, calc(100vw - 72px));
     margin: 0;
     padding: 10px 12px;
     border: 1px solid #b7e4d7;
@@ -2178,6 +2209,10 @@ body.directory-modal-open {
         grid-template-columns: 1fr;
     }
 
+    .portal-shell::before {
+        display: none;
+    }
+
     .portal-sidebar {
         display: none;
     }
@@ -2327,6 +2362,19 @@ body.directory-modal-open {
     .workflow-payload,
     .comment-form {
         grid-template-columns: 1fr;
+    }
+
+    .pdpa-note {
+        position: relative;
+        top: auto;
+        right: auto;
+        justify-content: flex-end;
+        margin-bottom: 12px;
+    }
+
+    .pdpa-note p {
+        right: 0;
+        width: min(320px, calc(100vw - 54px));
     }
 
     .asset-status-form {

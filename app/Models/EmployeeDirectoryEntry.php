@@ -67,4 +67,19 @@ class EmployeeDirectoryEntry extends Model
 
         return $letters !== '' ? $letters : 'W';
     }
+
+    public function employeeCode(): ?string
+    {
+        $payload = $this->raw_payload ?: [];
+
+        foreach (['employee_code', 'Employee Code', 'รหัสพนักงาน', 'รหัส', 'code'] as $key) {
+            $value = data_get($payload, $key);
+
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return null;
+    }
 }

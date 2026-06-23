@@ -19,9 +19,7 @@ class DirectoryController extends Controller
         $entryType = $request->string('type')->toString();
         $directoryView = $request->string('view')->toString();
 
-        if (! in_array($directoryView, ['location', 'all', 'team', 'table'], true)) {
-            $directoryView = 'all';
-        }
+        $directoryView = 'all';
 
         $filteredEntries = EmployeeDirectoryEntry::where('is_active', true)
             ->when($q !== '', function ($query) use ($q) {
@@ -49,25 +47,11 @@ class DirectoryController extends Controller
             ->orderBy('department')
             ->orderBy('display_name');
 
-        $entries = $directoryView === 'all'
-            ? $orderedEntries(clone $filteredEntries)->paginate(18)->withQueryString()
-            : null;
-
-        $viewEntries = $directoryView === 'all'
-            ? collect()
-            : $orderedEntries(clone $filteredEntries)->get();
-
-        $groupedEntries = match ($directoryView) {
-            'location' => $viewEntries->groupBy(fn ($entry) => $entry->location ?: 'ไม่ระบุสาขา'),
-            'team' => $viewEntries->groupBy(fn ($entry) => $entry->team ?: 'ไม่ระบุทีม'),
-            default => collect(),
-        };
+        $entries = $orderedEntries(clone $filteredEntries)->paginate(18)->withQueryString();
 
         return view('directory.index', [
             'entries' => $entries,
             'directoryView' => $directoryView,
-            'viewEntries' => $viewEntries,
-            'groupedEntries' => $groupedEntries,
             'q' => $q,
             'department' => $department,
             'team' => $team,

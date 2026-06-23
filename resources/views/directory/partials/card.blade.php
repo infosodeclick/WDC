@@ -1,4 +1,5 @@
-@php($phoneText = collect([$entry->phone, $entry->extension_number ? 'ต่อ '.$entry->extension_number : null])->filter()->join(' · '))
+@php($employeeCode = $entry->employeeCode())
+@php($deskPhone = $entry->extension_number)
 @php($subtitleText = collect([$entry->thai_name, $entry->nickname ? '('.$entry->nickname.')' : null])->filter()->join(' '))
 
 <article class="directory-card directory-card-with-photo" data-directory-card>
@@ -14,9 +15,6 @@
             <div class="meta-row compact-meta">
                 <span class="copy-line compact-copy">
                     <span>{{ $entry->location ?? 'ไม่ระบุสาขา' }}</span>
-                    @if($entry->location)
-                        <button class="copy-button" type="button" data-copy="{{ $entry->location }}" title="คัดลอกสาขา" aria-label="คัดลอกสาขา"><i class="bi bi-copy"></i></button>
-                    @endif
                 </span>
             </div>
             <h2 class="directory-name-line">
@@ -24,36 +22,20 @@
                 <button class="copy-button" type="button" data-copy="{{ $entry->display_name }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>
             </h2>
             @if($subtitleText)
-                <p class="copy-line">
-                    <span>{{ $subtitleText }}</span>
-                    <button class="copy-button" type="button" data-copy="{{ $subtitleText }}" title="คัดลอกชื่อไทย/ชื่อเล่น" aria-label="คัดลอกชื่อไทยหรือชื่อเล่น"><i class="bi bi-copy"></i></button>
-                </p>
+                <p>{{ $subtitleText }}</p>
             @endif
         </div>
     </div>
 
     <dl class="mini-detail-list">
+        <dt>รหัสพนักงาน</dt>
+        <dd><span>{{ $employeeCode ?? '-' }}</span></dd>
         <dt>แผนก/BU</dt>
-        <dd class="copy-line">
-            <span>{{ $entry->department ?? '-' }}</span>
-            @if($entry->department)
-                <button class="copy-button" type="button" data-copy="{{ $entry->department }}" title="คัดลอกแผนก" aria-label="คัดลอกแผนก"><i class="bi bi-copy"></i></button>
-            @endif
-        </dd>
+        <dd><span>{{ $entry->department ?? '-' }}</span></dd>
         <dt>ทีม</dt>
-        <dd class="copy-line">
-            <span>{{ $entry->team ?? '-' }}</span>
-            @if($entry->team)
-                <button class="copy-button" type="button" data-copy="{{ $entry->team }}" title="คัดลอกทีม" aria-label="คัดลอกทีม"><i class="bi bi-copy"></i></button>
-            @endif
-        </dd>
+        <dd><span>{{ $entry->team ?? '-' }}</span></dd>
         <dt>ตำแหน่ง</dt>
-        <dd class="copy-line">
-            <span>{{ $entry->position ?? '-' }}</span>
-            @if($entry->position)
-                <button class="copy-button" type="button" data-copy="{{ $entry->position }}" title="คัดลอกตำแหน่ง" aria-label="คัดลอกตำแหน่ง"><i class="bi bi-copy"></i></button>
-            @endif
-        </dd>
+        <dd><span>{{ $entry->position ?? '-' }}</span></dd>
         <dt>อีเมล</dt>
         <dd class="copy-line">
             @if($entry->email)
@@ -64,27 +46,14 @@
             @endif
         </dd>
         <dt>โทร</dt>
-        <dd class="copy-line">
-            <span>{{ $phoneText ?: '-' }}</span>
-            @if($phoneText)
-                <button class="copy-button" type="button" data-copy="{{ $phoneText }}" title="คัดลอกเบอร์โทร" aria-label="คัดลอกเบอร์โทร"><i class="bi bi-copy"></i></button>
-            @endif
-        </dd>
+        <dd><span>{{ $entry->phone ?: '-' }}</span></dd>
+        <dt>เบอร์โทรโต๊ะ</dt>
+        <dd><span>{{ $deskPhone ?: '-' }}</span></dd>
     </dl>
 
     @if($entry->notes)
-        <div class="directory-note copy-line">
+        <div class="directory-note">
             <span>{{ $entry->notes }}</span>
-            <button class="copy-button" type="button" data-copy="{{ $entry->notes }}" title="คัดลอกหมายเหตุ" aria-label="คัดลอกหมายเหตุ"><i class="bi bi-copy"></i></button>
-        </div>
-    @endif
-
-    @if($entry->source_url)
-        <div class="source-actions">
-            <a class="source-link" href="{{ $entry->source_url }}" target="_blank" rel="noopener">
-                <i class="bi bi-box-arrow-up-right"></i> เปิดข้อมูลต้นทาง
-            </a>
-            <button class="copy-button" type="button" data-copy="{{ $entry->source_url }}" title="คัดลอกลิงก์ต้นทาง" aria-label="คัดลอกลิงก์ต้นทาง"><i class="bi bi-copy"></i></button>
         </div>
     @endif
 
@@ -103,42 +72,21 @@
                     <button class="copy-button" type="button" data-copy="{{ $entry->display_name }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>
                 </h2>
                 @if($subtitleText)
-                    <p class="copy-line">
-                        <span>{{ $subtitleText }}</span>
-                        <button class="copy-button" type="button" data-copy="{{ $subtitleText }}" title="คัดลอกชื่อไทย/ชื่อเล่น" aria-label="คัดลอกชื่อไทยหรือชื่อเล่น"><i class="bi bi-copy"></i></button>
-                    </p>
+                    <p>{{ $subtitleText }}</p>
                 @endif
             </div>
         </div>
         <dl class="detail-list directory-modal-details">
+            <dt>รหัสพนักงาน</dt>
+            <dd><span>{{ $employeeCode ?? '-' }}</span></dd>
             <dt>แผนก/BU</dt>
-            <dd class="copy-line">
-                <span>{{ $entry->department ?? '-' }}</span>
-                @if($entry->department)
-                    <button class="copy-button" type="button" data-copy="{{ $entry->department }}" title="คัดลอกแผนก" aria-label="คัดลอกแผนก"><i class="bi bi-copy"></i></button>
-                @endif
-            </dd>
+            <dd><span>{{ $entry->department ?? '-' }}</span></dd>
             <dt>ทีม</dt>
-            <dd class="copy-line">
-                <span>{{ $entry->team ?? '-' }}</span>
-                @if($entry->team)
-                    <button class="copy-button" type="button" data-copy="{{ $entry->team }}" title="คัดลอกทีม" aria-label="คัดลอกทีม"><i class="bi bi-copy"></i></button>
-                @endif
-            </dd>
+            <dd><span>{{ $entry->team ?? '-' }}</span></dd>
             <dt>ตำแหน่ง</dt>
-            <dd class="copy-line">
-                <span>{{ $entry->position ?? '-' }}</span>
-                @if($entry->position)
-                    <button class="copy-button" type="button" data-copy="{{ $entry->position }}" title="คัดลอกตำแหน่ง" aria-label="คัดลอกตำแหน่ง"><i class="bi bi-copy"></i></button>
-                @endif
-            </dd>
+            <dd><span>{{ $entry->position ?? '-' }}</span></dd>
             <dt>สาขา</dt>
-            <dd class="copy-line">
-                <span>{{ $entry->location ?? '-' }}</span>
-                @if($entry->location)
-                    <button class="copy-button" type="button" data-copy="{{ $entry->location }}" title="คัดลอกสาขา" aria-label="คัดลอกสาขา"><i class="bi bi-copy"></i></button>
-                @endif
-            </dd>
+            <dd><span>{{ $entry->location ?? '-' }}</span></dd>
             <dt>อีเมล</dt>
             <dd class="copy-line">
                 @if($entry->email)
@@ -149,25 +97,12 @@
                 @endif
             </dd>
             <dt>โทร</dt>
-            <dd class="copy-line">
-                <span>{{ $phoneText ?: '-' }}</span>
-                @if($phoneText)
-                    <button class="copy-button" type="button" data-copy="{{ $phoneText }}" title="คัดลอกเบอร์โทร" aria-label="คัดลอกเบอร์โทร"><i class="bi bi-copy"></i></button>
-                @endif
-            </dd>
+            <dd><span>{{ $entry->phone ?: '-' }}</span></dd>
+            <dt>เบอร์โทรโต๊ะ</dt>
+            <dd><span>{{ $deskPhone ?: '-' }}</span></dd>
             @if($entry->notes)
                 <dt>หมายเหตุ</dt>
-                <dd class="copy-line">
-                    <span>{{ $entry->notes }}</span>
-                    <button class="copy-button" type="button" data-copy="{{ $entry->notes }}" title="คัดลอกหมายเหตุ" aria-label="คัดลอกหมายเหตุ"><i class="bi bi-copy"></i></button>
-                </dd>
-            @endif
-            @if($entry->source_url)
-                <dt>ข้อมูลต้นทาง</dt>
-                <dd class="copy-line">
-                    <a href="{{ $entry->source_url }}" target="_blank" rel="noopener">{{ $entry->source_url }}</a>
-                    <button class="copy-button" type="button" data-copy="{{ $entry->source_url }}" title="คัดลอกลิงก์ต้นทาง" aria-label="คัดลอกลิงก์ต้นทาง"><i class="bi bi-copy"></i></button>
-                </dd>
+                <dd><span>{{ $entry->notes }}</span></dd>
             @endif
         </dl>
     </div>
