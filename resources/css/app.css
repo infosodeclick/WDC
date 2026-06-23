@@ -240,6 +240,7 @@ a {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin-left: auto;
 }
 
 .icon-button {
@@ -276,7 +277,18 @@ a {
 
 .user-chip {
     display: grid;
+    min-height: 46px;
+    align-content: center;
+    padding: 6px 0;
+    color: var(--ink);
     line-height: 1.2;
+    text-decoration: none;
+}
+
+.user-chip:hover,
+.user-chip:focus-visible {
+    color: var(--wdc-black);
+    outline: 0;
 }
 
 .user-chip small {
@@ -854,14 +866,11 @@ a {
 }
 
 .pdpa-note {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 2;
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    margin: 0;
+    justify-content: flex-end;
+    margin: 0 0 14px;
 }
 
 .pdpa-note-toggle {
@@ -898,7 +907,7 @@ a {
 .pdpa-note p {
     position: absolute;
     top: 44px;
-    right: 0;
+    right: 16px;
     z-index: 3;
     width: min(520px, calc(100vw - 72px));
     margin: 0;

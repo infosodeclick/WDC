@@ -81,7 +81,7 @@
                 </span>
             </a>
 
-            @unless(request()->routeIs('dashboard'))
+            @unless(request()->routeIs('dashboard') || request()->routeIs('directory.*'))
                 <form class="search-box" action="{{ route('search') }}" method="get">
                     <i class="bi bi-search"></i>
                     <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ เทรนนิ่ง" aria-label="ค้นหา">
@@ -99,10 +99,10 @@
                     </button>
                 </form>
 
-                <div class="user-chip">
+                <a class="user-chip" href="{{ route('profile') }}" title="เปิดโปรไฟล์พนักงาน" aria-label="เปิดโปรไฟล์พนักงาน">
                     <span>{{ $currentUser?->name }}</span>
-                    <small>{{ $currentUser?->role?->name }} · {{ $currentUser?->employee?->department?->name }}</small>
-                </div>
+                    <small>{{ $currentUser?->employee?->department?->name ?? '-' }}</small>
+                </a>
 
                 <form action="{{ route('logout') }}" method="post">
                     @csrf

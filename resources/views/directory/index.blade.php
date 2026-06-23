@@ -3,14 +3,6 @@
 @section('title', 'รายชื่อพนักงาน | WDC Portal')
 
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">WDC Information Directory</p>
-        <h1>รายชื่อพนักงาน</h1>
-        <p>ข้อมูลจาก Notion เดิมถูกนำเข้ามาไว้ใน WDC Portal เพื่อให้ค้นหาพนักงาน กลุ่มอีเมล ทีม และสาขาได้จากที่เดียว</p>
-    </div>
-</div>
-
 <section class="panel directory-search-panel">
     <details class="pdpa-note">
         <summary class="pdpa-note-toggle" title="ข้อมูลการใช้งาน" aria-label="ข้อมูลการใช้งาน">
