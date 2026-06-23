@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EmployeeDirectoryEntry;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class DirectoryController extends Controller
@@ -42,12 +43,29 @@ class DirectoryController extends Controller
             ->when($location !== '', fn ($query) => $query->where('location', $location))
             ->when($entryType !== '', fn ($query) => $query->where('entry_type', $entryType));
 
-        $orderedEntries = fn ($query) => $query
-            ->orderByRaw("CASE entry_type WHEN 'employee' THEN 1 WHEN 'mail_group' THEN 2 ELSE 3 END")
-            ->orderBy('department')
-            ->orderBy('display_name');
+        $sortedEntries = (clone $filteredEntries)
+            ->get()
+            ->sortBy([
+                fn (EmployeeDirectoryEntry $entry) => $entry->isNewHireThisMonth() ? 0 : 1,
+                fn (EmployeeDirectoryEntry $entry) => $entry->isNewHireThisMonth() ? -optional($entry->startDate())->timestamp : 0,
+                fn (EmployeeDirectoryEntry $entry) => ['employee' => 1, 'mail_group' => 2, 'showroom' => 3][$entry->entry_type] ?? 4,
+                fn (EmployeeDirectoryEntry $entry) => $entry->department ?? '',
+                fn (EmployeeDirectoryEntry $entry) => $entry->display_name,
+            ])
+            ->values();
 
-        $entries = $orderedEntries(clone $filteredEntries)->paginate(18)->withQueryString();
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 18;
+        $entries = new LengthAwarePaginator(
+            $sortedEntries->forPage($page, $perPage),
+            $sortedEntries->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ],
+        );
 
         return view('directory.index', [
             'entries' => $entries,

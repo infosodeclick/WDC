@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -81,5 +82,72 @@ class EmployeeDirectoryEntry extends Model
         }
 
         return null;
+    }
+
+    public function startDate(): ?CarbonImmutable
+    {
+        $payload = $this->raw_payload ?: [];
+
+        foreach ([
+            'start_date',
+            'hire_date',
+            'hired_at',
+            'employment_start_date',
+            'first_working_date',
+            'date_start',
+            'Start Date',
+            'Hire Date',
+            'Employment Start Date',
+            'First Working Date',
+            'วันเริ่มงาน',
+            'วันที่เริ่มงาน',
+            'เริ่มงาน',
+        ] as $key) {
+            $date = $this->parseDirectoryDate(data_get($payload, $key));
+
+            if ($date) {
+                return $date;
+            }
+        }
+
+        return null;
+    }
+
+    public function isNewHireThisMonth(): bool
+    {
+        $startDate = $this->startDate();
+
+        return $this->entry_type === 'employee'
+            && $startDate !== null
+            && $startDate->isSameMonth(now())
+            && $startDate->isSameYear(now());
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function parseDirectoryDate($value): ?CarbonImmutable
+    {
+        if (is_array($value)) {
+            foreach (['date', 'start', 'value', 'plain_text', 'text'] as $key) {
+                $date = $this->parseDirectoryDate($value[$key] ?? null);
+
+                if ($date) {
+                    return $date;
+                }
+            }
+
+            return null;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse(trim($value))->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

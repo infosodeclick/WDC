@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Complaint;
+use App\Models\EmployeeDirectoryEntry;
 use App\Models\ItAsset;
 use App\Models\MeetingRoomBooking;
 use App\Models\Permission;
@@ -402,6 +403,45 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('directory-table', false)
             ->assertSee('Chanapon Jakkaphan')
             ->assertSee('Information Technology');
+    }
+
+    public function test_directory_prioritizes_current_month_new_hires_with_compact_cards(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'manual',
+            'source_record_id' => 'new-hire-this-month',
+            'entry_type' => 'employee',
+            'display_name' => 'Newest WDC Member',
+            'english_name' => 'Newest WDC Member',
+            'thai_name' => 'สมาชิกใหม่ ดับบลิวดีซี',
+            'nickname' => 'ใหม่',
+            'department' => 'Human Resources',
+            'position' => 'HR Officer',
+            'location' => 'Lumpini',
+            'email' => 'new.member@wdc.co.th',
+            'phone' => '099-000-0000',
+            'extension_number' => '1234',
+            'raw_payload' => [
+                'start_date' => now()->toDateString(),
+                'employee_code' => 'EMP00999',
+            ],
+            'is_active' => true,
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('directory.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['Newest WDC Member', 'Aiyada Supso'])
+            ->assertSee('new-hire-badge', false)
+            ->assertSee('directory-card-detail', false)
+            ->assertSee('directory-modal-source', false)
+            ->assertDontSee('mini-detail-list', false);
     }
 
     public function test_employee_can_create_workflow_request_from_smartflow_template(): void

@@ -649,7 +649,7 @@ a {
 }
 
 .directory-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin-bottom: 18px;
 }
 
@@ -1040,26 +1040,25 @@ a {
 }
 
 .directory-card-with-photo {
+    position: relative;
     align-content: start;
-}
-
-.directory-card-top {
-    display: grid;
-    grid-template-columns: 86px minmax(0, 1fr);
-    gap: 14px;
-    align-items: center;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
 }
 
 .directory-photo-button {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 86px;
-    height: 86px;
+    width: 100%;
+    aspect-ratio: 4 / 3;
     padding: 0;
     border: 0;
-    border-radius: 8px;
-    background: transparent;
+    border-radius: 0;
+    background: #f4f7fb;
     cursor: pointer;
+    overflow: hidden;
 }
 
 .directory-photo-button:focus-visible,
@@ -1071,14 +1070,14 @@ a {
 
 .directory-photo,
 .directory-avatar {
-    width: 86px;
-    height: 86px;
-    border-radius: 8px;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
 }
 
 .directory-photo {
     object-fit: cover;
-    border: 1px solid var(--line);
+    border: 0;
     background: #eef2f7;
 }
 
@@ -1087,26 +1086,115 @@ a {
     place-items: center;
     color: var(--wdc-black);
     background: linear-gradient(135deg, var(--wdc-yellow-1), var(--wdc-yellow-2) 60%, var(--wdc-yellow-3));
-    font-size: 1.35rem;
+    font-size: 2.7rem;
     font-weight: 800;
 }
 
 .directory-photo-button:hover .directory-photo,
 .directory-photo-button:hover .directory-avatar {
-    box-shadow: 0 12px 26px rgba(15, 35, 54, .18);
-    transform: translateY(-1px);
+    transform: scale(1.025);
 }
 
-.directory-card-title {
+.directory-card-body {
+    display: grid;
+    gap: 8px;
+    padding: 16px 18px 18px;
     min-width: 0;
 }
 
-.directory-card-title h2 {
+.directory-card-body h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1.35;
     overflow-wrap: anywhere;
 }
 
-.compact-meta {
+.directory-card-thai,
+.directory-card-nickname {
+    color: var(--muted);
+    font-size: .96rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.directory-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.directory-card-tags span {
+    display: inline-flex;
+    max-width: 100%;
+    min-height: 28px;
     align-items: center;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: #f7e7ae;
+    color: #3f3100;
+    font-size: .88rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.directory-card-position {
+    background: #eef2f7;
+    color: var(--ink);
+}
+
+.directory-card-department {
+    background: #f7e7ae;
+    color: #3f3100;
+}
+
+.directory-card-detail {
+    justify-self: start;
+    margin-top: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-weight: 750;
+}
+
+.directory-card-detail:hover,
+.directory-card-detail:focus-visible {
+    color: var(--wdc-black);
+}
+
+.new-hire-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    min-height: 30px;
+    padding: 5px 10px;
+    border: 1px solid rgba(34, 31, 32, .18);
+    border-radius: 999px;
+    background: var(--wdc-yellow-2);
+    color: var(--wdc-black);
+    font-size: .82rem;
+    font-weight: 850;
+    box-shadow: 0 10px 24px rgba(34, 31, 32, .16);
+}
+
+.directory-photo-button .new-hire-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+}
+
+.directory-card.is-new-hire {
+    border-color: var(--wdc-yellow-3);
+    box-shadow: 0 14px 30px rgba(243, 188, 74, .18);
+}
+
+.modal-new-hire-badge {
+    margin-bottom: 4px;
 }
 
 .directory-name-line,
@@ -2473,10 +2561,6 @@ body.directory-modal-open {
         grid-template-columns: 1fr;
     }
 
-    .directory-card-top {
-        grid-template-columns: 72px minmax(0, 1fr);
-    }
-
     .admin-user-head,
     .permission-row {
         grid-template-columns: 1fr;
@@ -2486,14 +2570,11 @@ body.directory-modal-open {
         flex-direction: column;
     }
 
-    .directory-photo,
-    .directory-avatar {
-        width: 72px;
-        height: 72px;
+    .directory-card-body {
+        padding: 14px;
     }
 
     .directory-photo-button {
-        width: 72px;
-        height: 72px;
+        aspect-ratio: 16 / 10;
     }
 }
