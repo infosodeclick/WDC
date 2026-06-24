@@ -24,49 +24,14 @@ class AssetController extends Controller
         abort_unless($user->canAccessItAssets(), 403);
 
         $query = ItAsset::with('category', 'location', 'owner.employee.department');
-        $status = $request->string('status')->toString();
-        $categoryId = $request->integer('category_id') ?: null;
-        $locationId = $request->integer('location_id') ?: null;
-        $q = trim($request->string('q')->toString());
-
-        if ($status !== '' && in_array($status, ItAsset::STATUSES, true)) {
-            $query->where('status', $status);
-        } else {
-            $status = '';
-        }
-
-        if ($categoryId) {
-            $query->where('asset_category_id', $categoryId);
-        }
-
-        if ($locationId) {
-            $query->where('asset_location_id', $locationId);
-        }
-
-        if ($q !== '') {
-            $query->where(function ($assetQuery) use ($q) {
-                $assetQuery->where('code', 'like', "%{$q}%")
-                    ->orWhere('name', 'like', "%{$q}%")
-                    ->orWhere('brand', 'like', "%{$q}%")
-                    ->orWhere('model', 'like', "%{$q}%")
-                    ->orWhere('serial_number', 'like', "%{$q}%")
-                    ->orWhere('owner_name', 'like', "%{$q}%")
-                    ->orWhere('department', 'like', "%{$q}%");
-            });
-        }
-
         $baseAssetQuery = ItAsset::query();
 
         return view('assets.index', [
-            'assets' => $query->latest()->paginate(12)->withQueryString(),
+            'assets' => $query->latest()->paginate(12),
             'categories' => AssetCategory::withCount('assets')->orderBy('code')->get(),
             'locations' => AssetLocation::withCount('assets')->orderBy('code')->get(),
             'inspectionDocuments' => AssetInspectionDocument::with('location', 'creator')->latest('inspection_date')->take(8)->get(),
             'auditLogs' => AssetAuditLog::with('asset', 'user')->latest()->take(12)->get(),
-            'status' => $status,
-            'categoryId' => $categoryId,
-            'locationId' => $locationId,
-            'q' => $q,
             'assetCount' => (clone $baseAssetQuery)->count(),
             'activeCount' => (clone $baseAssetQuery)->where('status', 'active')->count(),
             'repairCount' => (clone $baseAssetQuery)->where('status', 'repair')->count(),

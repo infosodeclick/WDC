@@ -28,39 +28,6 @@
     <div class="metric-card"><span>มูลค่ารวม</span><strong>{{ number_format($totalValue, 0) }}</strong><small>บาท ตามราคาทุน</small></div>
 </div>
 
-<form class="panel asset-filter" method="get" action="{{ route('assets.index') }}">
-    <div class="form-grid">
-        <label class="span-2">ค้นหา
-            <input class="form-control" name="q" value="{{ $q }}" placeholder="รหัส ชื่อ รุ่น serial ผู้ถือครอง แผนก">
-        </label>
-        <label>สถานะ
-            <select class="form-select" name="status">
-                <option value="">ทุกสถานะ</option>
-                @foreach(['active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
-                    <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label>หมวดหมู่
-            <select class="form-select" name="category_id">
-                <option value="">ทุกหมวดหมู่</option>
-                @foreach($categories as $category)
-                    <option value="{{ $category->id }}" @selected($categoryId === $category->id)>{{ $category->code }} - {{ $category->name }}</option>
-                @endforeach
-            </select>
-        </label>
-        <label>สถานที่
-            <select class="form-select" name="location_id">
-                <option value="">ทุกสถานที่</option>
-                @foreach($locations as $location)
-                    <option value="{{ $location->id }}" @selected($locationId === $location->id)>{{ $location->code }} - {{ $location->name }}</option>
-                @endforeach
-            </select>
-        </label>
-        <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> ค้นหา</button>
-    </div>
-</form>
-
 @if($canManageAssets)
     <div class="content-grid asset-admin-grid">
         <section class="panel">
@@ -87,19 +54,6 @@
             </ol>
         </section>
 
-        <section class="panel">
-            <div class="section-title">
-                <h2>Scan / QR Lookup</h2>
-                <span class="tag">QR Code</span>
-            </div>
-            <form class="stack-form" method="get" action="{{ route('assets.index') }}">
-                <label>สแกนหรือพิมพ์รหัสทรัพย์สิน
-                    <input class="form-control" name="q" value="{{ $q }}" placeholder="เช่น WDC-NB-0001" autofocus>
-                </label>
-                <button class="btn btn-primary" type="submit"><i class="bi bi-qr-code-scan"></i> ค้นหาทรัพย์สิน</button>
-            </form>
-            <p class="form-help mt-2">บนมือถือสามารถใช้กล้อง/keyboard wedge scanner เพื่อกรอกรหัสเข้าช่องนี้ได้ทันที</p>
-        </section>
     </div>
 
     <section class="panel" id="new-asset">
@@ -311,7 +265,7 @@
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="{{ ($canManageAssets || $canDeleteAssets) ? 7 : 6 }}"><div class="empty-state">ยังไม่พบทรัพย์สินตามเงื่อนไขที่ค้นหา</div></td></tr>
+                    <tr><td colspan="{{ ($canManageAssets || $canDeleteAssets) ? 7 : 6 }}"><div class="empty-state">ยังไม่มีรายการทรัพย์สิน</div></td></tr>
                 @endforelse
             </tbody>
         </table>

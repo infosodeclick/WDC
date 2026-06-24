@@ -23,30 +23,7 @@ class AdminController extends Controller
 
         abort_unless($this->canOpenAdmin($actor), 403);
 
-        $userSearch = trim($request->string('q')->toString());
-        $roleFilter = $request->string('role')->toString();
-        $statusFilter = $request->string('status')->toString();
         $usersQuery = User::with('role.permissions', 'employee.department', 'permissionOverrides')->orderBy('employee_code');
-
-        if ($userSearch !== '') {
-            $usersQuery->where(function ($query) use ($userSearch) {
-                $query->where('employee_code', 'like', "%{$userSearch}%")
-                    ->orWhere('name', 'like', "%{$userSearch}%")
-                    ->orWhere('email', 'like', "%{$userSearch}%")
-                    ->orWhereHas('employee.department', fn ($departmentQuery) => $departmentQuery->where('name', 'like', "%{$userSearch}%"))
-                    ->orWhereHas('employee', fn ($employeeQuery) => $employeeQuery->where('position', 'like', "%{$userSearch}%"));
-            });
-        }
-
-        if ($roleFilter !== '') {
-            $usersQuery->whereHas('role', fn ($query) => $query->where('slug', $roleFilter));
-        }
-
-        if (in_array($statusFilter, ['active', 'suspended'], true)) {
-            $usersQuery->where('is_active', $statusFilter === 'active');
-        } else {
-            $statusFilter = '';
-        }
 
         $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
@@ -66,9 +43,6 @@ class AdminController extends Controller
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
             'logs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']) ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
-            'userSearch' => $userSearch,
-            'roleFilter' => $roleFilter,
-            'statusFilter' => $statusFilter,
             'totalUsers' => User::count(),
             'activeUsers' => User::where('is_active', true)->count(),
             'suspendedUsers' => User::where('is_active', false)->count(),
