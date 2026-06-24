@@ -23,13 +23,30 @@
         <h2>เมนูด้านซ้ายหน้าบ้าน</h2>
         <span class="status-pill">ผูกกับ Permission</span>
     </div>
-    <div class="menu-permission-grid">
+    <div class="menu-permission-layout">
+        <nav class="menu-permission-buttons" aria-label="เมนูด้านซ้ายหน้าบ้านที่ผูกกับ Permission">
+            @foreach($menuPermissions as $menuPermission)
+                <a class="menu-permission-button" href="#menu-permission-{{ $loop->index }}">
+                    <span>{{ $menuPermission['label'] }}</span>
+                    <small>{{ count($menuPermission['permissions']) }} permission</small>
+                </a>
+            @endforeach
+        </nav>
+        <div class="menu-permission-details">
         @foreach($menuPermissions as $menuPermission)
-            <div class="menu-permission-card">
-                <strong>{{ $menuPermission['label'] }}</strong>
-                <small>{{ collect($menuPermission['permissions'])->join(' / ') }}</small>
-            </div>
+            <article class="menu-permission-card" id="menu-permission-{{ $loop->index }}">
+                <div>
+                    <strong>{{ $menuPermission['label'] }}</strong>
+                    <small>Permission ที่ใช้เปิดเมนูนี้ในหน้าบ้าน</small>
+                </div>
+                <div class="permission-chip-list">
+                    @foreach($menuPermission['permissions'] as $permissionKey)
+                        <span>{{ $permissionKey }}</span>
+                    @endforeach
+                </div>
+            </article>
         @endforeach
+        </div>
     </div>
 </section>
 
