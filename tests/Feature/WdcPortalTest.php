@@ -200,7 +200,7 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('ระบบที่ให้ IT เปิด')
             ->assertDontSee('เลขที่ประกาศ');
 
-        $this->get(route('hr.index', ['section' => 'onboarding']))
+        $onboardingResponse = $this->get(route('hr.index', ['section' => 'onboarding']))
             ->assertOk()
             ->assertSee('ชื่อ ภาษาอังกฤษ')
             ->assertSee('นามสกุล ภาษาอังกฤษ')
@@ -208,8 +208,11 @@ class WdcPortalTest extends TestCase
             ->assertSee('เบอร์โต๊ะ')
             ->assertSee('เลือกตำแหน่ง')
             ->assertSee('เลือกแผนก/BU')
+            ->assertSee('bi-x-lg', false)
+            ->assertSee(route('hr.index', ['section' => 'employees']), false)
             ->assertDontSee('ระบบที่ให้ IT เปิด')
             ->assertDontSee('เลขที่ประกาศ');
+        $this->assertSame(1, substr_count($onboardingResponse->getContent(), 'bi-x-lg'));
 
         $this->get(route('hr.index', ['section' => 'announcements']))
             ->assertOk()
@@ -222,6 +225,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('EMP00125')
             ->assertSee('สมชาย ใจดี')
             ->assertSee('เพิ่มพนักงานใหม่')
+            ->assertSee('คำขอแก้ข้อมูลโปรไฟล์')
             ->assertSee('ส่งออกข้อมูล')
             ->assertSee('Excel (.xls)')
             ->assertSee('CSV (.csv)')
@@ -229,6 +233,11 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('administrator ·')
             ->assertDontSee('เลขที่ประกาศ');
         $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-plus'));
+        $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-gear'));
+        $this->assertLessThan(
+            strpos($employeesResponse->getContent(), 'bi-download'),
+            strpos($employeesResponse->getContent(), 'bi-person-gear'),
+        );
 
         $csvExport = $this->get(route('hr.employees.export', ['format' => 'csv']))
             ->assertOk()

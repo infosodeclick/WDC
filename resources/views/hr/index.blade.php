@@ -8,7 +8,6 @@
         ['section' => 'dashboard', 'label' => 'แดชบอร์ด', 'icon' => 'bi-speedometer2', 'show' => true],
         ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
         ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
-        ['section' => 'profile-requests', 'label' => 'คำขอแก้ข้อมูลโปรไฟล์', 'icon' => 'bi-person-gear', 'show' => $canManageEmployees],
         ['section' => 'complaints', 'label' => 'เรื่องร้องเรียนล่าสุด', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
     ];
 @endphp
@@ -126,6 +125,7 @@
                 @if($canManageOnboarding)
                     <a class="btn btn-primary" href="{{ route('hr.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
                 @endif
+                <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'profile-requests']) }}"><i class="bi bi-person-gear"></i> คำขอแก้ข้อมูลโปรไฟล์</a>
                 <div class="dropdown">
                     <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-download"></i> ส่งออกข้อมูล
@@ -152,8 +152,13 @@
 
 @if($activeSection === 'onboarding' && $canManageOnboarding)
     <section class="panel" id="new-employee">
-        <h2>เพิ่มพนักงานใหม่</h2>
-        <p class="muted">HR กรอกข้อมูลครั้งเดียว ระบบจะส่งรายการให้ IT เปิดระบบ เมื่อ IT กดเสร็จ HR จะอนุมัติให้แสดงในหน้ารายชื่อพนักงานได้ทันที</p>
+        <div class="section-title">
+            <div>
+                <h2>เพิ่มพนักงานใหม่</h2>
+                <p class="muted">HR กรอกข้อมูลครั้งเดียว ระบบจะส่งรายการให้ IT เปิดระบบ เมื่อ IT กดเสร็จ HR จะอนุมัติให้แสดงในหน้ารายชื่อพนักงานได้ทันที</p>
+            </div>
+            <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'employees']) }}" aria-label="ปิดหน้าฟอร์มเพิ่มพนักงานใหม่"><i class="bi bi-x-lg"></i></a>
+        </div>
         <form method="post" action="{{ route('hr.onboarding.store') }}" class="form-grid">
             @csrf
             <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" required placeholder="EMP00125"></label>
