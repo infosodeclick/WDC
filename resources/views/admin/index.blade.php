@@ -3,21 +3,6 @@
 @section('title', 'Admin | WDC Portal')
 
 @section('content')
-<div class="button-row mb-3">
-    @if($canManageUsers || $canManageRoles || $canManageDirectory)
-        <a class="btn btn-primary" href="#permission-management"><i class="bi bi-shield-check"></i> กำหนดสิทธิ์</a>
-    @endif
-    @if($canCreateUsers)
-        <a class="btn btn-outline-primary" href="#create-user"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้งาน</a>
-    @endif
-    @if($canManageRoles)
-        <a class="btn btn-outline-primary" href="#role-template"><i class="bi bi-sliders"></i> Role Template</a>
-    @endif
-    @if($canViewLogs)
-        <a class="btn btn-outline-primary" href="#activity-logs"><i class="bi bi-clock-history"></i> Activity Logs</a>
-    @endif
-</div>
-
 <section class="panel">
     <div class="section-title">
         <h2>เมนูด้านซ้ายหน้าบ้าน</h2>
