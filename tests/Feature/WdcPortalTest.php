@@ -698,11 +698,22 @@ class WdcPortalTest extends TestCase
         $this->get(route('documents.index'))
             ->assertOk()
             ->assertSee('document-category-grid', false)
-            ->assertSee('เอกสารตามแผนก')
+            ->assertSee('ทั้งหมด')
+            ->assertSee('HR')
+            ->assertSee('บัญชี')
             ->assertSee('HR / ใบลา')
             ->assertSee('บัญชี / เบิกเงินสดย่อย')
             ->assertSee('leave-form.pdf')
-            ->assertSee('petty-cash-form.pdf');
+            ->assertSee('petty-cash-form.pdf')
+            ->assertDontSee('Forms')
+            ->assertDontSee('ใบลา ระเบียบบริษัท คู่มือพนักงาน สัญญาจ้าง และหนังสือรับรอง');
+
+        $this->get(route('documents.index', ['department' => 'HR']))
+            ->assertOk()
+            ->assertSee('HR / ใบลา')
+            ->assertSee('leave-form.pdf')
+            ->assertDontSee('บัญชี / เบิกเงินสดย่อย')
+            ->assertDontSee('petty-cash-form.pdf');
     }
 
     public function test_search_only_returns_modules_visible_to_current_user(): void

@@ -3,22 +3,22 @@
 @section('title', 'แบบฟอร์ม | WDC Portal')
 
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">Forms</p>
-        <h1>แบบฟอร์ม</h1>
-        <p>ใบลา ระเบียบบริษัท คู่มือพนักงาน สัญญาจ้าง และหนังสือรับรอง</p>
-    </div>
+<div class="button-row mb-3">
+    <a class="btn {{ $activeDepartment === '' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('documents.index') }}">
+        <i class="bi bi-folder2-open"></i> ทั้งหมด
+    </a>
+    @foreach($documentDepartments as $department)
+        <a class="btn {{ $activeDepartment === $department ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('documents.index', ['department' => $department]) }}">
+            <i class="bi bi-folder"></i> {{ $department }}
+        </a>
+    @endforeach
 </div>
 
 <div class="document-category-grid">
-    @foreach($documentGroups as $group => $groupDocuments)
+    @forelse($documentGroups as $group => $groupDocuments)
         <section class="panel document-category-panel">
             <div class="section-title">
-                <div>
-                    <p class="eyebrow">เอกสารตามแผนก</p>
-                    <h2>{{ $group }}</h2>
-                </div>
+                <h2>{{ $group }}</h2>
                 <span class="status-pill">{{ $groupDocuments->count() }} ไฟล์</span>
             </div>
             <div class="item-list">
@@ -37,6 +37,10 @@
                 @endforeach
             </div>
         </section>
-    @endforeach
+    @empty
+        <section class="panel">
+            <div class="empty-state">ยังไม่มีเอกสารในแผนกนี้</div>
+        </section>
+    @endforelse
 </div>
 @endsection

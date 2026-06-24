@@ -234,10 +234,27 @@ class PortalController extends Controller
         }
 
         $documents = $documents->latest()->get();
+        $documentDepartments = $documents
+            ->map(fn (EmployeeDocument $document) => Str::before($document->category, '/'))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+        $activeDepartment = trim($request->string('department')->toString());
+
+        if (! $documentDepartments->contains($activeDepartment)) {
+            $activeDepartment = '';
+        }
+
+        $visibleDocuments = $activeDepartment !== ''
+            ? $documents->filter(fn (EmployeeDocument $document) => Str::before($document->category, '/') === $activeDepartment)
+            : $documents;
 
         return view('documents.index', [
-            'documents' => $documents,
-            'documentGroups' => $documents->groupBy(fn (EmployeeDocument $document) => Str::before($document->category, '/')),
+            'documents' => $visibleDocuments,
+            'documentGroups' => $visibleDocuments->groupBy(fn (EmployeeDocument $document) => Str::before($document->category, '/')),
+            'documentDepartments' => $documentDepartments,
+            'activeDepartment' => $activeDepartment,
         ]);
     }
 
