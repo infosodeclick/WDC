@@ -490,6 +490,9 @@ class WdcPortalTest extends TestCase
         $this->get(route('documents.index'))
             ->assertOk()
             ->assertSee('document-category-grid', false)
+            ->assertSee('เอกสารตามแผนก')
+            ->assertSee('HR / ใบลา')
+            ->assertSee('บัญชี / เบิกเงินสดย่อย')
             ->assertSee('leave-form.pdf')
             ->assertSee('petty-cash-form.pdf');
     }
@@ -649,7 +652,8 @@ class WdcPortalTest extends TestCase
             ->assertSee('สมาชิกใหม่ ดับบลิวดีซี (ใหม่)')
             ->assertDontSee('Newest WDC Member (ใหม่)')
             ->assertSee('new-hire-badge', false)
-            ->assertSee('directory-card-detail', false)
+            ->assertDontSee('directory-card-detail', false)
+            ->assertSee('role="button"', false)
             ->assertSee('directory-modal-source', false)
             ->assertSee('directory-modal-highlight-list', false)
             ->assertDontSee('mini-detail-list', false);

@@ -84,6 +84,14 @@ if (directoryModal) {
     });
 
     document.addEventListener('keydown', (event) => {
+        const trigger = event.target.closest('[data-directory-open]');
+
+        if (trigger && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            trigger.click();
+            return;
+        }
+
         if (event.key === 'Escape' && ! directoryModal.hidden) {
             closeDirectoryModal();
         }

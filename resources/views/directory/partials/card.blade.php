@@ -17,7 +17,7 @@
         @endif
     </button>
 
-    <div class="directory-card-body">
+    <div class="directory-card-body" data-directory-open role="button" tabindex="0" aria-label="เปิดข้อมูล {{ $entry->display_name }}">
         <h2>{{ $englishDisplayName }}</h2>
 
         @if($thaiDisplayName)
@@ -33,9 +33,6 @@
             @endif
         </div>
 
-        <button class="directory-card-detail" type="button" data-directory-open>
-            ดูรายละเอียด
-        </button>
     </div>
 
     <div class="directory-modal-source" hidden>
