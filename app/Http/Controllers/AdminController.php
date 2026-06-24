@@ -51,6 +51,7 @@ class AdminController extends Controller
         $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
         $adminAccessKeys = ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage'];
+        $directoryManageKeys = ['directory.manage', 'hr.employees.manage'];
         $adminCapableUsers = User::with('role.permissions', 'permissionOverrides')
             ->get()
             ->filter(fn (User $user) => $user->canAccessAny($adminAccessKeys))
@@ -73,6 +74,8 @@ class AdminController extends Controller
             'suspendedUsers' => User::where('is_active', false)->count(),
             'adminCapableUsers' => $adminCapableUsers,
             'canManageUsers' => $actor->canAccess('admin.users.manage'),
+            'canManageDirectory' => $actor->canAccessAny($directoryManageKeys),
+            'canCreateUsers' => $actor->canAccessAny(['admin.users.manage', ...$directoryManageKeys]),
             'canManageRoles' => $actor->canAccess('admin.roles.manage'),
             'canViewLogs' => $actor->canAccess('admin.activity.view'),
             'canManageSystem' => $actor->canAccess('admin.system.manage'),
@@ -83,7 +86,7 @@ class AdminController extends Controller
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
-        abort_unless($actor->canAccess('admin.users.manage'), 403);
+        abort_unless($actor->canAccessAny(['admin.users.manage', 'directory.manage', 'hr.employees.manage']), 403);
 
         $data = $request->validate([
             'employee_code' => ['required', 'string', 'max:50', 'unique:users,employee_code'],
@@ -146,13 +149,16 @@ class AdminController extends Controller
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
-        abort_unless($actor->canAccess('admin.users.manage'), 403);
+        $canManageAccess = $actor->canAccess('admin.users.manage');
+        $canManageDirectory = $actor->canAccessAny(['directory.manage', 'hr.employees.manage']);
+
+        abort_unless($canManageAccess || $canManageDirectory, 403);
         $this->ensureUserEditable($actor, $user->load('role'));
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'email' => ['sometimes', 'nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role_id' => ['required', 'exists:roles,id'],
+            'role_id' => ['nullable', 'exists:roles,id'],
             'data_scope' => ['nullable', Rule::in(array_keys(Permission::DATA_SCOPE_LABELS))],
             'is_active' => ['nullable', 'boolean'],
             'department_id' => ['sometimes', 'required', 'exists:departments,id'],
@@ -170,7 +176,10 @@ class AdminController extends Controller
             'permission_denies.*' => ['string', Rule::in(Permission::catalogKeys())],
         ]);
 
-        $role = Role::findOrFail($data['role_id']);
+        $role = $canManageAccess && ! empty($data['role_id'])
+            ? Role::findOrFail($data['role_id'])
+            : $user->role;
+
         $this->ensureRoleAssignable($actor, $role);
 
         if ($actor->id === $user->id && $user->isSuperAdmin() && ! $role->isSuperAdmin()) {
@@ -181,11 +190,16 @@ class AdminController extends Controller
             return back()->withErrors(['is_active' => 'ไม่สามารถระงับบัญชีของตนเองได้']);
         }
 
-        $userPayload = [
-            'role_id' => $role->id,
-            'data_scope' => $data['data_scope'] ?? null,
-            'is_active' => $request->boolean('is_active'),
-        ];
+        $userPayload = [];
+
+        if ($canManageAccess) {
+            $userPayload['role_id'] = $role->id;
+            $userPayload['data_scope'] = $data['data_scope'] ?? null;
+        }
+
+        if ($canManageAccess || $canManageDirectory) {
+            $userPayload['is_active'] = $request->boolean('is_active');
+        }
 
         foreach (['name', 'email'] as $field) {
             if ($request->has($field)) {
@@ -193,7 +207,9 @@ class AdminController extends Controller
             }
         }
 
-        $user->update($userPayload);
+        if ($userPayload !== []) {
+            $user->update($userPayload);
+        }
 
         if ($request->hasAny([
             'department_id',
@@ -278,6 +294,8 @@ class AdminController extends Controller
             'admin.roles.manage',
             'admin.activity.view',
             'admin.system.manage',
+            'directory.manage',
+            'hr.employees.manage',
         ]);
     }
 
@@ -286,7 +304,7 @@ class AdminController extends Controller
         return [
             ['label' => 'หน้าแรก', 'permissions' => ['portal.dashboard.view']],
             ['label' => 'โปรไฟล์พนักงาน', 'permissions' => ['profile.view']],
-            ['label' => 'รายชื่อพนักงาน', 'permissions' => ['directory.view']],
+            ['label' => 'รายชื่อพนักงาน', 'permissions' => ['directory.view', 'directory.manage']],
             ['label' => 'ห้องประชุม', 'permissions' => ['meeting_rooms.view']],
             ['label' => 'ประกาศ', 'permissions' => ['announcements.view']],
             ['label' => 'เทรนนิ่ง', 'permissions' => ['knowledge.view']],
@@ -295,7 +313,7 @@ class AdminController extends Controller
             ['label' => 'ร้องเรียน', 'permissions' => ['complaints.create', 'complaints.review']],
             ['label' => 'แบบฟอร์ม', 'permissions' => ['documents.view']],
             ['label' => 'ศูนย์ IT', 'permissions' => ['it.portal.view', 'tickets.manage']],
-            ['label' => 'ทรัพย์สิน IT', 'permissions' => ['assets.view', 'assets.manage', 'assets.reports']],
+            ['label' => 'ทรัพย์สิน IT', 'permissions' => ['assets.view', 'assets.manage', 'assets.reports', 'assets.settings.manage', 'assets.delete']],
             ['label' => 'HR Portal', 'permissions' => ['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']],
             ['label' => 'Admin', 'permissions' => ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage']],
         ];
@@ -304,6 +322,19 @@ class AdminController extends Controller
     private function ensureRoleAssignable(User $actor, Role $role): void
     {
         abort_if($role->isSuperAdmin() && ! $actor->isSuperAdmin(), 403);
+
+        if (! $actor->canAccess('admin.users.manage')) {
+            $role->loadMissing('permissions');
+
+            $restrictedPermissions = [
+                'admin.users.manage',
+                'admin.roles.manage',
+                'admin.activity.view',
+                'admin.system.manage',
+            ];
+
+            abort_if($role->permissions->pluck('key')->intersect($restrictedPermissions)->isNotEmpty(), 403);
+        }
     }
 
     private function ensureUserEditable(User $actor, User $target): void

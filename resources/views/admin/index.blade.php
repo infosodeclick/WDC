@@ -37,7 +37,7 @@
     </div>
 </section>
 
-@if($canManageUsers)
+@if($canCreateUsers)
 <section class="panel">
     <div class="section-title">
         <h2>เพิ่มผู้ใช้งาน</h2>
@@ -56,7 +56,12 @@
         <label><span>Role</span>
             <select class="form-select" name="role_id">
                 @foreach($roles as $role)
-                    <option value="{{ $role->id }}" @disabled($role->isSuperAdmin() && ! auth()->user()->isSuperAdmin())>{{ $role->name }}</option>
+                    @php
+                        $roleIsRestricted = $role->permissions->pluck('key')->intersect(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage'])->isNotEmpty();
+                    @endphp
+                    @if($canManageUsers || ! $roleIsRestricted)
+                        <option value="{{ $role->id }}" @disabled($role->isSuperAdmin() && ! auth()->user()->isSuperAdmin())>{{ $role->name }}</option>
+                    @endif
                 @endforeach
             </select>
         </label>
@@ -83,7 +88,7 @@
 </section>
 @endif
 
-@if($canManageUsers || $canManageRoles)
+@if($canManageUsers || $canManageRoles || $canManageDirectory)
 <section class="panel">
     <div class="section-title">
         <h2>สิทธิ์รายผู้ใช้</h2>
@@ -148,7 +153,7 @@
                             </select>
                         </label>
                         <label class="form-check small-check">
-                            <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($managedUser->is_active) @disabled(! $canManageUsers || auth()->id() === $managedUser->id)>
+                            <input class="form-check-input" type="checkbox" name="is_active" value="1" @checked($managedUser->is_active) @disabled(! ($canManageUsers || $canManageDirectory) || auth()->id() === $managedUser->id)>
                             <span class="form-check-label">เปิดใช้งาน</span>
                         </label>
                         <div class="permission-count">
@@ -161,41 +166,41 @@
                         <summary>ข้อมูลพนักงานสำหรับหน้ารายชื่อ</summary>
                         <div class="form-grid compact-form-grid">
                             <label><span>ชื่อที่แสดง</span>
-                                <input class="form-control form-control-sm" name="name" value="{{ old('name', $managedUser->name) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="name" value="{{ old('name', $managedUser->name) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>อีเมล</span>
-                                <input class="form-control form-control-sm" type="email" name="email" value="{{ old('email', $managedUser->email) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" type="email" name="email" value="{{ old('email', $managedUser->email) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>ชื่ออังกฤษ</span>
-                                <input class="form-control form-control-sm" name="english_name" value="{{ old('english_name', $managedUser->employee?->english_name) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="english_name" value="{{ old('english_name', $managedUser->employee?->english_name) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>ชื่อเล่นอังกฤษ</span>
-                                <input class="form-control form-control-sm" name="english_nickname" value="{{ old('english_nickname', $managedUser->employee?->english_nickname) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="english_nickname" value="{{ old('english_nickname', $managedUser->employee?->english_nickname) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>ชื่อไทย</span>
-                                <input class="form-control form-control-sm" name="thai_name" value="{{ old('thai_name', $managedUser->employee?->thai_name) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="thai_name" value="{{ old('thai_name', $managedUser->employee?->thai_name) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>ชื่อเล่นไทย</span>
-                                <input class="form-control form-control-sm" name="thai_nickname" value="{{ old('thai_nickname', $managedUser->employee?->thai_nickname ?? $managedUser->employee?->nickname) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="thai_nickname" value="{{ old('thai_nickname', $managedUser->employee?->thai_nickname ?? $managedUser->employee?->nickname) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>แผนก</span>
-                                <select class="form-select form-select-sm" name="department_id" @disabled(! $canManageUsers)>
+                                <select class="form-select form-select-sm" name="department_id" @disabled(! ($canManageUsers || $canManageDirectory))>
                                     @foreach($departments as $department)
                                         <option value="{{ $department->id }}" @selected($managedUser->employee?->department_id === $department->id)>{{ $department->name }}</option>
                                     @endforeach
                                 </select>
                             </label>
                             <label><span>ตำแหน่ง</span>
-                                <input class="form-control form-control-sm" name="position" value="{{ old('position', $managedUser->employee?->position) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="position" value="{{ old('position', $managedUser->employee?->position) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>เบอร์โทร</span>
-                                <input class="form-control form-control-sm" name="phone" value="{{ old('phone', $managedUser->employee?->phone) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="phone" value="{{ old('phone', $managedUser->employee?->phone) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>เบอร์ต่อ</span>
-                                <input class="form-control form-control-sm" name="extension_number" value="{{ old('extension_number', $managedUser->employee?->extension_number) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" name="extension_number" value="{{ old('extension_number', $managedUser->employee?->extension_number) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                             <label><span>วันเริ่มงาน</span>
-                                <input class="form-control form-control-sm" type="date" name="start_date" value="{{ old('start_date', $managedUser->employee?->start_date?->format('Y-m-d')) }}" @disabled(! $canManageUsers)>
+                                <input class="form-control form-control-sm" type="date" name="start_date" value="{{ old('start_date', $managedUser->employee?->start_date?->format('Y-m-d')) }}" @disabled(! ($canManageUsers || $canManageDirectory))>
                             </label>
                         </div>
                     </details>
@@ -228,7 +233,7 @@
                         </div>
                     </details>
 
-                    @if($canManageUsers)
+                    @if($canManageUsers || $canManageDirectory)
                         <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-shield-check"></i> บันทึกสิทธิ์</button>
                     @endif
                 </form>

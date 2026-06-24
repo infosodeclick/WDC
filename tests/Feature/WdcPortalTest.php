@@ -10,6 +10,7 @@ use App\Models\ItAsset;
 use App\Models\MeetingRoomBooking;
 use App\Models\Permission;
 use App\Models\ProfileChangeRequest;
+use App\Models\Role;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WorkflowRequest;
@@ -230,6 +231,71 @@ class WdcPortalTest extends TestCase
             ->assertSee('Nattawadee Test (Nat)')
             ->assertSee('ณัฐวดี ทดสอบ (นัท)')
             ->assertDontSee('Nattawadee Test (นัท)');
+    }
+
+    public function test_granular_hr_and_it_permissions_are_seeded_for_roles(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $hrRole = Role::where('slug', 'hr')->with('permissions')->firstOrFail();
+        $adminRole = Role::where('slug', 'admin')->with('permissions')->firstOrFail();
+
+        $this->assertTrue($hrRole->permissions->contains('key', 'directory.manage'));
+        $this->assertTrue($adminRole->permissions->contains('key', 'assets.settings.manage'));
+        $this->assertTrue($adminRole->permissions->contains('key', 'assets.delete'));
+        $this->assertFalse($employee->effectivePermissionKeys()->contains('directory.manage'));
+        $this->assertTrue($itUser->effectivePermissionKeys()->contains('assets.settings.manage'));
+        $this->assertTrue($itUser->effectivePermissionKeys()->contains('assets.delete'));
+    }
+
+    public function test_hr_can_create_employee_user_without_admin_role_escalation(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hrUser = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $employeeRole = Role::where('slug', 'employee')->firstOrFail();
+        $adminRole = Role::where('slug', 'admin')->firstOrFail();
+        $departmentId = $hrUser->employee->department_id;
+
+        $this->actingAs($hrUser);
+
+        $this->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('directory.manage')
+            ->assertSee('เพิ่มผู้ใช้งาน');
+
+        $payload = [
+            'employee_code' => 'EMP07777',
+            'name' => 'Test HR Created',
+            'email' => 'test.hr.created@wdc.co.th',
+            'password' => 'password123',
+            'role_id' => $employeeRole->id,
+            'data_scope' => '',
+            'department_id' => $departmentId,
+            'english_name' => 'Test HR Created',
+            'english_nickname' => 'Test',
+            'thai_name' => 'ทดสอบ HR',
+            'thai_nickname' => 'เทส',
+            'position' => 'HR Created Employee',
+        ];
+
+        $this->post(route('admin.users.store'), $payload)->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'employee_code' => 'EMP07777',
+            'role_id' => $employeeRole->id,
+        ]);
+
+        $this->post(route('admin.users.store'), [
+            ...$payload,
+            'employee_code' => 'EMP07778',
+            'email' => 'blocked.admin.created@wdc.co.th',
+            'role_id' => $adminRole->id,
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('users', ['employee_code' => 'EMP07778']);
     }
 
     public function test_legacy_systems_hub_is_removed(): void
@@ -875,6 +941,7 @@ class WdcPortalTest extends TestCase
             'password' => 'password123',
         ]);
 
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
         $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
 
         $this->get(route('assets.index'))
@@ -910,6 +977,12 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertSee('WDC-NB-TEST')
             ->assertSee('Test Notebook');
+
+        $this->actingAs($itUser);
+
+        $this->delete(route('assets.destroy', $asset))->assertRedirect();
+
+        $this->assertDatabaseMissing('it_assets', ['code' => 'WDC-NB-TEST']);
     }
 
     public function test_employee_without_asset_permission_cannot_open_assets(): void

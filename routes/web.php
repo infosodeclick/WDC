@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/assets/inspections', [AssetController::class, 'storeInspection'])->name('assets.inspections.store');
     Route::post('/assets/sync', [AssetController::class, 'importSync'])->name('assets.sync.import');
     Route::patch('/assets/{asset}/status', [AssetController::class, 'updateStatus'])->name('assets.status');
+    Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->name('assets.destroy');
 
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
     Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');

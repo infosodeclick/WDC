@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\AnnouncementFile;
 use App\Models\Complaint;
 use App\Models\Department;
+use App\Models\EmployeeDirectoryEntry;
 use App\Models\Notification;
 use App\Models\ProfileChangeRequest;
 use App\Models\User;
@@ -166,7 +167,7 @@ class HrController extends Controller
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
-        abort_unless($actor->canAccess('hr.employees.manage'), 403);
+        abort_unless($actor->canAccessAny(['hr.employees.manage', 'directory.manage']), 403);
         abort_if($actor->id === $user->id, 422, 'Cannot suspend your own account.');
         abort_if($user->isSuperAdmin() && ! $actor->isSuperAdmin(), 403);
 
@@ -175,6 +176,10 @@ class HrController extends Controller
         }
 
         $user->update(['is_active' => ! $user->is_active]);
+
+        EmployeeDirectoryEntry::where('source_system', 'wdc')
+            ->where('source_record_id', $user->employee_code)
+            ->update(['is_active' => $user->is_active]);
 
         ActivityLog::create([
             'user_id' => $request->user()->id,

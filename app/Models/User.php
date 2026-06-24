@@ -134,11 +134,11 @@ class User extends Authenticatable
 
     public function canAccessItAssets(): bool
     {
-        if ($this->canAccessAny(['assets.view', 'assets.manage', 'assets.reports'])) {
+        if ($this->canAccessAny(['assets.view', 'assets.manage', 'assets.reports', 'assets.settings.manage', 'assets.delete'])) {
             return true;
         }
 
-        if ($this->hasDeniedAny(['assets.view', 'assets.manage', 'assets.reports'])) {
+        if ($this->hasDeniedAny(['assets.view', 'assets.manage', 'assets.reports', 'assets.settings.manage', 'assets.delete'])) {
             return false;
         }
 
@@ -156,6 +156,24 @@ class User extends Authenticatable
         }
 
         return $this->belongsToItDepartment() && $this->canAccessAny(['it.portal.view', 'tickets.manage']);
+    }
+
+    public function canManageItAssetSettings(): bool
+    {
+        if ($this->canAccess('assets.settings.manage')) {
+            return true;
+        }
+
+        if ($this->hasDeniedAny(['assets.settings.manage', 'assets.view'])) {
+            return false;
+        }
+
+        return $this->belongsToItDepartment() && $this->canAccessAny(['assets.manage', 'it.portal.view', 'tickets.manage']);
+    }
+
+    public function canDeleteItAssets(): bool
+    {
+        return $this->canAccess('assets.delete');
     }
 
     public function canExportItAssets(): bool

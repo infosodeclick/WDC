@@ -186,6 +186,9 @@
         </form>
     </section>
 
+@endif
+
+@if($canManageAssetSettings)
     <div class="content-grid asset-admin-grid">
         <section class="panel" id="asset-categories">
             <div class="section-title">
@@ -266,7 +269,7 @@
                     <th>ผู้ถือครอง</th>
                     <th>มูลค่า</th>
                     <th>สถานะ</th>
-                    @if($canManageAssets)<th>อัปเดต</th>@endif
+                    @if($canManageAssets || $canDeleteAssets)<th>จัดการ</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -282,24 +285,33 @@
                         <td>{{ $asset->owner_name ?: '-' }}<small class="d-block muted">{{ $asset->department ?: '-' }}</small></td>
                         <td>{{ number_format((float) $asset->price, 0) }}<small class="d-block muted">Book {{ number_format((float) $asset->book_value, 0) }}</small></td>
                         <td><span class="status-pill status-{{ $asset->status }}">{{ $asset->statusLabel() }}</span></td>
-                        @if($canManageAssets)
+                        @if($canManageAssets || $canDeleteAssets)
                             <td>
-                                <form class="asset-status-form" method="post" action="{{ route('assets.status', $asset) }}">
-                                    @csrf
-                                    @method('patch')
-                                    <select class="form-select form-select-sm" name="status" aria-label="อัปเดตสถานะ {{ $asset->code }}">
-                                        @foreach(['active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
-                                            <option value="{{ $key }}" @selected($asset->status === $key)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                    <input class="form-control form-control-sm" name="notes" value="{{ $asset->notes }}" placeholder="หมายเหตุ">
-                                    <button class="btn btn-outline-primary btn-sm" type="submit">บันทึก</button>
-                                </form>
+                                @if($canManageAssets)
+                                    <form class="asset-status-form" method="post" action="{{ route('assets.status', $asset) }}">
+                                        @csrf
+                                        @method('patch')
+                                        <select class="form-select form-select-sm" name="status" aria-label="อัปเดตสถานะ {{ $asset->code }}">
+                                            @foreach(['active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
+                                                <option value="{{ $key }}" @selected($asset->status === $key)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                        <input class="form-control form-control-sm" name="notes" value="{{ $asset->notes }}" placeholder="หมายเหตุ">
+                                        <button class="btn btn-outline-primary btn-sm" type="submit">บันทึก</button>
+                                    </form>
+                                @endif
+                                @if($canDeleteAssets)
+                                    <form class="asset-status-form mt-2" method="post" action="{{ route('assets.destroy', $asset) }}" onsubmit="return confirm('ยืนยันลบทรัพย์สิน {{ $asset->code }} ?')">
+                                        @csrf
+                                        @method('delete')
+                                        <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-trash"></i> ลบ</button>
+                                    </form>
+                                @endif
                             </td>
                         @endif
                     </tr>
                 @empty
-                    <tr><td colspan="{{ $canManageAssets ? 7 : 6 }}"><div class="empty-state">ยังไม่พบทรัพย์สินตามเงื่อนไขที่ค้นหา</div></td></tr>
+                    <tr><td colspan="{{ ($canManageAssets || $canDeleteAssets) ? 7 : 6 }}"><div class="empty-state">ยังไม่พบทรัพย์สินตามเงื่อนไขที่ค้นหา</div></td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -150,7 +150,15 @@ class DatabaseSeeder extends Seeder
         });
 
         if (isset($users['EMP00200'])) {
-            $itPermissionIds = Permission::whereIn('key', ['tickets.manage', 'it.portal.view', 'assets.view', 'assets.manage', 'assets.reports'])->pluck('id');
+            $itPermissionIds = Permission::whereIn('key', [
+                'tickets.manage',
+                'it.portal.view',
+                'assets.view',
+                'assets.manage',
+                'assets.reports',
+                'assets.settings.manage',
+                'assets.delete',
+            ])->pluck('id');
             $users['EMP00200']->permissionOverrides()->syncWithoutDetaching(
                 $itPermissionIds->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'grant']])->all(),
             );
@@ -363,6 +371,7 @@ class DatabaseSeeder extends Seeder
                     'portal.dashboard.view',
                     'profile.view',
                     'directory.view',
+                    'directory.manage',
                     'meeting_rooms.view',
                     'announcements.view',
                     'knowledge.view',
@@ -385,6 +394,7 @@ class DatabaseSeeder extends Seeder
                     'portal.dashboard.view',
                     'profile.view',
                     'directory.view',
+                    'directory.manage',
                     'meeting_rooms.view',
                     'announcements.view',
                     'knowledge.view',
@@ -397,6 +407,8 @@ class DatabaseSeeder extends Seeder
                     'assets.view',
                     'assets.manage',
                     'assets.reports',
+                    'assets.settings.manage',
+                    'assets.delete',
                     'workflows.create',
                     'workflows.manage',
                     'complaints.create',

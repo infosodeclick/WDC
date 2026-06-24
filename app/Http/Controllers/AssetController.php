@@ -73,6 +73,8 @@ class AssetController extends Controller
             'lostCount' => (clone $baseAssetQuery)->where('status', 'lost')->count(),
             'totalValue' => (clone $baseAssetQuery)->sum('price'),
             'canManageAssets' => $user->canManageItAssets(),
+            'canManageAssetSettings' => $user->canManageItAssetSettings(),
+            'canDeleteAssets' => $user->canDeleteItAssets(),
             'canExportAssets' => $user->canExportItAssets(),
             'manageableUsers' => $user->canManageItAssets() ? User::with('employee.department')->where('is_active', true)->orderBy('name')->get() : collect(),
         ]);
@@ -175,7 +177,7 @@ class AssetController extends Controller
 
     public function storeCategory(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->canManageItAssets(), 403);
+        abort_unless($request->user()->canManageItAssetSettings(), 403);
 
         $data = $request->validate([
             'code' => ['required', 'string', 'max:40', 'unique:asset_categories,code'],
@@ -192,7 +194,7 @@ class AssetController extends Controller
 
     public function storeLocation(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->canManageItAssets(), 403);
+        abort_unless($request->user()->canManageItAssetSettings(), 403);
 
         $data = $request->validate([
             'code' => ['required', 'string', 'max:60'],
@@ -216,6 +218,21 @@ class AssetController extends Controller
         $this->logGeneral($request, 'create_asset_location', AssetLocation::class, $location->id, "Saved asset location {$data['code']}");
 
         return back()->with('status', 'เพิ่มสถานที่จัดเก็บทรัพย์สินแล้ว');
+    }
+
+    public function destroy(ItAsset $asset, Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canDeleteItAssets(), 403);
+
+        $snapshot = $asset->toArray();
+        $assetCode = $asset->code;
+        $assetName = $asset->name;
+
+        $this->logAsset($request, $asset, 'delete_asset', "Deleted {$assetCode} {$assetName}", $snapshot, null);
+
+        $asset->delete();
+
+        return back()->with('status', 'ลบรายการทรัพย์สิน IT แล้ว');
     }
 
     public function export(Request $request)
