@@ -24,7 +24,9 @@ class HrController extends Controller
 
         abort_unless($actor->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']), 403);
 
-        $employees = User::with('role', 'employee.department')->orderBy('employee_code');
+        $employees = User::with('role', 'employee.department')
+            ->where('employee_code', '!=', 'administrator')
+            ->orderBy('employee_code');
 
         if (! $actor->canSeeAllData()) {
             if ($actor->canSeeDepartmentData() && $actor->employee?->department_id) {
@@ -47,6 +49,10 @@ class HrController extends Controller
 
         $activeSection = $request->string('section')->toString() ?: 'dashboard';
         $allowedSections = ['dashboard'];
+
+        if ($canManageEmployees) {
+            $allowedSections[] = 'employees';
+        }
 
         if ($canManageOnboarding) {
             $allowedSections[] = 'onboarding';

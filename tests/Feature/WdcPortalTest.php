@@ -218,7 +218,10 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('hr.index', ['section' => 'employees']))
             ->assertOk()
-            ->assertSee('แดชบอร์ด')
+            ->assertSee('รายชื่อพนักงาน')
+            ->assertSee('EMP00125')
+            ->assertSee('สมชาย ใจดี')
+            ->assertDontSee('administrator ·')
             ->assertDontSee('เลขที่ประกาศ');
     }
 

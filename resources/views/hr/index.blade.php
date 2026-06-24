@@ -6,6 +6,7 @@
 @php
     $hrMenu = [
         ['section' => 'dashboard', 'label' => 'แดชบอร์ด', 'icon' => 'bi-speedometer2', 'show' => true],
+        ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
         ['section' => 'onboarding', 'label' => 'เพิ่มพนักงานใหม่', 'icon' => 'bi-person-plus', 'show' => $canManageOnboarding],
         ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
         ['section' => 'profile-requests', 'label' => 'คำขอแก้ข้อมูลโปรไฟล์', 'icon' => 'bi-person-gear', 'show' => $canManageEmployees],
@@ -116,6 +117,28 @@
             </section>
         @endif
     </div>
+@endif
+
+@if($activeSection === 'employees' && $canManageEmployees)
+    <section class="panel">
+        <div class="section-title">
+            <div>
+                <h2>รายชื่อพนักงาน</h2>
+                <p>แสดงรายชื่อพนักงานทั้งหมดในระบบ โดยไม่รวมบัญชีผู้ดูแลระบบหลัก</p>
+            </div>
+            <span class="tag">{{ number_format($employees->count()) }} รายการ</span>
+        </div>
+        <div class="item-list">
+            @forelse($employees as $employeeUser)
+                <div class="result-row">
+                    <strong>{{ $employeeUser->employee_code }} · {{ $employeeUser->name }}</strong>
+                    <small>{{ $employeeUser->employee?->position ?: '-' }} · {{ $employeeUser->employee?->department?->name ?? $employeeUser->employee?->business_unit ?? '-' }} · {{ $employeeUser->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก' }}</small>
+                </div>
+            @empty
+                <div class="empty-state">ยังไม่มีรายชื่อพนักงานในระบบ</div>
+            @endforelse
+        </div>
+    </section>
 @endif
 
 @if($activeSection === 'onboarding' && $canManageOnboarding)
