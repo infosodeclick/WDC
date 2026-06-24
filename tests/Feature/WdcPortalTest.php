@@ -221,8 +221,29 @@ class WdcPortalTest extends TestCase
             ->assertSee('รายชื่อพนักงาน')
             ->assertSee('EMP00125')
             ->assertSee('สมชาย ใจดี')
+            ->assertSee('เพิ่มพนักงานใหม่')
+            ->assertSee('ส่งออกข้อมูล')
+            ->assertSee('Excel (.xls)')
+            ->assertSee('CSV (.csv)')
+            ->assertDontSee('แสดงรายชื่อพนักงานทั้งหมด')
             ->assertDontSee('administrator ·')
             ->assertDontSee('เลขที่ประกาศ');
+
+        $csvExport = $this->get(route('hr.employees.export', ['format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $csvContent = $csvExport->streamedContent();
+
+        $this->assertStringContainsString('EMP00125', $csvContent);
+        $this->assertStringNotContainsString('administrator', $csvContent);
+
+        $excelExport = $this->get(route('hr.employees.export', ['format' => 'xls']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+        $excelContent = $excelExport->streamedContent();
+
+        $this->assertStringContainsString('EMP00125', $excelContent);
+        $this->assertStringContainsString('<table', $excelContent);
     }
 
     public function test_admin_can_open_admin_portal(): void

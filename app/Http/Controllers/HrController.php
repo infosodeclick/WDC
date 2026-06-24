@@ -14,7 +14,9 @@ use App\Models\ProfileChangeRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class HrController extends Controller
 {
@@ -24,17 +26,7 @@ class HrController extends Controller
 
         abort_unless($actor->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']), 403);
 
-        $employees = User::with('role', 'employee.department')
-            ->where('employee_code', '!=', 'administrator')
-            ->orderBy('employee_code');
-
-        if (! $actor->canSeeAllData()) {
-            if ($actor->canSeeDepartmentData() && $actor->employee?->department_id) {
-                $employees->whereHas('employee', fn ($query) => $query->where('department_id', $actor->employee->department_id));
-            } else {
-                $employees->where('id', $actor->id);
-            }
-        }
+        $employees = $this->employeeListQuery($actor);
 
         $complaints = Complaint::with('reporter')->latest()->take(8);
 
@@ -109,6 +101,21 @@ class HrController extends Controller
             'canManageEmployees' => $canManageEmployees,
             'canReviewComplaints' => $canReviewComplaints,
         ]);
+    }
+
+    public function exportEmployees(Request $request): StreamedResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($actor->canAccess('hr.employees.manage'), 403);
+
+        $format = $request->string('format')->lower()->toString();
+        $employees = $this->employeeListQuery($actor)->get();
+        $rows = $this->employeeExportRows($employees);
+
+        return $format === 'csv'
+            ? $this->streamEmployeeCsv($rows)
+            : $this->streamEmployeeExcel($rows);
     }
 
     public function storeAnnouncement(Request $request): RedirectResponse
@@ -254,6 +261,87 @@ class HrController extends Controller
         ]);
 
         return back()->with('status', 'อัปเดตสถานะพนักงานแล้ว');
+    }
+
+    private function employeeListQuery(User $actor)
+    {
+        $employees = User::with('role', 'employee.department')
+            ->where('employee_code', '!=', 'administrator')
+            ->orderBy('employee_code');
+
+        if (! $actor->canSeeAllData()) {
+            if ($actor->canSeeDepartmentData() && $actor->employee?->department_id) {
+                $employees->whereHas('employee', fn ($query) => $query->where('department_id', $actor->employee->department_id));
+            } else {
+                $employees->where('id', $actor->id);
+            }
+        }
+
+        return $employees;
+    }
+
+    private function employeeExportRows(Collection $employees): Collection
+    {
+        return $employees->map(fn (User $user) => [
+            'รหัสพนักงาน' => $user->employee_code,
+            'ชื่อ' => $user->name,
+            'ชื่ออังกฤษ' => $user->employee?->english_name,
+            'ชื่อไทย' => $user->employee?->thai_name,
+            'ชื่อเล่นอังกฤษ' => $user->employee?->english_nickname,
+            'ชื่อเล่นไทย' => $user->employee?->thai_nickname,
+            'ตำแหน่ง' => $user->employee?->position,
+            'แผนก/BU' => $user->employee?->department?->name ?? $user->employee?->business_unit,
+            'ทีม' => $user->employee?->team,
+            'สาขา' => $user->employee?->location,
+            'อีเมล' => $user->email,
+            'โทร' => $user->employee?->phone,
+            'เบอร์โต๊ะ' => $user->employee?->extension_number,
+            'วันที่เริ่มงาน' => $user->employee?->start_date?->format('Y-m-d'),
+            'สถานะ' => $user->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก',
+        ]);
+    }
+
+    private function streamEmployeeCsv(Collection $rows): StreamedResponse
+    {
+        $filename = 'wdc-employees-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($rows): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            $headers = array_keys($rows->first() ?? []);
+            fputcsv($handle, $headers);
+
+            foreach ($rows as $row) {
+                fputcsv($handle, array_values($row));
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function streamEmployeeExcel(Collection $rows): StreamedResponse
+    {
+        $filename = 'wdc-employees-'.now()->format('Ymd-His').'.xls';
+
+        return response()->streamDownload(function () use ($rows): void {
+            echo '<html><head><meta charset="UTF-8"></head><body><table border="1">';
+            echo '<thead><tr>';
+            foreach (array_keys($rows->first() ?? []) as $header) {
+                echo '<th>'.e($header).'</th>';
+            }
+            echo '</tr></thead><tbody>';
+
+            foreach ($rows as $row) {
+                echo '<tr>';
+                foreach ($row as $value) {
+                    echo '<td>'.e((string) ($value ?? '')).'</td>';
+                }
+                echo '</tr>';
+            }
+
+            echo '</tbody></table></body></html>';
+        }, $filename, ['Content-Type' => 'application/vnd.ms-excel; charset=UTF-8']);
     }
 
     private function nextAnnouncementNo(): string

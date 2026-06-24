@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.status');
 
     Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
+    Route::get('/hr/employees/export', [HrController::class, 'exportEmployees'])->name('hr.employees.export');
     Route::post('/hr/onboarding', [EmployeeOnboardingController::class, 'store'])->name('hr.onboarding.store');
     Route::patch('/hr/onboarding/{onboarding}/publish', [EmployeeOnboardingController::class, 'publish'])->name('hr.onboarding.publish');
     Route::post('/hr/announcements', [HrController::class, 'storeAnnouncement'])->name('hr.announcements.store');

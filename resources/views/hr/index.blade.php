@@ -122,11 +122,21 @@
 @if($activeSection === 'employees' && $canManageEmployees)
     <section class="panel">
         <div class="section-title">
-            <div>
-                <h2>รายชื่อพนักงาน</h2>
-                <p>แสดงรายชื่อพนักงานทั้งหมดในระบบ โดยไม่รวมบัญชีผู้ดูแลระบบหลัก</p>
+            <div></div>
+            <div class="button-row">
+                @if($canManageOnboarding)
+                    <a class="btn btn-primary" href="{{ route('hr.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
+                @endif
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-download"></i> ส่งออกข้อมูล
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ route('hr.employees.export', ['format' => 'xls']) }}">Excel (.xls)</a></li>
+                        <li><a class="dropdown-item" href="{{ route('hr.employees.export', ['format' => 'csv']) }}">CSV (.csv)</a></li>
+                    </ul>
+                </div>
             </div>
-            <span class="tag">{{ number_format($employees->count()) }} รายการ</span>
         </div>
         <div class="item-list">
             @forelse($employees as $employeeUser)
