@@ -131,6 +131,24 @@ class WdcPortalTest extends TestCase
             ->assertSee($urgent->title);
     }
 
+    public function test_dashboard_announcement_popup_has_close_arrows_and_indicators(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $response = $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('data-auto-open-announcement-modal', false)
+            ->assertSee('data-announcement-popup-close', false)
+            ->assertSee('data-announcement-popup-prev', false)
+            ->assertSee('data-announcement-popup-next', false)
+            ->assertSee('announcement-carousel-indicators', false);
+
+        $this->assertSame(3, substr_count($response->getContent(), 'data-announcement-popup-dot='));
+    }
+
     public function test_hr_can_create_announcement_with_uploaded_attachment(): void
     {
         Storage::fake('local');

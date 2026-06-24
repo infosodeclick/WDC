@@ -120,9 +120,149 @@ if (smartflowTemplateSelect && smartflowFieldsets.length > 0) {
 document.addEventListener('DOMContentLoaded', () => {
     const announcementModal = document.querySelector('[data-auto-open-announcement-modal]');
 
-    if (! announcementModal || ! window.bootstrap?.Modal) {
+    if (! announcementModal) {
         return;
     }
 
-    window.bootstrap.Modal.getOrCreateInstance(announcementModal).show();
+    const carousel = announcementModal.querySelector('#announcementEntryCarousel');
+    const slides = Array.from(announcementModal.querySelectorAll('.carousel-item'));
+    const dots = Array.from(announcementModal.querySelectorAll('[data-announcement-popup-dot]'));
+    const fallbackBackdropClass = 'announcement-popup-fallback-backdrop';
+    let activeIndex = Math.max(0, slides.findIndex((slide) => slide.classList.contains('active')));
+
+    const removeFallbackBackdrop = () => {
+        document.querySelectorAll(`.${fallbackBackdropClass}`).forEach((backdrop) => backdrop.remove());
+    };
+
+    const closePopup = () => {
+        if (window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(announcementModal).hide();
+        }
+
+        announcementModal.classList.remove('show');
+        announcementModal.style.display = 'none';
+        announcementModal.setAttribute('aria-hidden', 'true');
+        announcementModal.removeAttribute('aria-modal');
+        announcementModal.removeAttribute('role');
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        removeFallbackBackdrop();
+    };
+
+    const showPopup = () => {
+        if (window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(announcementModal, {
+                backdrop: true,
+                keyboard: true,
+            }).show();
+            return;
+        }
+
+        announcementModal.style.display = 'block';
+        announcementModal.removeAttribute('aria-hidden');
+        announcementModal.setAttribute('aria-modal', 'true');
+        announcementModal.setAttribute('role', 'dialog');
+        announcementModal.classList.add('show');
+        document.body.classList.add('modal-open');
+
+        if (! document.querySelector(`.${fallbackBackdropClass}`)) {
+            const backdrop = document.createElement('div');
+            backdrop.className = `modal-backdrop fade show ${fallbackBackdropClass}`;
+            document.body.appendChild(backdrop);
+        }
+    };
+
+    const syncDots = () => {
+        dots.forEach((dot, index) => {
+            const isActive = index === activeIndex;
+            dot.classList.toggle('active', isActive);
+            dot.toggleAttribute('aria-current', isActive);
+        });
+    };
+
+    const showSlide = (nextIndex) => {
+        if (slides.length === 0) {
+            return;
+        }
+
+        activeIndex = (nextIndex + slides.length) % slides.length;
+
+        slides.forEach((slide, index) => {
+            slide.classList.toggle('active', index === activeIndex);
+        });
+
+        syncDots();
+    };
+
+    announcementModal.querySelectorAll('[data-announcement-popup-close], [data-bs-dismiss="modal"]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            closePopup();
+        });
+    });
+
+    announcementModal.addEventListener('click', (event) => {
+        if (event.target === announcementModal) {
+            closePopup();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (! announcementModal.classList.contains('show')) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            closePopup();
+        }
+
+        if (event.key === 'ArrowLeft') {
+            showSlide(activeIndex - 1);
+        }
+
+        if (event.key === 'ArrowRight') {
+            showSlide(activeIndex + 1);
+        }
+    });
+
+    announcementModal.querySelector('[data-announcement-popup-prev]')?.addEventListener('click', (event) => {
+        if (! window.bootstrap?.Carousel) {
+            event.preventDefault();
+            showSlide(activeIndex - 1);
+        }
+    });
+
+    announcementModal.querySelector('[data-announcement-popup-next]')?.addEventListener('click', (event) => {
+        if (! window.bootstrap?.Carousel) {
+            event.preventDefault();
+            showSlide(activeIndex + 1);
+        }
+    });
+
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', (event) => {
+            if (! window.bootstrap?.Carousel) {
+                event.preventDefault();
+                showSlide(index);
+            }
+        });
+    });
+
+    if (window.bootstrap?.Carousel && carousel) {
+        window.bootstrap.Carousel.getOrCreateInstance(carousel, {
+            interval: false,
+            ride: false,
+            touch: true,
+            wrap: true,
+        });
+
+        carousel.addEventListener('slid.bs.carousel', (event) => {
+            activeIndex = event.to ?? activeIndex;
+            syncDots();
+        });
+    }
+
+    syncDots();
+    showPopup();
 });
