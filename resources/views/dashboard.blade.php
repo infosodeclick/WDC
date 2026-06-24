@@ -107,27 +107,25 @@
                                 </div>
                             @endforeach
                         </div>
-                        @if($popupAnnouncements->count() > 1)
-                            <button class="carousel-control-prev announcement-carousel-control announcement-carousel-control-prev" type="button" data-bs-target="#announcementEntryCarousel" data-bs-slide="prev" data-announcement-popup-prev aria-label="ก่อนหน้า">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                            </button>
-                            <button class="carousel-control-next announcement-carousel-control announcement-carousel-control-next" type="button" data-bs-target="#announcementEntryCarousel" data-bs-slide="next" data-announcement-popup-next aria-label="ถัดไป">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                            </button>
-                            <div class="carousel-indicators announcement-carousel-indicators" aria-label="จำนวนประกาศ {{ $popupAnnouncements->count() }} รายการ">
-                                @foreach($popupAnnouncements as $announcement)
-                                    <button
-                                        type="button"
-                                        data-bs-target="#announcementEntryCarousel"
-                                        data-bs-slide-to="{{ $loop->index }}"
-                                        data-announcement-popup-dot="{{ $loop->index }}"
-                                        class="{{ $loop->first ? 'active' : '' }}"
-                                        @if($loop->first) aria-current="true" @endif
-                                        aria-label="ประกาศที่ {{ $loop->iteration }} จาก {{ $popupAnnouncements->count() }}"
-                                    ></button>
-                                @endforeach
-                            </div>
-                        @endif
+                        <button class="carousel-control-prev announcement-carousel-control announcement-carousel-control-prev" type="button" data-bs-target="#announcementEntryCarousel" data-bs-slide="prev" data-announcement-popup-prev aria-label="ก่อนหน้า">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        </button>
+                        <button class="carousel-control-next announcement-carousel-control announcement-carousel-control-next" type="button" data-bs-target="#announcementEntryCarousel" data-bs-slide="next" data-announcement-popup-next aria-label="ถัดไป">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="carousel-indicators announcement-carousel-indicators" aria-label="จำนวนประกาศ {{ $popupAnnouncements->count() }} รายการ">
+                            @foreach($popupAnnouncements as $announcement)
+                                <button
+                                    type="button"
+                                    data-bs-target="#announcementEntryCarousel"
+                                    data-bs-slide-to="{{ $loop->index }}"
+                                    data-announcement-popup-dot="{{ $loop->index }}"
+                                    class="{{ $loop->first ? 'active' : '' }}"
+                                    @if($loop->first) aria-current="true" @endif
+                                    aria-label="ประกาศที่ {{ $loop->iteration }} จาก {{ $popupAnnouncements->count() }}"
+                                ></button>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </div>
