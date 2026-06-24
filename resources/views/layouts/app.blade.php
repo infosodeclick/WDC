@@ -13,6 +13,7 @@
 @php($currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department'))
 @php($helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0))
 @php($isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId)
+@php($hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*'))
 <div class="portal-shell">
     <aside class="portal-sidebar">
         <a class="brand-lockup" href="{{ route('dashboard') }}">
@@ -81,7 +82,7 @@
                 </span>
             </a>
 
-            @unless(request()->routeIs('dashboard') || request()->routeIs('directory.*'))
+            @unless($hideTopbarSearch)
                 <form class="search-box" action="{{ route('search') }}" method="get">
                     <i class="bi bi-search"></i>
                     <input name="q" value="{{ request('q') }}" placeholder="ค้นหา พนักงาน ประกาศ เทรนนิ่ง" aria-label="ค้นหา">
