@@ -27,7 +27,7 @@
                     <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
                     <span>{{ $onboarding->employee_code }} · {{ $onboarding->department?->name ?? $onboarding->business_unit ?? '-' }}</span>
                 </div>
-                <h3>{{ $onboarding->displayName() }}</h3>
+                <h3><a class="text-link" href="{{ route('onboarding.show', $onboarding) }}">{{ $onboarding->displayName() }}</a></h3>
                 <p>{{ $onboarding->position ?: '-' }} · เริ่มงาน {{ optional($onboarding->start_date)->format('d/m/Y') ?: '-' }}</p>
                 @if($onboarding->hr_note)
                     <div class="alert-panel"><strong>หมายเหตุ HR</strong><p>{{ $onboarding->hr_note }}</p></div>
@@ -71,6 +71,7 @@
                     <textarea class="form-control mb-2" name="it_note" rows="2">{{ $onboarding->it_note }}</textarea>
                     <div class="button-row">
                         <button class="btn btn-outline-primary" type="submit"><i class="bi bi-save"></i> บันทึก</button>
+                        <a class="btn btn-outline-primary" href="{{ route('onboarding.show', $onboarding) }}"><i class="bi bi-box-arrow-up-right"></i> เปิดรายละเอียด</a>
                     </div>
                 </form>
                 @if($onboarding->status !== 'it_completed')

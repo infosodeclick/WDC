@@ -460,7 +460,7 @@ class WdcPortalTest extends TestCase
             'user_id' => $administrator->id,
             'type' => 'onboarding',
             'title' => 'มีรายการพนักงานใหม่จาก HR',
-            'url' => route('admin.index', ['section' => 'notifications']),
+            'url' => route('onboarding.show', $onboarding),
         ]);
 
         $this->actingAs($administrator);
@@ -472,9 +472,23 @@ class WdcPortalTest extends TestCase
             ->assertSee('EMP77777')
             ->assertSee('New Starter');
 
+        $this->get(route('onboarding.show', $onboarding))
+            ->assertOk()
+            ->assertSee('ข้อมูลที่ HR ส่งมา')
+            ->assertSee('EMP77777')
+            ->assertSee('New Starter')
+            ->assertSee('พนักงาน ใหม่')
+            ->assertSee('เริ่มงานเดือนนี้')
+            ->assertSee('อนุมัติเปิดระบบและส่งกลับ HR');
+
         $emailSystem = $onboarding->systems->firstWhere('system_name', 'Email');
 
         $this->actingAs($itUser);
+
+        $this->get(route('onboarding.show', $onboarding))
+            ->assertOk()
+            ->assertSee('รายการเปิดระบบโดย IT')
+            ->assertSee('บันทึกข้อมูล IT');
 
         $this->patch(route('it.onboarding.update', $onboarding), [
             'systems' => [

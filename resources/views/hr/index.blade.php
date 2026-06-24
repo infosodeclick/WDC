@@ -187,7 +187,7 @@
                         <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
                         <span>{{ $onboarding->employee_code }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</span>
                     </div>
-                    <h3>{{ $onboarding->displayName() }}</h3>
+                    <h3><a class="text-link" href="{{ route('onboarding.show', $onboarding) }}">{{ $onboarding->displayName() }}</a></h3>
                     <p>{{ $onboarding->thai_name ?: '-' }} · {{ $onboarding->position ?: '-' }} · {{ $onboarding->department?->name ?? $onboarding->business_unit ?? '-' }}</p>
                     <div class="asset-chip-list">
                         @foreach($onboarding->systems as $system)

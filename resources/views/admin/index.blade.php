@@ -103,10 +103,10 @@
             <h3>คำขอพนักงานใหม่ที่รอ IT</h3>
             <div class="item-list">
                 @forelse($pendingAdminOnboardingRequests as $onboarding)
-                    <article class="result-row">
+                    <a class="result-row" href="{{ route('onboarding.show', $onboarding) }}">
                         <strong>{{ $onboarding->employee_code }} · {{ $onboarding->displayName() }}</strong>
                         <small>{{ $onboarding->statusLabel() }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }} · {{ $onboarding->position ?: '-' }} · {{ $onboarding->department?->name ?? $onboarding->business_unit ?? '-' }}</small>
-                    </article>
+                    </a>
                 @empty
                     <div class="empty-state">ยังไม่มีคำขอพนักงานใหม่ที่รอ IT</div>
                 @endforelse

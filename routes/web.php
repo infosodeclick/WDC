@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/hr/employees/{user}/status', [HrController::class, 'updateEmployeeStatus'])->name('hr.employees.status');
 
     Route::get('/it', [TicketController::class, 'itDashboard'])->name('it.index');
+    Route::get('/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'show'])->name('onboarding.show');
     Route::patch('/it/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'updateIt'])->name('it.onboarding.update');
     Route::patch('/it/onboarding/{onboarding}/complete', [EmployeeOnboardingController::class, 'completeIt'])->name('it.onboarding.complete');
 

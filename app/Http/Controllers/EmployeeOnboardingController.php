@@ -16,9 +16,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class EmployeeOnboardingController extends Controller
 {
+    public function show(EmployeeOnboardingRequest $onboarding, Request $request): View
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canViewOnboarding($actor), 403);
+
+        return view('onboarding.show', [
+            'onboarding' => $onboarding->load('department', 'systems.asset', 'requester', 'itCompleter', 'hrApprover'),
+            'canManageItOnboarding' => $this->canManageItOnboarding($actor) && $onboarding->status !== 'hr_approved',
+            'availableAssets' => $actor->canManageItAssets()
+                ? ItAsset::whereIn('status', ['active', 'repair'])->orderBy('code')->get()
+                : collect(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
@@ -90,7 +106,7 @@ class EmployeeOnboardingController extends Controller
             'status' => 'pending',
         ]));
 
-        $this->notifyUsers(['it.onboarding.manage', 'it.portal.view'], 'มีรายการพนักงานใหม่จาก HR', $onboarding->displayName(), route('it.index'));
+        $this->notifyUsers(['it.onboarding.manage', 'it.portal.view'], 'มีรายการพนักงานใหม่จาก HR', $onboarding->displayName(), route('onboarding.show', $onboarding));
         $this->log($request, 'create_employee_onboarding', EmployeeOnboardingRequest::class, $onboarding->id, "Created onboarding {$onboarding->employee_code}");
 
         return back()->with('status', 'ส่งรายการพนักงานใหม่ให้ IT แล้ว');
@@ -166,7 +182,7 @@ class EmployeeOnboardingController extends Controller
             'it_completed_at' => now(),
         ]);
 
-        $this->notifyUsers(['hr.onboarding.manage', 'hr.employees.manage'], 'IT เปิดระบบพนักงานใหม่เรียบร้อยแล้ว', $onboarding->displayName(), route('hr.index'));
+        $this->notifyUsers(['hr.onboarding.manage', 'hr.employees.manage'], 'IT เปิดระบบพนักงานใหม่เรียบร้อยแล้ว', $onboarding->displayName(), route('onboarding.show', $onboarding));
         $this->log($request, 'complete_employee_onboarding_it', EmployeeOnboardingRequest::class, $onboarding->id, "Completed IT onboarding {$onboarding->employee_code}");
 
         return back()->with('status', 'แจ้ง HR ว่าเปิดระบบเรียบร้อยแล้ว');
@@ -298,9 +314,7 @@ class EmployeeOnboardingController extends Controller
                 'type' => 'onboarding',
                 'title' => $title,
                 'body' => $body,
-                'url' => $user->employee_code === 'administrator'
-                    ? route('admin.index', ['section' => 'notifications'])
-                    : $url,
+                'url' => $url,
             ]));
 
         $administrator = User::where('employee_code', 'administrator')
@@ -313,9 +327,25 @@ class EmployeeOnboardingController extends Controller
                 'type' => 'onboarding',
                 'title' => $title,
                 'body' => $body,
-                'url' => route('admin.index', ['section' => 'notifications']),
+                'url' => $url,
             ]);
         }
+    }
+
+    private function canViewOnboarding(User $user): bool
+    {
+        return $user->canAccessAny([
+            'it.onboarding.manage',
+            'it.portal.view',
+            'tickets.manage',
+            'hr.onboarding.manage',
+            'hr.employees.manage',
+        ]);
+    }
+
+    private function canManageItOnboarding(User $user): bool
+    {
+        return $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage']);
     }
 
     private function log(Request $request, string $action, ?string $subjectType = null, ?int $subjectId = null, ?string $description = null): void
