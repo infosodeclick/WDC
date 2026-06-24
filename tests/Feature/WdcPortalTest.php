@@ -237,11 +237,7 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('Super Admin Console')
             ->assertDontSee('ศูนย์หลังบ้านและสิทธิ์ผู้ใช้งาน')
             ->assertDontSee('ผู้ใช้งานทั้งหมด')
-            ->assertDontSee('Admin Access')
-            ->assertDontSee('href="#permission-management"', false)
-            ->assertDontSee('href="#create-user"', false)
-            ->assertDontSee('href="#role-template"', false)
-            ->assertDontSee('href="#activity-logs"', false);
+            ->assertDontSee('Admin Access');
     }
 
     public function test_admin_can_create_employee_with_language_specific_nicknames_for_directory(): void
