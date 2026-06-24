@@ -64,7 +64,7 @@
                 <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
             @endif
             @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
-                <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>
+                <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span></a>
             @endif
             @if($currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']))
                 <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span></a>
@@ -196,7 +196,7 @@
                     <a href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
                 @endif
                 @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
-                    <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>
+                    <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span></a>
                 @endif
                 @if($currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']))
                     <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span></a>

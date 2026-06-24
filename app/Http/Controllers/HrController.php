@@ -40,24 +40,65 @@ class HrController extends Controller
             $complaints->whereRaw('1 = 0');
         }
 
+        $canManageAnnouncements = $actor->canAccess('hr.announcements.manage');
+        $canManageOnboarding = $actor->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']);
+        $canManageEmployees = $actor->canAccess('hr.employees.manage');
+        $canReviewComplaints = $actor->canAccess('complaints.review');
+
+        $activeSection = $request->string('section')->toString() ?: 'dashboard';
+        $allowedSections = ['dashboard'];
+
+        if ($canManageOnboarding) {
+            $allowedSections[] = 'onboarding';
+        }
+
+        if ($canManageAnnouncements) {
+            $allowedSections[] = 'announcements';
+        }
+
+        if ($canManageEmployees) {
+            $allowedSections[] = 'profile-requests';
+            $allowedSections[] = 'employees';
+        }
+
+        if ($canReviewComplaints) {
+            $allowedSections[] = 'complaints';
+        }
+
+        if (! in_array($activeSection, $allowedSections, true)) {
+            $activeSection = 'dashboard';
+        }
+
+        $employees = $employees->get();
+        $onboardingRequests = $canManageOnboarding
+            ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'requester', 'itCompleter')
+                ->latest()
+                ->take(20)
+                ->get()
+            : collect();
+        $profileChangeRequests = $canManageEmployees
+            ? ProfileChangeRequest::with('user.employee.department')->where('status', 'pending')->latest()->take(10)->get()
+            : collect();
+        $complaints = $complaints->get();
+
         return view('hr.index', [
-            'employees' => $employees->get(),
+            'activeSection' => $activeSection,
+            'employees' => $employees,
             'departments' => Department::orderBy('name')->get(),
             'announcements' => Announcement::with('files')->latest()->take(8)->get(),
-            'complaints' => $complaints->get(),
-            'onboardingRequests' => $actor->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage'])
-                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'requester', 'itCompleter')
-                    ->latest()
-                    ->take(20)
-                    ->get()
-                : collect(),
-            'profileChangeRequests' => $actor->canAccess('hr.employees.manage')
-                ? ProfileChangeRequest::with('user.employee.department')->where('status', 'pending')->latest()->take(10)->get()
-                : collect(),
-            'canManageAnnouncements' => $actor->canAccess('hr.announcements.manage'),
-            'canManageOnboarding' => $actor->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']),
-            'canManageEmployees' => $actor->canAccess('hr.employees.manage'),
-            'canReviewComplaints' => $actor->canAccess('complaints.review'),
+            'complaints' => $complaints,
+            'onboardingRequests' => $onboardingRequests,
+            'profileChangeRequests' => $profileChangeRequests,
+            'employeeCount' => $employees->count(),
+            'activeEmployeeCount' => $employees->where('is_active', true)->count(),
+            'inactiveEmployeeCount' => $employees->where('is_active', false)->count(),
+            'pendingOnboardingCount' => $onboardingRequests->where('status', '!=', 'hr_approved')->count(),
+            'pendingProfileChangeCount' => $profileChangeRequests->count(),
+            'complaintCount' => $complaints->count(),
+            'canManageAnnouncements' => $canManageAnnouncements,
+            'canManageOnboarding' => $canManageOnboarding,
+            'canManageEmployees' => $canManageEmployees,
+            'canReviewComplaints' => $canReviewComplaints,
         ]);
     }
 

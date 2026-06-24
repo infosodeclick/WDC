@@ -1,24 +1,125 @@
 @extends('layouts.app')
 
-@section('title', 'HR Portal | WDC Portal')
+@section('title', 'HR | WDC Portal')
 
 @section('content')
+@php
+    $hrMenu = [
+        ['section' => 'dashboard', 'label' => 'แดชบอร์ด', 'icon' => 'bi-speedometer2', 'show' => true],
+        ['section' => 'onboarding', 'label' => 'เพิ่มพนักงานใหม่', 'icon' => 'bi-person-plus', 'show' => $canManageOnboarding],
+        ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
+        ['section' => 'profile-requests', 'label' => 'คำขอแก้ข้อมูลโปรไฟล์', 'icon' => 'bi-person-gear', 'show' => $canManageEmployees],
+        ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
+        ['section' => 'complaints', 'label' => 'เรื่องร้องเรียนล่าสุด', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
+    ];
+@endphp
+
 <div class="button-row mb-3">
-    @if($canManageOnboarding)
-        <a class="btn btn-primary" href="#new-employee"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
-    @endif
-    @if($canManageAnnouncements)
-        <a class="btn btn-outline-primary" href="#create-announcement"><i class="bi bi-megaphone"></i> สร้างประกาศ</a>
-    @endif
-    @if($canManageEmployees)
-        <a class="btn btn-outline-primary" href="#profile-change-requests"><i class="bi bi-person-gear"></i> คำขอแก้ข้อมูลโปรไฟล์</a>
-    @endif
-    @if($canReviewComplaints)
-        <a class="btn btn-outline-primary" href="#recent-complaints"><i class="bi bi-shield-check"></i> เรื่องร้องเรียนล่าสุด</a>
-    @endif
+    @foreach($hrMenu as $item)
+        @if($item['show'])
+            <a class="btn {{ $activeSection === $item['section'] ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('hr.index', ['section' => $item['section']]) }}">
+                <i class="bi {{ $item['icon'] }}"></i> {{ $item['label'] }}
+            </a>
+        @endif
+    @endforeach
 </div>
 
-@if($canManageOnboarding)
+@if($activeSection === 'dashboard')
+    <div class="metric-grid mb-3">
+        <div class="metric-card"><span>พนักงานทั้งหมด</span><strong>{{ number_format($employeeCount) }}</strong><small>ตามสิทธิ์ข้อมูลที่เข้าถึงได้</small></div>
+        <div class="metric-card"><span>ใช้งานอยู่</span><strong>{{ number_format($activeEmployeeCount) }}</strong><small>แสดงในระบบ</small></div>
+        <div class="metric-card"><span>พนักงานลาออก/ไม่แสดง</span><strong>{{ number_format($inactiveEmployeeCount) }}</strong><small>ถูกปิดการใช้งาน</small></div>
+        @if($canManageOnboarding)
+            <div class="metric-card"><span>พนักงานใหม่รอดำเนินการ</span><strong>{{ number_format($pendingOnboardingCount) }}</strong><small>รอ IT หรือ HR อนุมัติ</small></div>
+        @endif
+        @if($canManageEmployees)
+            <div class="metric-card"><span>คำขอแก้โปรไฟล์</span><strong>{{ number_format($pendingProfileChangeCount) }}</strong><small>รอ HR ตรวจสอบ</small></div>
+        @endif
+        @if($canReviewComplaints)
+            <div class="metric-card"><span>เรื่องร้องเรียน</span><strong>{{ number_format($complaintCount) }}</strong><small>รายการล่าสุดที่เกี่ยวข้อง</small></div>
+        @endif
+    </div>
+
+    <div class="content-grid">
+        @if($canManageOnboarding)
+            <section class="panel">
+                <div class="section-title">
+                    <h2>คำขอพนักงานใหม่</h2>
+                    <a class="text-link" href="{{ route('hr.index', ['section' => 'onboarding']) }}">เปิดเมนู</a>
+                </div>
+                <div class="item-list">
+                    @forelse($onboardingRequests->take(5) as $onboarding)
+                        <div class="result-row">
+                            <strong>{{ $onboarding->employee_code }} · {{ $onboarding->displayName() }}</strong>
+                            <small>{{ $onboarding->statusLabel() }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</small>
+                        </div>
+                    @empty
+                        <div class="empty-state">ยังไม่มีรายการพนักงานใหม่</div>
+                    @endforelse
+                </div>
+            </section>
+        @endif
+
+        @if($canManageEmployees)
+            <section class="panel">
+                <div class="section-title">
+                    <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
+                    <a class="text-link" href="{{ route('hr.index', ['section' => 'profile-requests']) }}">เปิดเมนู</a>
+                </div>
+                <div class="item-list">
+                    @forelse($profileChangeRequests->take(5) as $profileRequest)
+                        <div class="result-row">
+                            <strong>{{ $profileRequest->user?->employee_code }} · {{ $profileRequest->user?->name }}</strong>
+                            <small>{{ $profileRequest->field }} · {{ $profileRequest->requested_value ?: '-' }}</small>
+                        </div>
+                    @empty
+                        <div class="empty-state">ไม่มีคำขอแก้ข้อมูลที่รออนุมัติ</div>
+                    @endforelse
+                </div>
+            </section>
+        @endif
+
+        @if($canReviewComplaints)
+            <section class="panel">
+                <div class="section-title">
+                    <h2>เรื่องร้องเรียนล่าสุด</h2>
+                    <a class="text-link" href="{{ route('hr.index', ['section' => 'complaints']) }}">เปิดเมนู</a>
+                </div>
+                <div class="item-list">
+                    @forelse($complaints->take(5) as $complaint)
+                        <div class="result-row">
+                            <strong>{{ $complaint->subject }}</strong>
+                            <small>{{ $complaint->status }} · {{ $complaint->created_at->format('d/m/Y H:i') }}</small>
+                        </div>
+                    @empty
+                        <div class="empty-state">ยังไม่มีเรื่องร้องเรียนล่าสุด</div>
+                    @endforelse
+                </div>
+            </section>
+        @endif
+
+        @if($canManageAnnouncements)
+            <section class="panel">
+                <div class="section-title">
+                    <h2>ประกาศล่าสุด</h2>
+                    <a class="text-link" href="{{ route('hr.index', ['section' => 'announcements']) }}">เปิดเมนู</a>
+                </div>
+                <div class="item-list">
+                    @forelse($announcements->take(5) as $announcement)
+                        <div class="result-row">
+                            <strong>{{ $announcement->announcement_no }} · {{ $announcement->title }}</strong>
+                            <small>{{ $announcement->category }} · {{ $announcement->published_at?->format('d/m/Y') ?: '-' }}</small>
+                        </div>
+                    @empty
+                        <div class="empty-state">ยังไม่มีประกาศล่าสุด</div>
+                    @endforelse
+                </div>
+            </section>
+        @endif
+    </div>
+@endif
+
+@if($activeSection === 'onboarding' && $canManageOnboarding)
     <section class="panel" id="new-employee">
         <h2>เพิ่มพนักงานใหม่</h2>
         <p class="muted">HR กรอกข้อมูลครั้งเดียว ระบบจะส่งรายการให้ IT เปิดระบบ เมื่อ IT กดเสร็จ HR จะอนุมัติให้แสดงในหน้ารายชื่อพนักงานได้ทันที</p>
@@ -59,7 +160,7 @@
         </form>
     </section>
 
-    <section class="panel" id="create-announcement">
+    <section class="panel">
         <h2>คำขอพนักงานใหม่</h2>
         <div class="item-list">
             @forelse($onboardingRequests as $onboarding)
@@ -93,7 +194,7 @@
     </section>
 @endif
 
-@if($canManageAnnouncements)
+@if($activeSection === 'announcements' && $canManageAnnouncements)
     <section class="panel">
         <h2>สร้างประกาศ</h2>
         <form method="post" action="{{ route('hr.announcements.store') }}" class="form-grid" enctype="multipart/form-data">
@@ -117,72 +218,76 @@
     </section>
 @endif
 
-<div class="content-grid">
-    @if($canManageEmployees)
-        <section class="panel" id="employee-list">
-            <h2 id="profile-change-requests">คำขอแก้ข้อมูลโปรไฟล์</h2>
-            <div class="item-list mb-4">
-                @forelse($profileChangeRequests as $profileRequest)
-                    <div class="result-row">
-                        <strong>{{ $profileRequest->user?->employee_code }} · {{ $profileRequest->user?->name }}</strong>
-                        <small>ขอแก้ {{ $profileRequest->field }} จาก {{ $profileRequest->current_value ?: '-' }} เป็น {{ $profileRequest->requested_value ?: '-' }}</small>
-                        <div class="button-row">
-                            <form method="post" action="{{ route('hr.profile-requests.review', $profileRequest) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="status" value="approved">
-                                <button class="btn btn-sm btn-primary" type="submit">อนุมัติ</button>
-                            </form>
-                            <form method="post" action="{{ route('hr.profile-requests.review', $profileRequest) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="status" value="rejected">
-                                <button class="btn btn-sm btn-outline-primary" type="submit">ไม่อนุมัติ</button>
-                            </form>
-                        </div>
+@if($activeSection === 'profile-requests' && $canManageEmployees)
+    <section class="panel">
+        <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
+        <div class="item-list">
+            @forelse($profileChangeRequests as $profileRequest)
+                <div class="result-row">
+                    <strong>{{ $profileRequest->user?->employee_code }} · {{ $profileRequest->user?->name }}</strong>
+                    <small>ขอแก้ {{ $profileRequest->field }} จาก {{ $profileRequest->current_value ?: '-' }} เป็น {{ $profileRequest->requested_value ?: '-' }}</small>
+                    <div class="button-row">
+                        <form method="post" action="{{ route('hr.profile-requests.review', $profileRequest) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="approved">
+                            <button class="btn btn-sm btn-primary" type="submit">อนุมัติ</button>
+                        </form>
+                        <form method="post" action="{{ route('hr.profile-requests.review', $profileRequest) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="rejected">
+                            <button class="btn btn-sm btn-outline-primary" type="submit">ไม่อนุมัติ</button>
+                        </form>
                     </div>
-                @empty
-                    <div class="empty-state">ไม่มีคำขอแก้ข้อมูลที่รออนุมัติ</div>
-                @endforelse
-            </div>
+                </div>
+            @empty
+                <div class="empty-state">ไม่มีคำขอแก้ข้อมูลที่รออนุมัติ</div>
+            @endforelse
+        </div>
+    </section>
+@endif
 
-            <h2>รายชื่อพนักงาน</h2>
-            <p class="muted">ปุ่มสถานะนี้ใช้เปิด/ปิดการใช้งานและซ่อน/แสดงในหน้ารายชื่อพนักงาน กรณีพนักงานลาออกจะถูกย้ายไปสถานะไม่แสดง</p>
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead>
-                    <tbody>
-                    @foreach($employees as $employee)
-                        <tr>
-                            <td>{{ $employee->employee_code }}</td>
-                            <td>{{ $employee->name }}</td>
-                            <td>{{ $employee->employee?->department?->name }}</td>
-                            <td>{{ $employee->role?->name }}</td>
-                            <td>{{ $employee->is_active ? 'แสดงในรายชื่อ / ใช้งาน' : 'พนักงานลาออก / ไม่แสดง' }}</td>
-                            <td>
-                                <form method="post" action="{{ route('hr.employees.status', $employee) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="btn btn-sm btn-outline-secondary" @disabled(auth()->id() === $employee->id)>{{ $employee->is_active ? 'ระงับ' : 'เปิดใช้งาน' }}</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    @endif
-
-    @if($canReviewComplaints)
-        <section class="panel" id="recent-complaints">
-            <h2>เรื่องร้องเรียนล่าสุด</h2>
-            <div class="item-list">
-                @foreach($complaints as $complaint)
-                    <div class="result-row"><strong>{{ $complaint->subject }}</strong><small>{{ $complaint->type }} · {{ $complaint->status }}</small></div>
+@if($activeSection === 'employees' && $canManageEmployees)
+    <section class="panel">
+        <h2>รายชื่อพนักงาน</h2>
+        <p class="muted">ปุ่มสถานะนี้ใช้เปิด/ปิดการใช้งานและซ่อน/แสดงในหน้ารายชื่อพนักงาน กรณีพนักงานลาออกจะถูกย้ายไปสถานะไม่แสดง</p>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead>
+                <tbody>
+                @foreach($employees as $employee)
+                    <tr>
+                        <td>{{ $employee->employee_code }}</td>
+                        <td>{{ $employee->name }}</td>
+                        <td>{{ $employee->employee?->department?->name }}</td>
+                        <td>{{ $employee->role?->name }}</td>
+                        <td>{{ $employee->is_active ? 'แสดงในรายชื่อ / ใช้งาน' : 'พนักงานลาออก / ไม่แสดง' }}</td>
+                        <td>
+                            <form method="post" action="{{ route('hr.employees.status', $employee) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button class="btn btn-sm btn-outline-secondary" @disabled(auth()->id() === $employee->id)>{{ $employee->is_active ? 'ระงับ' : 'เปิดใช้งาน' }}</button>
+                            </form>
+                        </td>
+                    </tr>
                 @endforeach
-            </div>
-        </section>
-    @endif
-</div>
+                </tbody>
+            </table>
+        </div>
+    </section>
+@endif
+
+@if($activeSection === 'complaints' && $canReviewComplaints)
+    <section class="panel">
+        <h2>เรื่องร้องเรียนล่าสุด</h2>
+        <div class="item-list">
+            @forelse($complaints as $complaint)
+                <div class="result-row"><strong>{{ $complaint->subject }}</strong><small>{{ $complaint->type }} · {{ $complaint->status }}</small></div>
+            @empty
+                <div class="empty-state">ยังไม่มีเรื่องร้องเรียนล่าสุด</div>
+            @endforelse
+        </div>
+    </section>
+@endif
 @endsection

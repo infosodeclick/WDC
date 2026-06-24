@@ -292,7 +292,7 @@ class AdminController extends Controller
             ['label' => 'แบบฟอร์ม', 'permissions' => ['documents.view']],
             ['label' => 'IT', 'permissions' => ['it.portal.view', 'tickets.manage', 'it.onboarding.manage']],
             ['label' => 'INVENTORY', 'permissions' => ['assets.view', 'assets.manage', 'assets.reports', 'assets.settings.manage', 'assets.delete']],
-            ['label' => 'HR Portal', 'permissions' => ['hr.portal.view', 'hr.onboarding.manage', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']],
+            ['label' => 'HR', 'permissions' => ['hr.portal.view', 'hr.onboarding.manage', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']],
             ['label' => 'Admin', 'permissions' => ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']],
         ];
     }

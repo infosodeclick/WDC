@@ -185,6 +185,38 @@ class WdcPortalTest extends TestCase
             ->assertSee(route('announcements.files.show', $file), false);
     }
 
+    public function test_hr_backend_uses_dashboard_and_section_menus(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $this->actingAs($hr);
+
+        $this->get(route('hr.index'))
+            ->assertOk()
+            ->assertSee('แดชบอร์ด')
+            ->assertSee('พนักงานทั้งหมด')
+            ->assertSee('คำขอแก้โปรไฟล์')
+            ->assertDontSee('ระบบที่ให้ IT เปิด')
+            ->assertDontSee('เลขที่ประกาศ');
+
+        $this->get(route('hr.index', ['section' => 'onboarding']))
+            ->assertOk()
+            ->assertSee('ระบบที่ให้ IT เปิด')
+            ->assertDontSee('เลขที่ประกาศ');
+
+        $this->get(route('hr.index', ['section' => 'announcements']))
+            ->assertOk()
+            ->assertSee('เลขที่ประกาศ')
+            ->assertDontSee('ระบบที่ให้ IT เปิด');
+
+        $this->get(route('hr.index', ['section' => 'employees']))
+            ->assertOk()
+            ->assertSee('รายชื่อพนักงาน')
+            ->assertSee('EMP00125')
+            ->assertDontSee('เลขที่ประกาศ');
+    }
+
     public function test_admin_can_open_admin_portal(): void
     {
         $this->seed(DatabaseSeeder::class);
