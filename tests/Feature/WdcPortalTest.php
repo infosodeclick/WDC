@@ -216,7 +216,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('เลขที่ประกาศ')
             ->assertDontSee('ระบบที่ให้ IT เปิด');
 
-        $this->get(route('hr.index', ['section' => 'employees']))
+        $employeesResponse = $this->get(route('hr.index', ['section' => 'employees']))
             ->assertOk()
             ->assertSee('รายชื่อพนักงาน')
             ->assertSee('EMP00125')
@@ -228,6 +228,7 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('แสดงรายชื่อพนักงานทั้งหมด')
             ->assertDontSee('administrator ·')
             ->assertDontSee('เลขที่ประกาศ');
+        $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-plus'));
 
         $csvExport = $this->get(route('hr.employees.export', ['format' => 'csv']))
             ->assertOk()

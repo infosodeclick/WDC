@@ -7,7 +7,6 @@
     $hrMenu = [
         ['section' => 'dashboard', 'label' => 'แดชบอร์ด', 'icon' => 'bi-speedometer2', 'show' => true],
         ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
-        ['section' => 'onboarding', 'label' => 'เพิ่มพนักงานใหม่', 'icon' => 'bi-person-plus', 'show' => $canManageOnboarding],
         ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
         ['section' => 'profile-requests', 'label' => 'คำขอแก้ข้อมูลโปรไฟล์', 'icon' => 'bi-person-gear', 'show' => $canManageEmployees],
         ['section' => 'complaints', 'label' => 'เรื่องร้องเรียนล่าสุด', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
