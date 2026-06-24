@@ -58,7 +58,6 @@ class HrController extends Controller
 
         if ($canManageEmployees) {
             $allowedSections[] = 'profile-requests';
-            $allowedSections[] = 'employees';
         }
 
         if ($canReviewComplaints) {

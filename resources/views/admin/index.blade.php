@@ -3,23 +3,19 @@
 @section('title', 'Admin | WDC Portal')
 
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">Super Admin Console</p>
-        <h1>ศูนย์หลังบ้านและสิทธิ์ผู้ใช้งาน</h1>
-        <p>กำหนดว่าแต่ละคนทำอะไรได้ เห็นข้อมูลได้ถึงระดับไหน และให้หลังบ้านสอดคล้องกับเมนูหน้าบ้าน</p>
-    </div>
-    @if($canManageSystem)
-        <div class="role-badge">สิทธิ์แอดมินสูงสุด</div>
+<div class="button-row mb-3">
+    @if($canManageUsers || $canManageRoles || $canManageDirectory)
+        <a class="btn btn-primary" href="#permission-management"><i class="bi bi-shield-check"></i> กำหนดสิทธิ์</a>
     @endif
-</div>
-
-<div class="metric-grid">
-    <div class="metric-card"><span>ผู้ใช้งานทั้งหมด</span><strong>{{ $totalUsers }}</strong><small>บัญชีในระบบ WDC</small></div>
-    <div class="metric-card"><span>ใช้งานอยู่</span><strong>{{ $activeUsers }}</strong><small>ล็อกอินและเปิดเมนูได้ตามสิทธิ์</small></div>
-    <div class="metric-card"><span>ระงับ</span><strong>{{ $suspendedUsers }}</strong><small>บัญชีที่ปิดการใช้งาน</small></div>
-    <div class="metric-card"><span>Role</span><strong>{{ $roles->count() }}</strong><small>รวม Super Admin</small></div>
-    <div class="metric-card"><span>Admin Access</span><strong>{{ $adminCapableUsers }}</strong><small>บัญชีที่แตะหลังบ้านได้</small></div>
+    @if($canCreateUsers)
+        <a class="btn btn-outline-primary" href="#create-user"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้งาน</a>
+    @endif
+    @if($canManageRoles)
+        <a class="btn btn-outline-primary" href="#role-template"><i class="bi bi-sliders"></i> Role Template</a>
+    @endif
+    @if($canViewLogs)
+        <a class="btn btn-outline-primary" href="#activity-logs"><i class="bi bi-clock-history"></i> Activity Logs</a>
+    @endif
 </div>
 
 <section class="panel">
@@ -38,7 +34,7 @@
 </section>
 
 @if($canCreateUsers)
-<section class="panel">
+<section class="panel" id="create-user">
     <div class="section-title">
         <h2>เพิ่มผู้ใช้งาน</h2>
         <span class="status-pill">สร้างบัญชี WDC Login</span>
@@ -89,10 +85,40 @@
 @endif
 
 @if($canManageUsers || $canManageRoles || $canManageDirectory)
-<section class="panel">
+<section class="panel" id="permission-management">
     <div class="section-title">
-        <h2>สิทธิ์รายผู้ใช้</h2>
+        <h2>กำหนดสิทธิ์</h2>
         <span class="status-pill">{{ $users->count() }} รายการที่แสดง</span>
+    </div>
+    <h3>รายชื่อพนักงาน</h3>
+    <p class="muted">ปุ่มสถานะนี้ใช้เปิด/ปิดการใช้งานและซ่อน/แสดงในหน้ารายชื่อพนักงาน กรณีพนักงานลาออกจะถูกย้ายไปสถานะไม่แสดง</p>
+    <div class="table-responsive mb-4">
+        <table class="table align-middle">
+            <thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody>
+            @foreach($users as $managedUser)
+                <tr>
+                    <td>{{ $managedUser->employee_code }}</td>
+                    <td>{{ $managedUser->name }}</td>
+                    <td>{{ $managedUser->employee?->department?->name }}</td>
+                    <td>{{ $managedUser->role?->name }}</td>
+                    <td>{{ $managedUser->is_active ? 'แสดงในรายชื่อ / ใช้งาน' : 'พนักงานลาออก / ไม่แสดง' }}</td>
+                    <td>
+                        @if($canManageUsers || $canManageDirectory)
+                            <form method="post" action="{{ route('admin.users.access', $managedUser) }}">
+                                @csrf
+                                @method('PATCH')
+                                @unless($managedUser->is_active)
+                                    <input type="hidden" name="is_active" value="1">
+                                @endunless
+                                <button class="btn btn-sm btn-outline-secondary" @disabled(auth()->id() === $managedUser->id || ($managedUser->isSuperAdmin() && ! auth()->user()->isSuperAdmin()))>{{ $managedUser->is_active ? 'ระงับ' : 'เปิดใช้งาน' }}</button>
+                            </form>
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
     </div>
     <div class="admin-user-list">
         @forelse($users as $managedUser)
@@ -222,7 +248,7 @@
 @endif
 
 @if($canManageRoles)
-<section class="panel">
+<section class="panel" id="role-template">
     <div class="section-title">
         <h2>Role Template</h2>
         <span class="status-pill">สิทธิ์เริ่มต้นของแต่ละกลุ่ม</span>
@@ -271,7 +297,7 @@
 @endif
 
 @if($canViewLogs)
-<section class="panel">
+<section class="panel" id="activity-logs">
     <div class="section-title">
         <h2>Activity Logs</h2>
         <span class="status-pill">{{ $logs->count() }} รายการล่าสุด</span>

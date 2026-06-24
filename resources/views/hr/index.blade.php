@@ -9,7 +9,6 @@
         ['section' => 'onboarding', 'label' => 'เพิ่มพนักงานใหม่', 'icon' => 'bi-person-plus', 'show' => $canManageOnboarding],
         ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
         ['section' => 'profile-requests', 'label' => 'คำขอแก้ข้อมูลโปรไฟล์', 'icon' => 'bi-person-gear', 'show' => $canManageEmployees],
-        ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
         ['section' => 'complaints', 'label' => 'เรื่องร้องเรียนล่าสุด', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
     ];
 @endphp
@@ -244,36 +243,6 @@
             @empty
                 <div class="empty-state">ไม่มีคำขอแก้ข้อมูลที่รออนุมัติ</div>
             @endforelse
-        </div>
-    </section>
-@endif
-
-@if($activeSection === 'employees' && $canManageEmployees)
-    <section class="panel">
-        <h2>รายชื่อพนักงาน</h2>
-        <p class="muted">ปุ่มสถานะนี้ใช้เปิด/ปิดการใช้งานและซ่อน/แสดงในหน้ารายชื่อพนักงาน กรณีพนักงานลาออกจะถูกย้ายไปสถานะไม่แสดง</p>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead>
-                <tbody>
-                @foreach($employees as $employee)
-                    <tr>
-                        <td>{{ $employee->employee_code }}</td>
-                        <td>{{ $employee->name }}</td>
-                        <td>{{ $employee->employee?->department?->name }}</td>
-                        <td>{{ $employee->role?->name }}</td>
-                        <td>{{ $employee->is_active ? 'แสดงในรายชื่อ / ใช้งาน' : 'พนักงานลาออก / ไม่แสดง' }}</td>
-                        <td>
-                            <form method="post" action="{{ route('hr.employees.status', $employee) }}">
-                                @csrf
-                                @method('PATCH')
-                                <button class="btn btn-sm btn-outline-secondary" @disabled(auth()->id() === $employee->id)>{{ $employee->is_active ? 'ระงับ' : 'เปิดใช้งาน' }}</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
         </div>
     </section>
 @endif

@@ -27,12 +27,7 @@ class AdminController extends Controller
 
         $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
-        $adminAccessKeys = ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view'];
         $directoryManageKeys = ['directory.manage', 'hr.employees.manage'];
-        $adminCapableUsers = User::with('role.permissions', 'permissionOverrides')
-            ->get()
-            ->filter(fn (User $user) => $user->canAccessAny($adminAccessKeys))
-            ->count();
 
         return view('admin.index', [
             'users' => $usersQuery->get(),
@@ -43,16 +38,11 @@ class AdminController extends Controller
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
             'logs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']) ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
-            'totalUsers' => User::count(),
-            'activeUsers' => User::where('is_active', true)->count(),
-            'suspendedUsers' => User::where('is_active', false)->count(),
-            'adminCapableUsers' => $adminCapableUsers,
             'canManageUsers' => $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']),
             'canManageDirectory' => $actor->canAccessAny($directoryManageKeys),
             'canCreateUsers' => $actor->canAccessAny(['admin.users.manage', 'iam.users.manage', ...$directoryManageKeys]),
             'canManageRoles' => $actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']),
             'canViewLogs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']),
-            'canManageSystem' => $actor->canAccess('admin.system.manage'),
         ]);
     }
 
@@ -168,7 +158,10 @@ class AdminController extends Controller
 
         if ($canManageAccess) {
             $userPayload['role_id'] = $role->id;
-            $userPayload['data_scope'] = $data['data_scope'] ?? null;
+
+            if ($request->has('data_scope')) {
+                $userPayload['data_scope'] = $data['data_scope'] ?? null;
+            }
         }
 
         if ($canManageAccess || $canManageDirectory) {

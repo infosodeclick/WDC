@@ -212,8 +212,7 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('hr.index', ['section' => 'employees']))
             ->assertOk()
-            ->assertSee('รายชื่อพนักงาน')
-            ->assertSee('EMP00125')
+            ->assertSee('แดชบอร์ด')
             ->assertDontSee('เลขที่ประกาศ');
     }
 
@@ -228,11 +227,17 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('Super Admin Console')
+            ->assertSee('กำหนดสิทธิ์')
+            ->assertSee('รายชื่อพนักงาน')
+            ->assertSee('แสดงในรายชื่อ / ใช้งาน')
             ->assertSee('ชื่อเล่นอังกฤษ')
             ->assertSee('ชื่อเล่นไทย')
             ->assertSee('Role Template')
-            ->assertSee('EMP00125');
+            ->assertSee('EMP00125')
+            ->assertDontSee('Super Admin Console')
+            ->assertDontSee('ศูนย์หลังบ้านและสิทธิ์ผู้ใช้งาน')
+            ->assertDontSee('ผู้ใช้งานทั้งหมด')
+            ->assertDontSee('Admin Access');
     }
 
     public function test_admin_can_create_employee_with_language_specific_nicknames_for_directory(): void
