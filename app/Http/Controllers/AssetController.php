@@ -224,15 +224,21 @@ class AssetController extends Controller
     {
         abort_unless($request->user()->canDeleteItAssets(), 403);
 
-        $snapshot = $asset->toArray();
+        $before = $asset->only(['status', 'notes']);
         $assetCode = $asset->code;
         $assetName = $asset->name;
+        $archivedBy = $request->user()->employee_code ?: $request->user()->name;
+        $archiveNote = 'Archived by '.$archivedBy.' on '.now()->format('Y-m-d H:i');
+        $notes = trim(collect([$asset->notes, $archiveNote])->filter()->implode("\n"));
 
-        $this->logAsset($request, $asset, 'delete_asset', "Deleted {$assetCode} {$assetName}", $snapshot, null);
+        $asset->update([
+            'status' => 'retired',
+            'notes' => $notes,
+        ]);
 
-        $asset->delete();
+        $this->logAsset($request, $asset, 'archive_asset', "Archived {$assetCode} {$assetName}", $before, $asset->only(['status', 'notes']));
 
-        return back()->with('status', 'ลบรายการทรัพย์สิน IT แล้ว');
+        return back()->with('status', 'เก็บประวัติ/จำหน่ายทรัพย์สิน IT แล้ว');
     }
 
     public function export(Request $request)

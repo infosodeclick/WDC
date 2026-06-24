@@ -50,7 +50,7 @@ class AdminController extends Controller
 
         $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
-        $adminAccessKeys = ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage'];
+        $adminAccessKeys = ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view'];
         $directoryManageKeys = ['directory.manage', 'hr.employees.manage'];
         $adminCapableUsers = User::with('role.permissions', 'permissionOverrides')
             ->get()
@@ -65,7 +65,7 @@ class AdminController extends Controller
             'menuPermissions' => $this->sidebarMenuPermissions(),
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
-            'logs' => $actor->canAccess('admin.activity.view') ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
+            'logs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']) ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
             'userSearch' => $userSearch,
             'roleFilter' => $roleFilter,
             'statusFilter' => $statusFilter,
@@ -73,11 +73,11 @@ class AdminController extends Controller
             'activeUsers' => User::where('is_active', true)->count(),
             'suspendedUsers' => User::where('is_active', false)->count(),
             'adminCapableUsers' => $adminCapableUsers,
-            'canManageUsers' => $actor->canAccess('admin.users.manage'),
+            'canManageUsers' => $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']),
             'canManageDirectory' => $actor->canAccessAny($directoryManageKeys),
-            'canCreateUsers' => $actor->canAccessAny(['admin.users.manage', ...$directoryManageKeys]),
-            'canManageRoles' => $actor->canAccess('admin.roles.manage'),
-            'canViewLogs' => $actor->canAccess('admin.activity.view'),
+            'canCreateUsers' => $actor->canAccessAny(['admin.users.manage', 'iam.users.manage', ...$directoryManageKeys]),
+            'canManageRoles' => $actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']),
+            'canViewLogs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']),
             'canManageSystem' => $actor->canAccess('admin.system.manage'),
         ]);
     }
@@ -86,7 +86,7 @@ class AdminController extends Controller
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
-        abort_unless($actor->canAccessAny(['admin.users.manage', 'directory.manage', 'hr.employees.manage']), 403);
+        abort_unless($actor->canAccessAny(['admin.users.manage', 'iam.users.manage', 'directory.manage', 'hr.employees.manage']), 403);
 
         $data = $request->validate([
             'employee_code' => ['required', 'string', 'max:50', 'unique:users,employee_code'],
@@ -149,7 +149,7 @@ class AdminController extends Controller
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
-        $canManageAccess = $actor->canAccess('admin.users.manage');
+        $canManageAccess = $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']);
         $canManageDirectory = $actor->canAccessAny(['directory.manage', 'hr.employees.manage']);
 
         abort_unless($canManageAccess || $canManageDirectory, 403);
@@ -265,7 +265,7 @@ class AdminController extends Controller
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
-        abort_unless($actor->canAccess('admin.roles.manage'), 403);
+        abort_unless($actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']), 403);
 
         $data = $request->validate([
             'default_data_scope' => ['required', Rule::in(array_keys(Permission::DATA_SCOPE_LABELS))],
@@ -294,6 +294,10 @@ class AdminController extends Controller
             'admin.roles.manage',
             'admin.activity.view',
             'admin.system.manage',
+            'iam.users.manage',
+            'iam.roles.manage',
+            'audit.logs.view',
+            'audit.logs.export',
             'directory.manage',
             'hr.employees.manage',
         ]);
@@ -315,7 +319,7 @@ class AdminController extends Controller
             ['label' => 'ศูนย์ IT', 'permissions' => ['it.portal.view', 'tickets.manage']],
             ['label' => 'ทรัพย์สิน IT', 'permissions' => ['assets.view', 'assets.manage', 'assets.reports', 'assets.settings.manage', 'assets.delete']],
             ['label' => 'HR Portal', 'permissions' => ['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']],
-            ['label' => 'Admin', 'permissions' => ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage']],
+            ['label' => 'Admin', 'permissions' => ['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']],
         ];
     }
 
@@ -331,6 +335,9 @@ class AdminController extends Controller
                 'admin.roles.manage',
                 'admin.activity.view',
                 'admin.system.manage',
+                'iam.users.manage',
+                'iam.roles.manage',
+                'system.breakglass.use',
             ];
 
             abort_if($role->permissions->pluck('key')->intersect($restrictedPermissions)->isNotEmpty(), 403);

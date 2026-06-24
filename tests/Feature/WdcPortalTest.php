@@ -259,13 +259,45 @@ class WdcPortalTest extends TestCase
         $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
         $hrRole = Role::where('slug', 'hr')->with('permissions')->firstOrFail();
         $adminRole = Role::where('slug', 'admin')->with('permissions')->firstOrFail();
+        $iamRole = Role::where('slug', 'iam_admin')->with('permissions')->firstOrFail();
+        $auditorRole = Role::where('slug', 'auditor')->with('permissions')->firstOrFail();
+        $assetOfficerRole = Role::where('slug', 'it_asset_officer')->with('permissions')->firstOrFail();
+        $assetAdminRole = Role::where('slug', 'it_asset_admin')->with('permissions')->firstOrFail();
 
         $this->assertTrue($hrRole->permissions->contains('key', 'directory.manage'));
         $this->assertTrue($adminRole->permissions->contains('key', 'assets.settings.manage'));
         $this->assertTrue($adminRole->permissions->contains('key', 'assets.delete'));
+        $this->assertTrue($iamRole->permissions->contains('key', 'iam.users.manage'));
+        $this->assertTrue($iamRole->permissions->contains('key', 'iam.roles.manage'));
+        $this->assertTrue($auditorRole->permissions->contains('key', 'audit.logs.view'));
+        $this->assertTrue($auditorRole->permissions->contains('key', 'audit.logs.export'));
+        $this->assertFalse($auditorRole->permissions->contains('key', 'admin.users.manage'));
+        $this->assertTrue($assetOfficerRole->permissions->contains('key', 'assets.manage'));
+        $this->assertFalse($assetOfficerRole->permissions->contains('key', 'assets.delete'));
+        $this->assertTrue($assetAdminRole->permissions->contains('key', 'assets.settings.manage'));
+        $this->assertTrue($assetAdminRole->permissions->contains('key', 'assets.delete'));
         $this->assertFalse($employee->effectivePermissionKeys()->contains('directory.manage'));
         $this->assertTrue($itUser->effectivePermissionKeys()->contains('assets.settings.manage'));
         $this->assertTrue($itUser->effectivePermissionKeys()->contains('assets.delete'));
+    }
+
+    public function test_iam_and_auditor_roles_can_open_admin_without_business_admin_permissions(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $employee->update([
+            'role_id' => Role::where('slug', 'auditor')->value('id'),
+            'data_scope' => 'all',
+        ]);
+        $employee->permissionOverrides()->sync([]);
+
+        $this->actingAs($employee);
+
+        $this->get(route('admin.index'))
+            ->assertOk()
+            ->assertSee('Activity Log')
+            ->assertDontSee('เพิ่มผู้ใช้งาน');
     }
 
     public function test_hr_can_create_employee_user_without_admin_role_escalation(): void
@@ -1000,7 +1032,14 @@ class WdcPortalTest extends TestCase
 
         $this->delete(route('assets.destroy', $asset))->assertRedirect();
 
-        $this->assertDatabaseMissing('it_assets', ['code' => 'WDC-NB-TEST']);
+        $this->assertDatabaseHas('it_assets', [
+            'code' => 'WDC-NB-TEST',
+            'status' => 'retired',
+        ]);
+        $this->assertDatabaseHas('asset_audit_logs', [
+            'it_asset_id' => $asset->id,
+            'action' => 'archive_asset',
+        ]);
     }
 
     public function test_employee_without_asset_permission_cannot_open_assets(): void

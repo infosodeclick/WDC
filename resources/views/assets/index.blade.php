@@ -301,10 +301,10 @@
                                     </form>
                                 @endif
                                 @if($canDeleteAssets)
-                                    <form class="asset-status-form mt-2" method="post" action="{{ route('assets.destroy', $asset) }}" onsubmit="return confirm('ยืนยันลบทรัพย์สิน {{ $asset->code }} ?')">
+                                    <form class="asset-status-form mt-2" method="post" action="{{ route('assets.destroy', $asset) }}" onsubmit="return confirm('ยืนยันเก็บประวัติ/จำหน่ายทรัพย์สิน {{ $asset->code }} ? รายการจะไม่ถูกลบออกจากฐานข้อมูล')">
                                         @csrf
                                         @method('delete')
-                                        <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-trash"></i> ลบ</button>
+                                        <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-archive"></i> เก็บประวัติ</button>
                                     </form>
                                 @endif
                             </td>

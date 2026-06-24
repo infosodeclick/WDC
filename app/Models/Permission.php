@@ -28,7 +28,7 @@ class Permission extends Model
         ['key' => 'assets.manage', 'group' => 'IT Asset', 'name' => 'จัดการทรัพย์สิน IT', 'description' => 'เพิ่มทรัพย์สิน เปลี่ยนสถานะ และสร้างเอกสารตรวจนับ', 'sort_order' => 126],
         ['key' => 'assets.reports', 'group' => 'IT Asset', 'name' => 'ส่งออกรายงานทรัพย์สิน', 'description' => 'ดาวน์โหลด CSV และรายงานตรวจนับทรัพย์สิน', 'sort_order' => 127],
         ['key' => 'assets.settings.manage', 'group' => 'IT Asset', 'name' => 'ตั้งค่าหมวดหมู่ทรัพย์สิน IT', 'description' => 'เพิ่มและแก้ไขหมวดหมู่ สถานที่ และค่ากลางของระบบทรัพย์สิน', 'sort_order' => 128],
-        ['key' => 'assets.delete', 'group' => 'IT Asset', 'name' => 'ลบทรัพย์สิน IT', 'description' => 'ลบรายการทรัพย์สิน IT พร้อมบันทึก activity log', 'sort_order' => 129],
+        ['key' => 'assets.delete', 'group' => 'IT Asset', 'name' => 'เก็บประวัติ/จำหน่ายทรัพย์สิน IT', 'description' => 'เปลี่ยนทรัพย์สินเป็นสถานะจำหน่ายหรือเก็บประวัติแทนการลบจริง', 'sort_order' => 129],
         ['key' => 'workflows.create', 'group' => 'Workflow', 'name' => 'ส่งคำขออนุมัติ', 'description' => 'เปิดคำขอจาก workflow ที่ย้ายมาจาก SmartFlow', 'sort_order' => 130],
         ['key' => 'workflows.manage', 'group' => 'Workflow', 'name' => 'อนุมัติ/ติดตามคำขอ', 'description' => 'เห็นและอัปเดตคำขออนุมัติตามขอบเขตข้อมูล', 'sort_order' => 140],
         ['key' => 'complaints.create', 'group' => 'HR & Compliance', 'name' => 'ส่งเรื่องร้องเรียน', 'description' => 'ส่งเรื่องร้องเรียนแบบไม่ระบุผู้ส่งถึง HR', 'sort_order' => 150],
@@ -40,6 +40,11 @@ class Permission extends Model
         ['key' => 'admin.roles.manage', 'group' => 'Admin', 'name' => 'จัดการ role และสิทธิ์', 'description' => 'แก้ role template และ permission matrix', 'sort_order' => 210],
         ['key' => 'admin.activity.view', 'group' => 'Admin', 'name' => 'ดู Activity Log', 'description' => 'ตรวจสอบประวัติ Login และการทำงานสำคัญ', 'sort_order' => 220],
         ['key' => 'admin.system.manage', 'group' => 'Admin', 'name' => 'ตั้งค่าระบบหลังบ้าน', 'description' => 'สิทธิ์สูงสุดสำหรับแก้ระบบหลังบ้านและ workflow การดูแลระบบ', 'sort_order' => 230],
+        ['key' => 'iam.users.manage', 'group' => 'IAM', 'name' => 'IAM: จัดการผู้ใช้งาน', 'description' => 'สร้าง/ระงับ user และจัดการ role ตาม approval โดยไม่ถือสิทธิ์ข้อมูลธุรกิจ', 'sort_order' => 240],
+        ['key' => 'iam.roles.manage', 'group' => 'IAM', 'name' => 'IAM: จัดการ role และ scope', 'description' => 'กำหนด role template, scope และ override สิทธิ์รายคนตามคำขอที่อนุมัติ', 'sort_order' => 250],
+        ['key' => 'audit.logs.view', 'group' => 'Audit', 'name' => 'Audit: ดู log', 'description' => 'ดู activity log และหลักฐานการใช้งานแบบ read-only', 'sort_order' => 260],
+        ['key' => 'audit.logs.export', 'group' => 'Audit', 'name' => 'Audit: ส่งออกหลักฐาน', 'description' => 'เตรียมส่งออกหลักฐานสำหรับ auditor หรือ compliance review', 'sort_order' => 270],
+        ['key' => 'system.breakglass.use', 'group' => 'Security', 'name' => 'ใช้บัญชีฉุกเฉิน Break-glass', 'description' => 'สิทธิ์ฉุกเฉิน ต้องมีเหตุผล ticket และ review หลังใช้งาน', 'sort_order' => 280],
     ];
 
     public const DATA_SCOPE_LABELS = [
