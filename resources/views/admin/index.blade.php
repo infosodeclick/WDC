@@ -4,20 +4,14 @@
 
 @section('content')
 <div class="button-row mb-3">
-    @if($canManageUsers || $canManageRoles || $canManageDirectory)
-        <a class="btn btn-primary" href="#permission-management"><i class="bi bi-shield-check"></i> กำหนดสิทธิ์</a>
-    @endif
-    @if($canCreateUsers)
-        <a class="btn btn-outline-primary" href="#create-user"><i class="bi bi-person-plus"></i> เพิ่มผู้ใช้งาน</a>
-    @endif
-    @if($canManageRoles)
-        <a class="btn btn-outline-primary" href="#role-template"><i class="bi bi-sliders"></i> Role Template</a>
-    @endif
-    @if($canViewLogs)
-        <a class="btn btn-outline-primary" href="#activity-logs"><i class="bi bi-clock-history"></i> Activity Logs</a>
-    @endif
+    @foreach($adminSections as $section)
+        <a class="btn {{ $activeSection === $section['key'] ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('admin.index', ['section' => $section['key']]) }}">
+            <i class="bi {{ $section['icon'] }}"></i> {{ $section['label'] }}
+        </a>
+    @endforeach
 </div>
 
+@if($activeSection === 'system')
 <section class="panel">
     <div class="section-title">
         <h2>เมนูด้านซ้ายหน้าบ้าน</h2>
@@ -32,8 +26,9 @@
         @endforeach
     </div>
 </section>
+@endif
 
-@if($canCreateUsers)
+@if($activeSection === 'create-user' && $canCreateUsers)
 <section class="panel" id="create-user">
     <div class="section-title">
         <h2>เพิ่มผู้ใช้งาน</h2>
@@ -84,7 +79,7 @@
 </section>
 @endif
 
-@if($canManageUsers || $canManageRoles || $canManageDirectory)
+@if($activeSection === 'permissions' && ($canManageUsers || $canManageRoles || $canManageDirectory))
 <section class="panel" id="permission-management">
     <div class="section-title">
         <h2>กำหนดสิทธิ์</h2>
@@ -247,7 +242,7 @@
 </section>
 @endif
 
-@if($canManageRoles)
+@if($activeSection === 'role-template' && $canManageRoles)
 <section class="panel" id="role-template">
     <div class="section-title">
         <h2>Role Template</h2>
@@ -296,7 +291,7 @@
 </section>
 @endif
 
-@if($canViewLogs)
+@if($activeSection === 'activity-logs' && $canViewLogs)
 <section class="panel" id="activity-logs">
     <div class="section-title">
         <h2>Activity Logs</h2>

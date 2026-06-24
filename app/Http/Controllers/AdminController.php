@@ -28,6 +28,23 @@ class AdminController extends Controller
         $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
         $directoryManageKeys = ['directory.manage', 'hr.employees.manage'];
+        $canManageUsers = $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']);
+        $canManageDirectory = $actor->canAccessAny($directoryManageKeys);
+        $canCreateUsers = $actor->canAccessAny(['admin.users.manage', 'iam.users.manage', ...$directoryManageKeys]);
+        $canManageRoles = $actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']);
+        $canViewLogs = $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']);
+        $adminSections = array_values(array_filter([
+            ['key' => 'system', 'label' => 'ระบบ', 'icon' => 'bi-diagram-3', 'show' => true],
+            ['key' => 'permissions', 'label' => 'กำหนดสิทธิ์', 'icon' => 'bi-shield-check', 'show' => $canManageUsers || $canManageRoles || $canManageDirectory],
+            ['key' => 'create-user', 'label' => 'เพิ่มผู้ใช้งาน', 'icon' => 'bi-person-plus', 'show' => $canCreateUsers],
+            ['key' => 'role-template', 'label' => 'Role Template', 'icon' => 'bi-sliders', 'show' => $canManageRoles],
+            ['key' => 'activity-logs', 'label' => 'Activity Logs', 'icon' => 'bi-clock-history', 'show' => $canViewLogs],
+        ], fn (array $section) => $section['show']));
+        $activeSection = $request->string('section')->toString();
+
+        if (! collect($adminSections)->pluck('key')->contains($activeSection)) {
+            $activeSection = $adminSections[0]['key'];
+        }
 
         return view('admin.index', [
             'users' => $usersQuery->get(),
@@ -35,14 +52,16 @@ class AdminController extends Controller
             'permissions' => $allPermissions->groupBy('group'),
             'allPermissions' => $allPermissions,
             'menuPermissions' => $this->sidebarMenuPermissions(),
+            'adminSections' => $adminSections,
+            'activeSection' => $activeSection,
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
-            'logs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']) ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
-            'canManageUsers' => $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']),
-            'canManageDirectory' => $actor->canAccessAny($directoryManageKeys),
-            'canCreateUsers' => $actor->canAccessAny(['admin.users.manage', 'iam.users.manage', ...$directoryManageKeys]),
-            'canManageRoles' => $actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']),
-            'canViewLogs' => $actor->canAccessAny(['admin.activity.view', 'audit.logs.view']),
+            'logs' => $canViewLogs ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
+            'canManageUsers' => $canManageUsers,
+            'canManageDirectory' => $canManageDirectory,
+            'canCreateUsers' => $canCreateUsers,
+            'canManageRoles' => $canManageRoles,
+            'canViewLogs' => $canViewLogs,
         ]);
     }
 

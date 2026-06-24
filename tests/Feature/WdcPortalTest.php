@@ -227,17 +227,39 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('กำหนดสิทธิ์')
-            ->assertSee('รายชื่อพนักงาน')
-            ->assertSee('แสดงในรายชื่อ / ใช้งาน')
-            ->assertSee('ชื่อเล่นอังกฤษ')
-            ->assertSee('ชื่อเล่นไทย')
-            ->assertSee('Role Template')
-            ->assertSee('EMP00125')
+            ->assertSee('ระบบ')
+            ->assertSee('เมนูด้านซ้ายหน้าบ้าน')
+            ->assertSee('portal.dashboard.view')
+            ->assertSee(route('admin.index', ['section' => 'create-user']), false)
+            ->assertDontSee('สร้างบัญชี WDC Login')
+            ->assertDontSee('แสดงในรายชื่อ / ใช้งาน')
             ->assertDontSee('Super Admin Console')
             ->assertDontSee('ศูนย์หลังบ้านและสิทธิ์ผู้ใช้งาน')
             ->assertDontSee('ผู้ใช้งานทั้งหมด')
             ->assertDontSee('Admin Access');
+
+        $this->get(route('admin.index', ['section' => 'create-user']))
+            ->assertOk()
+            ->assertSee('เพิ่มผู้ใช้งาน')
+            ->assertSee('สร้างบัญชี WDC Login')
+            ->assertSee('ชื่อเล่นอังกฤษ')
+            ->assertSee('ชื่อเล่นไทย')
+            ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
+
+        $this->get(route('admin.index', ['section' => 'permissions']))
+            ->assertOk()
+            ->assertSee('กำหนดสิทธิ์')
+            ->assertSee('รายชื่อพนักงาน')
+            ->assertSee('แสดงในรายชื่อ / ใช้งาน')
+            ->assertSee('EMP00125');
+
+        $this->get(route('admin.index', ['section' => 'role-template']))
+            ->assertOk()
+            ->assertSee('Role Template');
+
+        $this->get(route('admin.index', ['section' => 'activity-logs']))
+            ->assertOk()
+            ->assertSee('Activity Logs');
     }
 
     public function test_admin_can_create_employee_with_language_specific_nicknames_for_directory(): void
@@ -353,7 +375,10 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index'))
             ->assertOk()
-            ->assertSee('directory.manage')
+            ->assertSee('directory.manage');
+
+        $this->get(route('admin.index', ['section' => 'create-user']))
+            ->assertOk()
             ->assertSee('เพิ่มผู้ใช้งาน');
 
         $payload = [
