@@ -3,59 +3,17 @@
 @section('title', 'INVENTORY | WDC Portal')
 
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">IT Inventory</p>
-        <h1>INVENTORY</h1>
-        <p>ทะเบียนทรัพย์สิน งบประมาณเบื้องต้น ตรวจนับสถานที่ พิมพ์ QR และรายงานสำหรับทีม IT ใน WDC Portal</p>
-    </div>
-    <div class="button-row">
-        @if($canExportAssets)
-            <a class="btn btn-outline-primary" href="{{ route('assets.export') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
-            <a class="btn btn-outline-primary" href="{{ route('assets.master-data') }}"><i class="bi bi-download"></i> Master Data</a>
-        @endif
-        @if($canManageAssets)
-            <a class="btn btn-primary" href="#new-asset"><i class="bi bi-plus-circle"></i> เพิ่มทรัพย์สิน</a>
-        @endif
-    </div>
-</div>
-
-<div class="metric-grid asset-metric-grid">
-    <div class="metric-card"><span>ทรัพย์สินทั้งหมด</span><strong>{{ number_format($assetCount) }}</strong><small>รายการในทะเบียน WDC</small></div>
-    <div class="metric-card"><span>ใช้งานอยู่</span><strong>{{ number_format($activeCount) }}</strong><small>พร้อมใช้งาน</small></div>
-    <div class="metric-card"><span>ส่งซ่อม</span><strong>{{ number_format($repairCount) }}</strong><small>รอทีม IT ติดตาม</small></div>
-    <div class="metric-card"><span>สูญหาย</span><strong>{{ number_format($lostCount) }}</strong><small>ต้องตรวจสอบ</small></div>
-    <div class="metric-card"><span>มูลค่ารวม</span><strong>{{ number_format($totalValue, 0) }}</strong><small>บาท ตามราคาทุน</small></div>
+<div class="button-row mb-3">
+    @if($canExportAssets)
+        <a class="btn btn-outline-primary" href="{{ route('assets.export') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+        <a class="btn btn-outline-primary" href="{{ route('assets.master-data') }}"><i class="bi bi-download"></i> Master Data</a>
+    @endif
+    @if($canManageAssets)
+        <a class="btn btn-primary" href="#new-asset"><i class="bi bi-plus-circle"></i> เพิ่มทรัพย์สิน</a>
+    @endif
 </div>
 
 @if($canManageAssets)
-    <div class="content-grid asset-admin-grid">
-        <section class="panel">
-            <div class="section-title">
-                <h2>Sync Offline / Mobile</h2>
-                <span class="tag">Smart Track Workflow</span>
-            </div>
-            <p class="muted">ใช้สำหรับส่งออก Master Data ไปตรวจนับนอกสถานที่ แล้วนำไฟล์ JSON ผลตรวจนับกลับเข้าระบบ WDC</p>
-            <div class="asset-sync-actions">
-                <a class="btn btn-outline-primary" href="{{ route('assets.master-data') }}"><i class="bi bi-download"></i> ดาวน์โหลด Master Data</a>
-                <form method="post" action="{{ route('assets.sync.import') }}" enctype="multipart/form-data">
-                    @csrf
-                    <label class="asset-file-button">
-                        <i class="bi bi-upload"></i>
-                        <span>อัปโหลดผลตรวจนับ JSON</span>
-                        <input name="sync_file" type="file" accept="application/json,.json,.txt" required onchange="this.form.submit()">
-                    </label>
-                </form>
-            </div>
-            <ol class="asset-steps">
-                <li>ดาวน์โหลด Master Data จาก WDC</li>
-                <li>นำไปใช้กับมือถือหรือเครื่องตรวจนับภายนอก</li>
-                <li>อัปโหลดไฟล์ JSON กลับมาเพื่ออัปเดตสถานะ/เอกสารตรวจนับ</li>
-            </ol>
-        </section>
-
-    </div>
-
     <section class="panel" id="new-asset">
         <div class="section-title">
             <h2>เพิ่มรายการ Inventory</h2>

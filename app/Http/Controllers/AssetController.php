@@ -24,19 +24,12 @@ class AssetController extends Controller
         abort_unless($user->canAccessItAssets(), 403);
 
         $query = ItAsset::with('category', 'location', 'owner.employee.department');
-        $baseAssetQuery = ItAsset::query();
-
         return view('assets.index', [
             'assets' => $query->latest()->paginate(12),
             'categories' => AssetCategory::withCount('assets')->orderBy('code')->get(),
             'locations' => AssetLocation::withCount('assets')->orderBy('code')->get(),
             'inspectionDocuments' => AssetInspectionDocument::with('location', 'creator')->latest('inspection_date')->take(8)->get(),
             'auditLogs' => AssetAuditLog::with('asset', 'user')->latest()->take(12)->get(),
-            'assetCount' => (clone $baseAssetQuery)->count(),
-            'activeCount' => (clone $baseAssetQuery)->where('status', 'active')->count(),
-            'repairCount' => (clone $baseAssetQuery)->where('status', 'repair')->count(),
-            'lostCount' => (clone $baseAssetQuery)->where('status', 'lost')->count(),
-            'totalValue' => (clone $baseAssetQuery)->sum('price'),
             'canManageAssets' => $user->canManageItAssets(),
             'canManageAssetSettings' => $user->canManageItAssetSettings(),
             'canDeleteAssets' => $user->canDeleteItAssets(),

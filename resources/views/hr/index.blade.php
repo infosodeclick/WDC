@@ -3,18 +3,19 @@
 @section('title', 'HR Portal | WDC Portal')
 
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">HR Portal</p>
-        <h1>จัดการ HR</h1>
-        <p>เพิ่มพนักงานใหม่ จัดการรายชื่อพนักงาน และเตรียมพื้นที่เงินเดือนในอนาคต</p>
-    </div>
-</div>
-
-<div class="metric-grid mb-3">
-    <a class="metric-card text-decoration-none" href="#new-employee"><span>เมนู HR</span><strong>เพิ่มพนักงานใหม่</strong><small>ส่งงานให้ IT เปิดอีเมล user และระบบที่เกี่ยวข้อง</small></a>
-    <a class="metric-card text-decoration-none" href="#employee-list"><span>เมนู HR</span><strong>รายชื่อพนักงาน</strong><small>เปิด/ปิดการแสดงผล และแยกพนักงานลาออก</small></a>
-    <a class="metric-card text-decoration-none" href="#payroll-future"><span>เมนู HR</span><strong>เงินเดือน</strong><small>เตรียมไว้เชื่อมระบบเงินเดือนในอนาคต</small></a>
+<div class="button-row mb-3">
+    @if($canManageOnboarding)
+        <a class="btn btn-primary" href="#new-employee"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
+    @endif
+    @if($canManageAnnouncements)
+        <a class="btn btn-outline-primary" href="#create-announcement"><i class="bi bi-megaphone"></i> สร้างประกาศ</a>
+    @endif
+    @if($canManageEmployees)
+        <a class="btn btn-outline-primary" href="#profile-change-requests"><i class="bi bi-person-gear"></i> คำขอแก้ข้อมูลโปรไฟล์</a>
+    @endif
+    @if($canReviewComplaints)
+        <a class="btn btn-outline-primary" href="#recent-complaints"><i class="bi bi-shield-check"></i> เรื่องร้องเรียนล่าสุด</a>
+    @endif
 </div>
 
 @if($canManageOnboarding)
@@ -58,7 +59,7 @@
         </form>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="create-announcement">
         <h2>คำขอพนักงานใหม่</h2>
         <div class="item-list">
             @forelse($onboardingRequests as $onboarding)
@@ -119,7 +120,7 @@
 <div class="content-grid">
     @if($canManageEmployees)
         <section class="panel" id="employee-list">
-            <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
+            <h2 id="profile-change-requests">คำขอแก้ข้อมูลโปรไฟล์</h2>
             <div class="item-list mb-4">
                 @forelse($profileChangeRequests as $profileRequest)
                     <div class="result-row">
@@ -173,13 +174,8 @@
         </section>
     @endif
 
-    <section class="panel" id="payroll-future">
-        <h2>เงินเดือน</h2>
-        <div class="empty-state">เตรียมไว้เชื่อมต่อระบบเงินเดือนในอนาคต</div>
-    </section>
-
     @if($canReviewComplaints)
-        <section class="panel">
+        <section class="panel" id="recent-complaints">
             <h2>เรื่องร้องเรียนล่าสุด</h2>
             <div class="item-list">
                 @foreach($complaints as $complaint)
