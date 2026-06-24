@@ -124,6 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    if (announcementModal.parentElement !== document.body) {
+        document.body.appendChild(announcementModal);
+    }
+
     const carousel = announcementModal.querySelector('#announcementEntryCarousel');
     const slides = Array.from(announcementModal.querySelectorAll('.carousel-item'));
     const dots = Array.from(announcementModal.querySelectorAll('[data-announcement-popup-dot]'));
