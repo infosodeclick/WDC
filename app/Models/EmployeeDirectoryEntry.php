@@ -12,10 +12,12 @@ class EmployeeDirectoryEntry extends Model
 
     protected $fillable = [
         'source_system',
+        'user_id',
         'source_record_id',
         'source_url',
         'image_url',
         'entry_type',
+        'employment_status',
         'display_name',
         'english_name',
         'thai_name',
@@ -33,6 +35,8 @@ class EmployeeDirectoryEntry extends Model
         'raw_payload',
         'imported_at',
         'is_active',
+        'published_at',
+        'resigned_at',
     ];
 
     protected function casts(): array
@@ -41,6 +45,8 @@ class EmployeeDirectoryEntry extends Model
             'raw_payload' => 'array',
             'imported_at' => 'datetime',
             'is_active' => 'boolean',
+            'published_at' => 'datetime',
+            'resigned_at' => 'datetime',
         ];
     }
 

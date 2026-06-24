@@ -117,7 +117,7 @@ class AssetController extends Controller
 
         $this->logAsset($request, $asset, 'create_asset', "Created {$asset->code} {$asset->name}", null, $asset->toArray());
 
-        return back()->with('status', 'เพิ่มทรัพย์สิน IT เรียบร้อยแล้ว');
+        return back()->with('status', 'เพิ่มรายการ INVENTORY เรียบร้อยแล้ว');
     }
 
     public function updateStatus(ItAsset $asset, Request $request): RedirectResponse
@@ -238,7 +238,7 @@ class AssetController extends Controller
 
         $this->logAsset($request, $asset, 'archive_asset', "Archived {$assetCode} {$assetName}", $before, $asset->only(['status', 'notes']));
 
-        return back()->with('status', 'เก็บประวัติ/จำหน่ายทรัพย์สิน IT แล้ว');
+        return back()->with('status', 'เก็บประวัติ/จำหน่ายรายการ INVENTORY แล้ว');
     }
 
     public function export(Request $request)

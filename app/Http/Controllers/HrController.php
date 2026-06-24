@@ -8,6 +8,7 @@ use App\Models\AnnouncementFile;
 use App\Models\Complaint;
 use App\Models\Department;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeOnboardingRequest;
 use App\Models\Notification;
 use App\Models\ProfileChangeRequest;
 use App\Models\User;
@@ -44,10 +45,17 @@ class HrController extends Controller
             'departments' => Department::orderBy('name')->get(),
             'announcements' => Announcement::with('files')->latest()->take(8)->get(),
             'complaints' => $complaints->get(),
+            'onboardingRequests' => $actor->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage'])
+                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'requester', 'itCompleter')
+                    ->latest()
+                    ->take(20)
+                    ->get()
+                : collect(),
             'profileChangeRequests' => $actor->canAccess('hr.employees.manage')
                 ? ProfileChangeRequest::with('user.employee.department')->where('status', 'pending')->latest()->take(10)->get()
                 : collect(),
             'canManageAnnouncements' => $actor->canAccess('hr.announcements.manage'),
+            'canManageOnboarding' => $actor->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']),
             'canManageEmployees' => $actor->canAccess('hr.employees.manage'),
             'canReviewComplaints' => $actor->canAccess('complaints.review'),
         ]);
@@ -179,7 +187,11 @@ class HrController extends Controller
 
         EmployeeDirectoryEntry::where('source_system', 'wdc')
             ->where('source_record_id', $user->employee_code)
-            ->update(['is_active' => $user->is_active]);
+            ->update([
+                'is_active' => $user->is_active,
+                'employment_status' => $user->is_active ? 'active' : 'resigned',
+                'resigned_at' => $user->is_active ? null : now(),
+            ]);
 
         ActivityLog::create([
             'user_id' => $request->user()->id,

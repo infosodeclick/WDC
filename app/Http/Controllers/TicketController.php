@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\EmployeeOnboardingRequest;
+use App\Models\ItAsset;
 use App\Models\Notification;
 use App\Models\Ticket;
 use App\Models\TicketComment;
@@ -40,6 +42,16 @@ class TicketController extends Controller
             'pendingTickets' => (clone $workflowScope)->whereIn('status', ['in_review', 'accepted', 'in_progress', 'waiting_requester'])->count(),
             'doneTickets' => (clone $workflowScope)->whereIn('status', ItHelpdeskWorkflow::DONE_STATUSES)->count(),
             'requests' => (clone $workflowScope)->paginate(12),
+            'onboardingRequests' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
+                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'requester')
+                    ->whereIn('status', ['pending_it', 'in_progress', 'it_completed'])
+                    ->latest()
+                    ->take(12)
+                    ->get()
+                : collect(),
+            'availableAssets' => $user->canManageItAssets()
+                ? ItAsset::whereIn('status', ['active', 'repair'])->orderBy('code')->get()
+                : collect(),
             'itHelpdeskUrl' => $helpdesk->route(),
         ]);
     }

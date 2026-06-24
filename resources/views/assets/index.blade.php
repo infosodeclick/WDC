@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'ทรัพย์สิน IT | WDC Portal')
+@section('title', 'INVENTORY | WDC Portal')
 
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">IT Asset Management</p>
-        <h1>ทรัพย์สิน IT</h1>
-        <p>ทะเบียนทรัพย์สิน ตรวจนับสถานที่ พิมพ์ QR และรายงานสำหรับทีม IT ใน WDC Portal</p>
+        <p class="eyebrow">IT Inventory</p>
+        <h1>INVENTORY</h1>
+        <p>ทะเบียนทรัพย์สิน งบประมาณเบื้องต้น ตรวจนับสถานที่ พิมพ์ QR และรายงานสำหรับทีม IT ใน WDC Portal</p>
     </div>
     <div class="button-row">
         @if($canExportAssets)
@@ -104,7 +104,7 @@
 
     <section class="panel" id="new-asset">
         <div class="section-title">
-            <h2>เพิ่มทรัพย์สิน IT</h2>
+            <h2>เพิ่มรายการ Inventory</h2>
             <span class="tag">Asset Registry</span>
         </div>
         <form class="form-grid" method="post" action="{{ route('assets.store') }}">

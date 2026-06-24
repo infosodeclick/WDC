@@ -57,10 +57,10 @@
 
         <nav class="nav flex-column portal-nav">
             @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
-                <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>ศูนย์ IT</span></a>
+                <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>IT</span></a>
             @endif
             @if($currentUser?->canAccessItAssets())
-                <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i><span>ทรัพย์สิน IT</span></a>
+                <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
             @endif
             @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>
@@ -189,10 +189,10 @@
             <h3>หลังบ้าน</h3>
             <div class="mobile-more-grid">
                 @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
-                    <a href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>ศูนย์ IT</span></a>
+                    <a href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>IT</span></a>
                 @endif
                 @if($currentUser?->canAccessItAssets())
-                    <a href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i><span>ทรัพย์สิน IT</span></a>
+                    <a href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
                 @endif
                 @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
                     <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR Portal</span></a>

@@ -29,7 +29,7 @@
         <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> เทรนนิ่ง</a>
     @endif
     @if($user->canAccessItAssets())
-        <a class="btn btn-outline-primary" href="{{ route('assets.index') }}"><i class="bi bi-pc-display"></i> ทรัพย์สิน IT</a>
+        <a class="btn btn-outline-primary" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i> INVENTORY</a>
     @endif
 </div>
 

@@ -7,9 +7,90 @@
     <div>
         <p class="eyebrow">HR Portal</p>
         <h1>จัดการ HR</h1>
-        <p>จัดการพนักงาน ประกาศ เอกสาร และเรื่องร้องเรียน</p>
+        <p>เพิ่มพนักงานใหม่ จัดการรายชื่อพนักงาน และเตรียมพื้นที่เงินเดือนในอนาคต</p>
     </div>
 </div>
+
+<div class="metric-grid mb-3">
+    <a class="metric-card text-decoration-none" href="#new-employee"><span>เมนู HR</span><strong>เพิ่มพนักงานใหม่</strong><small>ส่งงานให้ IT เปิดอีเมล user และระบบที่เกี่ยวข้อง</small></a>
+    <a class="metric-card text-decoration-none" href="#employee-list"><span>เมนู HR</span><strong>รายชื่อพนักงาน</strong><small>เปิด/ปิดการแสดงผล และแยกพนักงานลาออก</small></a>
+    <a class="metric-card text-decoration-none" href="#payroll-future"><span>เมนู HR</span><strong>เงินเดือน</strong><small>เตรียมไว้เชื่อมระบบเงินเดือนในอนาคต</small></a>
+</div>
+
+@if($canManageOnboarding)
+    <section class="panel" id="new-employee">
+        <h2>เพิ่มพนักงานใหม่</h2>
+        <p class="muted">HR กรอกข้อมูลครั้งเดียว ระบบจะส่งรายการให้ IT เปิดระบบ เมื่อ IT กดเสร็จ HR จะอนุมัติให้แสดงในหน้ารายชื่อพนักงานได้ทันที</p>
+        <form method="post" action="{{ route('hr.onboarding.store') }}" class="form-grid">
+            @csrf
+            <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" required placeholder="EMP00125"></label>
+            <label><span>ชื่ออังกฤษ</span><input class="form-control" name="english_name" required placeholder="Somchai Jaidee"></label>
+            <label><span>ชื่อไทย</span><input class="form-control" name="thai_name" placeholder="สมชาย ใจดี"></label>
+            <label><span>ชื่อเล่นอังกฤษ</span><input class="form-control" name="english_nickname" placeholder="Som"></label>
+            <label><span>ชื่อเล่นไทย</span><input class="form-control" name="thai_nickname" placeholder="สม"></label>
+            <label><span>แผนก</span>
+                <select class="form-select" name="department_id">
+                    <option value="">เลือกแผนก</option>
+                    @foreach($departments as $department)
+                        <option value="{{ $department->id }}">{{ $department->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label><span>ตำแหน่ง</span><input class="form-control" name="position" placeholder="Sales Executive"></label>
+            <label><span>แผนก/BU</span><input class="form-control" name="business_unit" placeholder="Sales BU1"></label>
+            <label><span>ทีม</span><input class="form-control" name="team" placeholder="Team A"></label>
+            <label><span>สาขา</span><input class="form-control" name="location" placeholder="Lumpini"></label>
+            <label><span>อีเมลองค์กรที่ต้องการ</span><input class="form-control" name="corporate_email" type="email" placeholder="name@wdc.co.th"></label>
+            <label><span>เบอร์โทร / เบอร์โต๊ะ</span><input class="form-control" name="personal_phone" placeholder="08x-xxx-xxxx"></label>
+            <label><span>เบอร์ต่อ</span><input class="form-control" name="extension_number" placeholder="8004"></label>
+            <label><span>วันเริ่มงาน</span><input class="form-control" name="start_date" type="date"></label>
+            <fieldset class="span-3">
+                <legend>ระบบที่ให้ IT เปิด</legend>
+                <div class="button-row">
+                    @foreach(['WDC Portal', 'Email', 'ERP', 'POS', 'VPN', 'Shared Drive', 'Printer', 'AI-CRM'] as $system)
+                        <label class="form-check"><input class="form-check-input" type="checkbox" name="requested_systems[]" value="{{ $system }}" @checked(in_array($system, ['WDC Portal', 'Email'], true))><span class="form-check-label">{{ $system }}</span></label>
+                    @endforeach
+                </div>
+            </fieldset>
+            <label class="span-2"><span>ระบบอื่น ๆ</span><input class="form-control" name="other_systems" placeholder="ใส่หลายระบบคั่นด้วย comma หรือขึ้นบรรทัดใหม่"></label>
+            <label class="span-3"><span>หมายเหตุ HR ถึง IT</span><textarea class="form-control" name="hr_note" rows="3" placeholder="รายละเอียดสิทธิ์ แผนก หรืออุปกรณ์ที่ต้องเตรียม"></textarea></label>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งให้ IT เปิดระบบ</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>คำขอพนักงานใหม่</h2>
+        <div class="item-list">
+            @forelse($onboardingRequests as $onboarding)
+                <article class="list-card">
+                    <div class="meta-row">
+                        <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
+                        <span>{{ $onboarding->employee_code }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</span>
+                    </div>
+                    <h3>{{ $onboarding->displayName() }}</h3>
+                    <p>{{ $onboarding->thai_name ?: '-' }} · {{ $onboarding->position ?: '-' }} · {{ $onboarding->department?->name ?? $onboarding->business_unit ?? '-' }}</p>
+                    <div class="asset-chip-list">
+                        @foreach($onboarding->systems as $system)
+                            <span><strong>{{ $system->system_name }}</strong><small>{{ $system->statusLabel() }} {{ $system->username ? '· '.$system->username : '' }}</small></span>
+                        @endforeach
+                    </div>
+                    @if($onboarding->status === 'it_completed')
+                        <form class="mt-3" method="post" action="{{ route('hr.onboarding.publish', $onboarding) }}" enctype="multipart/form-data">
+                            @csrf
+                            @method('PATCH')
+                            <label class="form-label">รูปพนักงานสำหรับหน้ารายชื่อ</label>
+                            <input class="form-control mb-2" type="file" name="photo" accept="image/*">
+                            <textarea class="form-control mb-2" name="hr_note" rows="2" placeholder="หมายเหตุ HR ก่อนเผยแพร่"></textarea>
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> อนุมัติให้แสดงในรายชื่อพนักงาน</button>
+                        </form>
+                    @endif
+                </article>
+            @empty
+                <div class="empty-state">ยังไม่มีรายการพนักงานใหม่</div>
+            @endforelse
+        </div>
+    </section>
+@endif
 
 @if($canManageAnnouncements)
     <section class="panel">
@@ -37,7 +118,7 @@
 
 <div class="content-grid">
     @if($canManageEmployees)
-        <section class="panel">
+        <section class="panel" id="employee-list">
             <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
             <div class="item-list mb-4">
                 @forelse($profileChangeRequests as $profileRequest)
@@ -64,7 +145,8 @@
                 @endforelse
             </div>
 
-            <h2>พนักงาน</h2>
+            <h2>รายชื่อพนักงาน</h2>
+            <p class="muted">ปุ่มสถานะนี้ใช้เปิด/ปิดการใช้งานและซ่อน/แสดงในหน้ารายชื่อพนักงาน กรณีพนักงานลาออกจะถูกย้ายไปสถานะไม่แสดง</p>
             <div class="table-responsive">
                 <table class="table align-middle">
                     <thead><tr><th>รหัส</th><th>ชื่อ</th><th>แผนก</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead>
@@ -75,7 +157,7 @@
                             <td>{{ $employee->name }}</td>
                             <td>{{ $employee->employee?->department?->name }}</td>
                             <td>{{ $employee->role?->name }}</td>
-                            <td>{{ $employee->is_active ? 'ใช้งาน' : 'ระงับ' }}</td>
+                            <td>{{ $employee->is_active ? 'แสดงในรายชื่อ / ใช้งาน' : 'พนักงานลาออก / ไม่แสดง' }}</td>
                             <td>
                                 <form method="post" action="{{ route('hr.employees.status', $employee) }}">
                                     @csrf
@@ -90,6 +172,11 @@
             </div>
         </section>
     @endif
+
+    <section class="panel" id="payroll-future">
+        <h2>เงินเดือน</h2>
+        <div class="empty-state">เตรียมไว้เชื่อมต่อระบบเงินเดือนในอนาคต</div>
+    </section>
 
     @if($canReviewComplaints)
         <section class="panel">

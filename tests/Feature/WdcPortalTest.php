@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Complaint;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeOnboardingRequest;
 use App\Models\Announcement;
 use App\Models\AnnouncementFile;
 use App\Models\ItAsset;
@@ -265,6 +266,7 @@ class WdcPortalTest extends TestCase
         $assetAdminRole = Role::where('slug', 'it_asset_admin')->with('permissions')->firstOrFail();
 
         $this->assertTrue($hrRole->permissions->contains('key', 'directory.manage'));
+        $this->assertTrue($hrRole->permissions->contains('key', 'hr.onboarding.manage'));
         $this->assertTrue($adminRole->permissions->contains('key', 'assets.settings.manage'));
         $this->assertTrue($adminRole->permissions->contains('key', 'assets.delete'));
         $this->assertTrue($iamRole->permissions->contains('key', 'iam.users.manage'));
@@ -273,6 +275,7 @@ class WdcPortalTest extends TestCase
         $this->assertTrue($auditorRole->permissions->contains('key', 'audit.logs.export'));
         $this->assertFalse($auditorRole->permissions->contains('key', 'admin.users.manage'));
         $this->assertTrue($assetOfficerRole->permissions->contains('key', 'assets.manage'));
+        $this->assertTrue($assetOfficerRole->permissions->contains('key', 'it.onboarding.manage'));
         $this->assertFalse($assetOfficerRole->permissions->contains('key', 'assets.delete'));
         $this->assertTrue($assetAdminRole->permissions->contains('key', 'assets.settings.manage'));
         $this->assertTrue($assetAdminRole->permissions->contains('key', 'assets.delete'));
@@ -346,6 +349,95 @@ class WdcPortalTest extends TestCase
         ])->assertForbidden();
 
         $this->assertDatabaseMissing('users', ['employee_code' => 'EMP07778']);
+    }
+
+    public function test_hr_it_onboarding_flow_creates_employee_directory_entry_and_links_asset(): void
+    {
+        Storage::fake('public');
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $departmentId = $hr->employee->department_id;
+        $asset = ItAsset::where('code', 'WDC-NB-0001')->firstOrFail();
+
+        $this->actingAs($hr);
+
+        $this->post(route('hr.onboarding.store'), [
+            'employee_code' => 'EMP77777',
+            'english_name' => 'New Starter',
+            'thai_name' => 'พนักงาน ใหม่',
+            'english_nickname' => 'New',
+            'thai_nickname' => 'ใหม่',
+            'department_id' => $departmentId,
+            'position' => 'Sales Executive',
+            'business_unit' => 'Sales BU1',
+            'team' => 'Team A',
+            'location' => 'Lumpini',
+            'corporate_email' => 'new.starter@wdc.co.th',
+            'personal_phone' => '099-777-7777',
+            'extension_number' => '7777',
+            'start_date' => now()->toDateString(),
+            'requested_systems' => ['WDC Portal', 'Email', 'ERP'],
+            'hr_note' => 'เริ่มงานเดือนนี้',
+        ])->assertRedirect();
+
+        $onboarding = EmployeeOnboardingRequest::with('systems')->where('employee_code', 'EMP77777')->firstOrFail();
+
+        $this->assertSame('pending_it', $onboarding->status);
+        $this->assertCount(3, $onboarding->systems);
+
+        $emailSystem = $onboarding->systems->firstWhere('system_name', 'Email');
+
+        $this->actingAs($itUser);
+
+        $this->patch(route('it.onboarding.update', $onboarding), [
+            'systems' => [
+                $emailSystem->id => [
+                    'status' => 'provisioned',
+                    'username' => 'new.starter',
+                    'email' => 'new.starter@wdc.co.th',
+                    'it_asset_id' => $asset->id,
+                    'notes' => 'เปิดอีเมลและมอบเครื่องแล้ว',
+                ],
+            ],
+            'it_note' => 'พร้อมให้ HR ตรวจสอบ',
+        ])->assertRedirect();
+
+        $this->patch(route('it.onboarding.complete', $onboarding))->assertRedirect();
+
+        $this->assertSame('it_completed', $onboarding->fresh()->status);
+
+        $this->actingAs($hr);
+
+        $this->patch(route('hr.onboarding.publish', $onboarding), [
+            'photo' => UploadedFile::fake()->image('new-starter.jpg', 640, 640),
+            'hr_note' => 'อนุมัติแสดงรายชื่อ',
+        ])->assertRedirect();
+
+        $onboarding->refresh();
+        $createdUser = User::where('employee_code', 'EMP77777')->firstOrFail();
+
+        $this->assertSame('hr_approved', $onboarding->status);
+        $this->assertSame('New Starter', $createdUser->name);
+        $this->assertDatabaseHas('employees', [
+            'user_id' => $createdUser->id,
+            'english_name' => 'New Starter',
+            'thai_nickname' => 'ใหม่',
+        ]);
+        $this->assertDatabaseHas('employee_directory_entries', [
+            'source_system' => 'wdc',
+            'source_record_id' => 'EMP77777',
+            'display_name' => 'New Starter',
+            'employment_status' => 'active',
+            'is_active' => true,
+        ]);
+        $this->assertSame($createdUser->id, $asset->fresh()->owner_id);
+
+        $this->get(route('directory.index', ['q' => 'New Starter']))
+            ->assertOk()
+            ->assertSee('New Starter (New)')
+            ->assertSee('พนักงาน ใหม่ (ใหม่)');
     }
 
     public function test_legacy_systems_hub_is_removed(): void
@@ -761,9 +853,9 @@ class WdcPortalTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $this->get(route('directory.index'))
+        $this->get(route('directory.index', ['type' => 'employee']))
             ->assertOk()
-            ->assertSeeInOrder(['Newest WDC Member', 'Aiyada Supso'])
+            ->assertSeeInOrder(['Newest WDC Member', 'Bundit Hirunyanitiwatna'])
             ->assertSee('Newest WDC Member (New)')
             ->assertSee('สมาชิกใหม่ ดับบลิวดีซี (ใหม่)')
             ->assertDontSee('Newest WDC Member (ใหม่)')
@@ -996,7 +1088,7 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('assets.index'))
             ->assertOk()
-            ->assertSee('ทรัพย์สิน IT')
+            ->assertSee('INVENTORY')
             ->assertSee('WDC-NB-0001');
 
         $this->post(route('assets.store'), [

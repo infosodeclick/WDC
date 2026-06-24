@@ -5,6 +5,7 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DirectoryController;
+use App\Http\Controllers\EmployeeOnboardingController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\TicketController;
@@ -59,11 +60,15 @@ Route::middleware('auth')->group(function () {
     Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.status');
 
     Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
+    Route::post('/hr/onboarding', [EmployeeOnboardingController::class, 'store'])->name('hr.onboarding.store');
+    Route::patch('/hr/onboarding/{onboarding}/publish', [EmployeeOnboardingController::class, 'publish'])->name('hr.onboarding.publish');
     Route::post('/hr/announcements', [HrController::class, 'storeAnnouncement'])->name('hr.announcements.store');
     Route::patch('/hr/profile-requests/{profileChangeRequest}', [HrController::class, 'reviewProfileChangeRequest'])->name('hr.profile-requests.review');
     Route::patch('/hr/employees/{user}/status', [HrController::class, 'updateEmployeeStatus'])->name('hr.employees.status');
 
     Route::get('/it', [TicketController::class, 'itDashboard'])->name('it.index');
+    Route::patch('/it/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'updateIt'])->name('it.onboarding.update');
+    Route::patch('/it/onboarding/{onboarding}/complete', [EmployeeOnboardingController::class, 'completeIt'])->name('it.onboarding.complete');
 
     Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
     Route::get('/assets/export', [AssetController::class, 'export'])->name('assets.export');
