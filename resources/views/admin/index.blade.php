@@ -79,6 +79,43 @@
 </section>
 @endif
 
+@if($activeSection === 'notifications')
+<section class="panel" id="admin-notifications">
+    <div class="section-title">
+        <h2>แจ้งเตือนแอดมิน</h2>
+        <span class="status-pill">{{ $adminNotifications->whereNull('read_at')->count() }} ยังไม่อ่าน</span>
+    </div>
+    <div class="content-grid">
+        <section>
+            <h3>รายการแจ้งเตือนล่าสุด</h3>
+            <div class="item-list">
+                @forelse($adminNotifications as $notification)
+                    <a class="result-row" href="{{ $notification->url ?: route('admin.index', ['section' => 'notifications']) }}">
+                        <strong>{{ $notification->title }}</strong>
+                        <small>{{ $notification->body ?: '-' }} · {{ $notification->created_at->format('d/m/Y H:i') }}{{ $notification->read_at ? ' · อ่านแล้ว' : ' · ยังไม่อ่าน' }}</small>
+                    </a>
+                @empty
+                    <div class="empty-state">ยังไม่มีแจ้งเตือนของแอดมิน</div>
+                @endforelse
+            </div>
+        </section>
+        <section>
+            <h3>คำขอพนักงานใหม่ที่รอ IT</h3>
+            <div class="item-list">
+                @forelse($pendingAdminOnboardingRequests as $onboarding)
+                    <article class="result-row">
+                        <strong>{{ $onboarding->employee_code }} · {{ $onboarding->displayName() }}</strong>
+                        <small>{{ $onboarding->statusLabel() }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }} · {{ $onboarding->position ?: '-' }} · {{ $onboarding->department?->name ?? $onboarding->business_unit ?? '-' }}</small>
+                    </article>
+                @empty
+                    <div class="empty-state">ยังไม่มีคำขอพนักงานใหม่ที่รอ IT</div>
+                @endforelse
+            </div>
+        </section>
+    </div>
+</section>
+@endif
+
 @if($activeSection === 'permissions' && ($canManageUsers || $canManageRoles || $canManageDirectory))
 <section class="panel" id="permission-management">
     <div class="section-title">

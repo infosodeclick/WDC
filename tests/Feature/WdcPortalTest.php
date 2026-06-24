@@ -452,9 +452,25 @@ class WdcPortalTest extends TestCase
         ])->assertRedirect();
 
         $onboarding = EmployeeOnboardingRequest::with('systems')->where('employee_code', 'EMP77777')->firstOrFail();
+        $administrator = User::where('employee_code', 'administrator')->firstOrFail();
 
         $this->assertSame('pending_it', $onboarding->status);
         $this->assertCount(3, $onboarding->systems);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $administrator->id,
+            'type' => 'onboarding',
+            'title' => 'มีรายการพนักงานใหม่จาก HR',
+            'url' => route('admin.index', ['section' => 'notifications']),
+        ]);
+
+        $this->actingAs($administrator);
+
+        $this->get(route('admin.index', ['section' => 'notifications']))
+            ->assertOk()
+            ->assertSee('แจ้งเตือนแอดมิน')
+            ->assertSee('คำขอพนักงานใหม่ที่รอ IT')
+            ->assertSee('EMP77777')
+            ->assertSee('New Starter');
 
         $emailSystem = $onboarding->systems->firstWhere('system_name', 'Email');
 

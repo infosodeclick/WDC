@@ -6,6 +6,8 @@ use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeOnboardingRequest;
+use App\Models\Notification;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -37,6 +39,7 @@ class AdminController extends Controller
             ['key' => 'system', 'label' => 'ระบบ', 'icon' => 'bi-diagram-3', 'show' => true],
             ['key' => 'permissions', 'label' => 'กำหนดสิทธิ์', 'icon' => 'bi-shield-check', 'show' => $canManageUsers || $canManageRoles || $canManageDirectory],
             ['key' => 'create-user', 'label' => 'เพิ่มผู้ใช้งาน', 'icon' => 'bi-person-plus', 'show' => $canCreateUsers],
+            ['key' => 'notifications', 'label' => 'แจ้งเตือน', 'icon' => 'bi-bell', 'show' => true],
             ['key' => 'role-template', 'label' => 'Role Template', 'icon' => 'bi-sliders', 'show' => $canManageRoles],
             ['key' => 'activity-logs', 'label' => 'Activity Logs', 'icon' => 'bi-clock-history', 'show' => $canViewLogs],
         ], fn (array $section) => $section['show']));
@@ -56,6 +59,12 @@ class AdminController extends Controller
             'activeSection' => $activeSection,
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
+            'adminNotifications' => Notification::where('user_id', $actor->id)->latest()->take(40)->get(),
+            'pendingAdminOnboardingRequests' => EmployeeOnboardingRequest::with('department', 'systems')
+                ->whereIn('status', ['pending_it', 'in_progress'])
+                ->latest()
+                ->take(20)
+                ->get(),
             'logs' => $canViewLogs ? ActivityLog::with('user')->latest()->take(40)->get() : collect(),
             'canManageUsers' => $canManageUsers,
             'canManageDirectory' => $canManageDirectory,

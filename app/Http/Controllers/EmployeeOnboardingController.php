@@ -288,17 +288,34 @@ class EmployeeOnboardingController extends Controller
 
     private function notifyUsers(array $permissionKeys, string $title, string $body, string $url): void
     {
-        User::with('role.permissions', 'permissionOverrides')
+        $recipients = User::with('role.permissions', 'permissionOverrides')
             ->where('is_active', true)
             ->get()
-            ->filter(fn (User $user) => $user->canAccessAny($permissionKeys))
-            ->each(fn (User $user) => Notification::create([
+            ->filter(fn (User $user) => $user->canAccessAny($permissionKeys));
+
+        $recipients->each(fn (User $user) => Notification::create([
                 'user_id' => $user->id,
                 'type' => 'onboarding',
                 'title' => $title,
                 'body' => $body,
-                'url' => $url,
+                'url' => $user->employee_code === 'administrator'
+                    ? route('admin.index', ['section' => 'notifications'])
+                    : $url,
             ]));
+
+        $administrator = User::where('employee_code', 'administrator')
+            ->where('is_active', true)
+            ->first();
+
+        if ($administrator && ! $recipients->contains('id', $administrator->id)) {
+            Notification::create([
+                'user_id' => $administrator->id,
+                'type' => 'onboarding',
+                'title' => $title,
+                'body' => $body,
+                'url' => route('admin.index', ['section' => 'notifications']),
+            ]);
+        }
     }
 
     private function log(Request $request, string $action, ?string $subjectType = null, ?int $subjectId = null, ?string $description = null): void
