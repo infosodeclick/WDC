@@ -84,6 +84,10 @@ class HrController extends Controller
             'activeSection' => $activeSection,
             'employees' => $employees,
             'departments' => Department::orderBy('name')->get(),
+            'onboardingPositions' => $this->onboardingPositions(),
+            'onboardingTeams' => $this->onboardingTeams(),
+            'onboardingLocations' => $this->onboardingLocations(),
+            'onboardingDeskPhones' => $this->onboardingDeskPhones(),
             'announcements' => Announcement::with('files')->latest()->take(8)->get(),
             'complaints' => $complaints,
             'onboardingRequests' => $onboardingRequests,
@@ -249,5 +253,66 @@ class HrController extends Controller
     private function nextAnnouncementNo(): string
     {
         return 'WDC-ANN-'.now()->format('Ymd-His');
+    }
+
+    private function onboardingPositions(): array
+    {
+        return [
+            'Sales Executive',
+            'Sales Supervisor',
+            'Accounting Officer',
+            'HR Officer',
+            'IT Support',
+            'Warehouse Officer',
+            'Purchasing Officer',
+            'Marketing Officer',
+            'Driver Executive',
+            'Maid',
+            'System Administrator',
+        ];
+    }
+
+    private function onboardingTeams(): array
+    {
+        return [
+            'Management',
+            'People Operations',
+            'IT Support',
+            'Sales Team',
+            'Accounting',
+            'Warehouse',
+            'Purchasing',
+            'Marketing',
+        ];
+    }
+
+    private function onboardingLocations(): array
+    {
+        return [
+            'Lumpini',
+            'Nimitmai',
+            'Bangkok Project',
+            'Warehouse',
+            'All Place',
+        ];
+    }
+
+    private function onboardingDeskPhones(): array
+    {
+        return [
+            '1800',
+            '1801',
+            '1802',
+            '1803',
+            '1804',
+            '2101',
+            '2102',
+            '2103',
+            '8000',
+            '8001',
+            '8002',
+            '8003',
+            '8004',
+        ];
     }
 }

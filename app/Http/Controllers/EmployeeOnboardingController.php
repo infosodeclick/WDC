@@ -27,7 +27,11 @@ class EmployeeOnboardingController extends Controller
 
         $data = $request->validate([
             'employee_code' => ['required', 'string', 'max:50', 'unique:employee_onboarding_requests,employee_code', 'unique:users,employee_code'],
-            'english_name' => ['required', 'string', 'max:255'],
+            'english_first_name' => ['nullable', 'required_without:english_name', 'string', 'max:120'],
+            'english_last_name' => ['nullable', 'required_without:english_name', 'string', 'max:120'],
+            'english_name' => ['nullable', 'string', 'max:255'],
+            'thai_first_name' => ['nullable', 'string', 'max:120'],
+            'thai_last_name' => ['nullable', 'string', 'max:120'],
             'thai_name' => ['nullable', 'string', 'max:255'],
             'english_nickname' => ['nullable', 'string', 'max:100'],
             'thai_nickname' => ['nullable', 'string', 'max:100'],
@@ -46,8 +50,24 @@ class EmployeeOnboardingController extends Controller
             'other_systems' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $data['english_name'] = $this->joinName($data['english_first_name'] ?? null, $data['english_last_name'] ?? null)
+            ?: trim((string) ($data['english_name'] ?? ''));
+        $data['thai_name'] = $this->joinName($data['thai_first_name'] ?? null, $data['thai_last_name'] ?? null)
+            ?: ($data['thai_name'] ?? null);
+
+        if (($data['business_unit'] ?? null) === null && ! empty($data['department_id'])) {
+            $data['business_unit'] = Department::whereKey($data['department_id'])->value('name');
+        }
+
         $onboarding = EmployeeOnboardingRequest::create([
-            ...collect($data)->except(['requested_systems', 'other_systems'])->all(),
+            ...collect($data)->except([
+                'english_first_name',
+                'english_last_name',
+                'thai_first_name',
+                'thai_last_name',
+                'requested_systems',
+                'other_systems',
+            ])->all(),
             'requested_by' => $actor->id,
             'status' => 'pending_it',
         ]);
@@ -292,5 +312,13 @@ class EmployeeOnboardingController extends Controller
             'ip_address' => $request->ip(),
             'user_agent' => (string) $request->userAgent(),
         ]);
+    }
+
+    private function joinName(?string $firstName, ?string $lastName): string
+    {
+        return collect([$firstName, $lastName])
+            ->map(fn ($name) => trim((string) $name))
+            ->filter()
+            ->join(' ');
     }
 }

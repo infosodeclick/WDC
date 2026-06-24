@@ -202,7 +202,13 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('hr.index', ['section' => 'onboarding']))
             ->assertOk()
-            ->assertSee('ระบบที่ให้ IT เปิด')
+            ->assertSee('ชื่อ ภาษาอังกฤษ')
+            ->assertSee('นามสกุล ภาษาอังกฤษ')
+            ->assertSee('ชื่อเล่น ภาษาไทย')
+            ->assertSee('เบอร์โต๊ะ')
+            ->assertSee('เลือกตำแหน่ง')
+            ->assertSee('เลือกแผนก/BU')
+            ->assertDontSee('ระบบที่ให้ IT เปิด')
             ->assertDontSee('เลขที่ประกาศ');
 
         $this->get(route('hr.index', ['section' => 'announcements']))
@@ -427,13 +433,14 @@ class WdcPortalTest extends TestCase
 
         $this->post(route('hr.onboarding.store'), [
             'employee_code' => 'EMP77777',
-            'english_name' => 'New Starter',
-            'thai_name' => 'พนักงาน ใหม่',
+            'english_first_name' => 'New',
+            'english_last_name' => 'Starter',
+            'thai_first_name' => 'พนักงาน',
+            'thai_last_name' => 'ใหม่',
             'english_nickname' => 'New',
             'thai_nickname' => 'ใหม่',
             'department_id' => $departmentId,
             'position' => 'Sales Executive',
-            'business_unit' => 'Sales BU1',
             'team' => 'Team A',
             'location' => 'Lumpini',
             'corporate_email' => 'new.starter@wdc.co.th',

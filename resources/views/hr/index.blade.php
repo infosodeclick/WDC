@@ -125,36 +125,55 @@
         <form method="post" action="{{ route('hr.onboarding.store') }}" class="form-grid">
             @csrf
             <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" required placeholder="EMP00125"></label>
-            <label><span>ชื่ออังกฤษ</span><input class="form-control" name="english_name" required placeholder="Somchai Jaidee"></label>
-            <label><span>ชื่อไทย</span><input class="form-control" name="thai_name" placeholder="สมชาย ใจดี"></label>
-            <label><span>ชื่อเล่นอังกฤษ</span><input class="form-control" name="english_nickname" placeholder="Som"></label>
-            <label><span>ชื่อเล่นไทย</span><input class="form-control" name="thai_nickname" placeholder="สม"></label>
-            <label><span>แผนก</span>
-                <select class="form-select" name="department_id">
-                    <option value="">เลือกแผนก</option>
-                    @foreach($departments as $department)
-                        <option value="{{ $department->id }}">{{ $department->name }}</option>
+            <label><span>ชื่อ ภาษาอังกฤษ</span><input class="form-control" name="english_first_name" required placeholder="Somchai"></label>
+            <label><span>นามสกุล ภาษาอังกฤษ</span><input class="form-control" name="english_last_name" required placeholder="Jaidee"></label>
+            <label><span>ชื่อเล่น ภาษาอังกฤษ</span><input class="form-control" name="english_nickname" placeholder="Som"></label>
+            <label><span>ชื่อ ภาษาไทย</span><input class="form-control" name="thai_first_name" placeholder="สมชาย"></label>
+            <label><span>นามสกุล ภาษาไทย</span><input class="form-control" name="thai_last_name" placeholder="ใจดี"></label>
+            <label><span>ชื่อเล่น ภาษาไทย</span><input class="form-control" name="thai_nickname" placeholder="สม"></label>
+            <label><span>ตำแหน่ง</span>
+                <select class="form-select" name="position">
+                    <option value="">เลือกตำแหน่ง</option>
+                    @foreach($onboardingPositions as $position)
+                        <option value="{{ $position }}" @selected(old('position') === $position)>{{ $position }}</option>
                     @endforeach
                 </select>
             </label>
-            <label><span>ตำแหน่ง</span><input class="form-control" name="position" placeholder="Sales Executive"></label>
-            <label><span>แผนก/BU</span><input class="form-control" name="business_unit" placeholder="Sales BU1"></label>
-            <label><span>ทีม</span><input class="form-control" name="team" placeholder="Team A"></label>
-            <label><span>สาขา</span><input class="form-control" name="location" placeholder="Lumpini"></label>
-            <label><span>อีเมลองค์กรที่ต้องการ</span><input class="form-control" name="corporate_email" type="email" placeholder="name@wdc.co.th"></label>
-            <label><span>เบอร์โทร / เบอร์โต๊ะ</span><input class="form-control" name="personal_phone" placeholder="08x-xxx-xxxx"></label>
-            <label><span>เบอร์ต่อ</span><input class="form-control" name="extension_number" placeholder="8004"></label>
-            <label><span>วันเริ่มงาน</span><input class="form-control" name="start_date" type="date"></label>
-            <fieldset class="span-3">
-                <legend>ระบบที่ให้ IT เปิด</legend>
-                <div class="button-row">
-                    @foreach(['WDC Portal', 'Email', 'ERP', 'POS', 'VPN', 'Shared Drive', 'Printer', 'AI-CRM'] as $system)
-                        <label class="form-check"><input class="form-check-input" type="checkbox" name="requested_systems[]" value="{{ $system }}" @checked(in_array($system, ['WDC Portal', 'Email'], true))><span class="form-check-label">{{ $system }}</span></label>
+            <label><span>แผนก/BU</span>
+                <select class="form-select" name="department_id">
+                    <option value="">เลือกแผนก/BU</option>
+                    @foreach($departments as $department)
+                        <option value="{{ $department->id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
                     @endforeach
-                </div>
-            </fieldset>
-            <label class="span-2"><span>ระบบอื่น ๆ</span><input class="form-control" name="other_systems" placeholder="ใส่หลายระบบคั่นด้วย comma หรือขึ้นบรรทัดใหม่"></label>
-            <label class="span-3"><span>หมายเหตุ HR ถึง IT</span><textarea class="form-control" name="hr_note" rows="3" placeholder="รายละเอียดสิทธิ์ แผนก หรืออุปกรณ์ที่ต้องเตรียม"></textarea></label>
+                </select>
+            </label>
+            <label><span>ทีม</span>
+                <select class="form-select" name="team">
+                    <option value="">เลือกทีม</option>
+                    @foreach($onboardingTeams as $team)
+                        <option value="{{ $team }}" @selected(old('team') === $team)>{{ $team }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label><span>สาขา</span>
+                <select class="form-select" name="location">
+                    <option value="">เลือกสาขา</option>
+                    @foreach($onboardingLocations as $location)
+                        <option value="{{ $location }}" @selected(old('location') === $location)>{{ $location }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label><span>อีเมล</span><input class="form-control" name="corporate_email" type="email" placeholder="name@wdc.co.th"></label>
+            <label><span>โทร</span><input class="form-control" name="personal_phone" placeholder="08x-xxx-xxxx"></label>
+            <label><span>เบอร์โต๊ะ</span>
+                <select class="form-select" name="extension_number">
+                    <option value="">เลือกเบอร์โต๊ะ</option>
+                    @foreach($onboardingDeskPhones as $deskPhone)
+                        <option value="{{ $deskPhone }}" @selected(old('extension_number') === $deskPhone)>{{ $deskPhone }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label><span>วันที่เริ่มงาน</span><input class="form-control" name="start_date" type="date"></label>
             <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งให้ IT เปิดระบบ</button>
         </form>
     </section>
