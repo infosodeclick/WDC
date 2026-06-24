@@ -2298,91 +2298,23 @@ body.directory-modal-open {
     gap: 14px;
 }
 
-.menu-permission-layout {
+.menu-permission-grid {
     display: grid;
-    grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
-    gap: 16px;
-    align-items: flex-start;
-}
-
-.menu-permission-buttons {
-    position: sticky;
-    top: 18px;
-    display: grid;
-    gap: 8px;
-}
-
-.menu-permission-button {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
-    min-height: 44px;
-    padding: 10px 12px;
-    color: var(--ink);
-    text-decoration: none;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: #fffdf1;
-    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-}
-
-.menu-permission-button:hover,
-.menu-permission-button:focus-visible {
-    color: var(--ink);
-    border-color: var(--wdc-yellow-3);
-    box-shadow: 0 8px 18px rgba(34, 31, 32, .08);
-    transform: translateY(-1px);
-}
-
-.menu-permission-button span {
-    font-weight: 800;
-}
-
-.menu-permission-button small {
-    white-space: nowrap;
-    color: var(--muted);
-}
-
-.menu-permission-details {
-    display: grid;
-    gap: 10px;
-    scroll-margin-top: 20px;
 }
 
 .menu-permission-card {
     display: grid;
-    grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
-    gap: 12px;
-    align-items: flex-start;
-    padding: 14px;
+    gap: 4px;
+    padding: 12px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #ffffff;
-    scroll-margin-top: 18px;
+    background: #fffdf1;
 }
 
 .menu-permission-card small {
     color: var(--muted);
-}
-
-.permission-chip-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.permission-chip-list span {
-    display: inline-flex;
-    align-items: center;
-    min-height: 30px;
-    padding: 5px 9px;
-    color: var(--ink);
-    font-size: .86rem;
-    font-weight: 700;
-    border: 1px solid rgba(243, 188, 74, .48);
-    border-radius: 999px;
-    background: #fff4c7;
     overflow-wrap: anywhere;
 }
 
@@ -2646,8 +2578,7 @@ body.directory-modal-open {
     .asset-location-grid,
     .role-template-grid,
     .admin-access-grid,
-    .menu-permission-layout,
-    .menu-permission-card,
+    .menu-permission-grid,
     .permission-matrix,
     .smartflow-tabs,
     .system-mini-grid,
