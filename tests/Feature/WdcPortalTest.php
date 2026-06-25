@@ -224,6 +224,21 @@ class WdcPortalTest extends TestCase
             ->assertSee('รายชื่อพนักงาน')
             ->assertSee('EMP00125')
             ->assertSee('สมชาย ใจดี')
+            ->assertSee('<table', false)
+            ->assertSee('รหัสพนักงาน')
+            ->assertSee('วันที่เริ่มงาน')
+            ->assertSee('ชื่ออังกฤษ')
+            ->assertSee('ชื่อเล่นอังกฤษ')
+            ->assertSee('ชื่อไทย')
+            ->assertSee('ชื่อเล่นไทย')
+            ->assertSee('ตำแหน่ง')
+            ->assertSee('แผนก/BU')
+            ->assertSee('ทีม')
+            ->assertSee('สาขา')
+            ->assertSee('อีเมล')
+            ->assertSee('โทร')
+            ->assertSee('เบอร์โต๊ะ')
+            ->assertSee('สถานะ')
             ->assertSee('เพิ่มพนักงานใหม่')
             ->assertSee('คำขอแก้ข้อมูลโปรไฟล์')
             ->assertSee('ส่งออกข้อมูล')
@@ -233,6 +248,7 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('administrator ·')
             ->assertDontSee('เลขที่ประกาศ');
         $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-plus'));
+        $this->assertStringContainsString('btn btn-outline-primary', $employeesResponse->getContent());
         $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-gear'));
         $this->assertLessThan(
             strpos($employeesResponse->getContent(), 'bi-download'),
@@ -245,6 +261,8 @@ class WdcPortalTest extends TestCase
         $csvContent = $csvExport->streamedContent();
 
         $this->assertStringContainsString('EMP00125', $csvContent);
+        $this->assertStringContainsString('วันที่เริ่มงาน', $csvContent);
+        $this->assertStringContainsString('ชื่อเล่นไทย', $csvContent);
         $this->assertStringNotContainsString('administrator', $csvContent);
 
         $excelExport = $this->get(route('hr.employees.export', ['format' => 'xls']))
@@ -253,6 +271,8 @@ class WdcPortalTest extends TestCase
         $excelContent = $excelExport->streamedContent();
 
         $this->assertStringContainsString('EMP00125', $excelContent);
+        $this->assertStringContainsString('วันที่เริ่มงาน', $excelContent);
+        $this->assertStringContainsString('ชื่อเล่นไทย', $excelContent);
         $this->assertStringContainsString('<table', $excelContent);
     }
 

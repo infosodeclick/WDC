@@ -123,7 +123,7 @@
             <div></div>
             <div class="button-row">
                 @if($canManageOnboarding)
-                    <a class="btn btn-primary" href="{{ route('hr.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
+                    <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
                 @endif
                 <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'profile-requests']) }}"><i class="bi bi-person-gear"></i> คำขอแก้ข้อมูลโปรไฟล์</a>
                 <div class="dropdown">
@@ -137,16 +137,30 @@
                 </div>
             </div>
         </div>
-        <div class="item-list">
-            @forelse($employees as $employeeUser)
-                <div class="result-row">
-                    <strong>{{ $employeeUser->employee_code }} · {{ $employeeUser->name }}</strong>
-                    <small>{{ $employeeUser->employee?->position ?: '-' }} · {{ $employeeUser->employee?->department?->name ?? $employeeUser->employee?->business_unit ?? '-' }} · {{ $employeeUser->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก' }}</small>
-                </div>
-            @empty
-                <div class="empty-state">ยังไม่มีรายชื่อพนักงานในระบบ</div>
-            @endforelse
-        </div>
+        @if($employeeRows->isNotEmpty())
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            @foreach(array_keys($employeeRows->first()) as $column)
+                                <th>{{ $column }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($employeeRows as $row)
+                            <tr>
+                                @foreach($row as $value)
+                                    <td>{{ $value ?: '-' }}</td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="empty-state">ยังไม่มีรายชื่อพนักงานในระบบ</div>
+        @endif
     </section>
 @endif
 

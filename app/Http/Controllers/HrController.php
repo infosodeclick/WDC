@@ -67,6 +67,7 @@ class HrController extends Controller
         }
 
         $employees = $employees->get();
+        $employeeRows = $this->employeeExportRows($employees);
         $onboardingRequests = $canManageOnboarding
             ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'requester', 'itCompleter')
                 ->latest()
@@ -81,6 +82,7 @@ class HrController extends Controller
         return view('hr.index', [
             'activeSection' => $activeSection,
             'employees' => $employees,
+            'employeeRows' => $employeeRows,
             'departments' => Department::orderBy('name')->get(),
             'onboardingPositions' => $this->onboardingPositions(),
             'onboardingTeams' => $this->onboardingTeams(),
@@ -284,10 +286,10 @@ class HrController extends Controller
     {
         return $employees->map(fn (User $user) => [
             'รหัสพนักงาน' => $user->employee_code,
-            'ชื่อ' => $user->name,
+            'วันที่เริ่มงาน' => $user->employee?->start_date?->format('Y-m-d'),
             'ชื่ออังกฤษ' => $user->employee?->english_name,
-            'ชื่อไทย' => $user->employee?->thai_name,
             'ชื่อเล่นอังกฤษ' => $user->employee?->english_nickname,
+            'ชื่อไทย' => $user->employee?->thai_name,
             'ชื่อเล่นไทย' => $user->employee?->thai_nickname,
             'ตำแหน่ง' => $user->employee?->position,
             'แผนก/BU' => $user->employee?->department?->name ?? $user->employee?->business_unit,
@@ -296,7 +298,6 @@ class HrController extends Controller
             'อีเมล' => $user->email,
             'โทร' => $user->employee?->phone,
             'เบอร์โต๊ะ' => $user->employee?->extension_number,
-            'วันที่เริ่มงาน' => $user->employee?->start_date?->format('Y-m-d'),
             'สถานะ' => $user->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก',
         ]);
     }
