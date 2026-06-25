@@ -187,7 +187,7 @@
 
             <div class="modal fade admin-member-modal" id="{{ $profileModalId }}" tabindex="-1" aria-labelledby="{{ $profileModalId }}-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                    <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}" data-permission-editor data-role-permissions='@json($rolePermissionPayload)'>
+                    <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}">
                         @csrf
                         @method('PATCH')
                         <div class="modal-header">
@@ -250,7 +250,7 @@
 
             <div class="modal fade admin-member-modal admin-permission-modal" id="{{ $permissionModalId }}" tabindex="-1" aria-labelledby="{{ $permissionModalId }}-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                    <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}">
+                    <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}" data-permission-editor data-role-permissions='@json($rolePermissionPayload)'>
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="is_active" value="{{ $managedUser->is_active ? 1 : 0 }}">
