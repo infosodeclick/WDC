@@ -233,28 +233,29 @@
         <h2>คำขอพนักงานใหม่</h2>
         <div class="item-list">
             @forelse($onboardingRequests as $onboarding)
-                <article class="list-card">
+                <article class="list-card onboarding-request-card">
                     <div class="meta-row">
                         <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
                         <span>{{ $onboarding->employee_code }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</span>
                     </div>
                     <h3><a class="text-link" href="{{ route('onboarding.show', $onboarding) }}">{{ $onboarding->displayName() }}</a></h3>
                     <p>{{ $onboarding->thai_name ?: '-' }} · {{ $onboarding->position ?: '-' }} · {{ $onboarding->department?->name ?? $onboarding->business_unit ?? '-' }}</p>
-                    <div class="asset-chip-list">
+                    <div class="asset-chip-list onboarding-system-summary">
                         @foreach($onboarding->systems as $system)
                             <span><strong>{{ $system->system_name }}</strong><small>{{ $system->statusLabel() }} {{ $system->username ? '· '.$system->username : '' }}</small></span>
                         @endforeach
                     </div>
                     @if($onboarding->status === 'it_completed')
-                        <form class="mt-3" method="post" action="{{ route('hr.onboarding.publish', $onboarding) }}" enctype="multipart/form-data">
+                        <form class="onboarding-publish-form" method="post" action="{{ route('hr.onboarding.publish', $onboarding) }}" enctype="multipart/form-data">
                             @csrf
                             @method('PATCH')
                             <label class="form-label">รูปพนักงานสำหรับหน้ารายชื่อ</label>
                             <input class="form-control mb-2" type="file" name="photo" accept="image/*">
-                            <label class="form-label">วันที่เริ่มแสดงในรายชื่อ</label>
-                            <input class="form-control mb-1" type="date" name="published_at" value="{{ old('published_at', now()->toDateString()) }}">
-                            <small class="form-help d-block mb-2">ถ้าเลือกวันอนาคต ระบบจะอนุมัติไว้ก่อน และจะแสดงในรายชื่อพนักงานเมื่อถึงวันที่กำหนด</small>
-                            <textarea class="form-control mb-2" name="hr_note" rows="2" placeholder="หมายเหตุ HR ก่อนเผยแพร่"></textarea>
+                            <div class="onboarding-publish-date">
+                                <label class="form-label">วันที่เริ่มแสดงในรายชื่อ</label>
+                                <input class="form-control" type="date" name="published_at" value="{{ old('published_at', now()->toDateString()) }}">
+                            </div>
+                            <small class="form-help d-block">ถ้าเลือกวันอนาคต ระบบจะอนุมัติไว้ก่อน และจะแสดงในรายชื่อพนักงานเมื่อถึงวันที่กำหนด</small>
                             <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> อนุมัติให้แสดงในรายชื่อพนักงาน</button>
                         </form>
                     @endif

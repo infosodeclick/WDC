@@ -1643,6 +1643,65 @@ body.directory-modal-open {
     color: var(--muted);
 }
 
+.onboarding-request-card {
+    padding: 14px;
+}
+
+.onboarding-request-card h3 {
+    margin: 8px 0 4px;
+    font-size: 1rem;
+}
+
+.onboarding-request-card p {
+    margin-bottom: 8px;
+    font-size: .9rem;
+}
+
+.onboarding-system-summary {
+    gap: 7px;
+    margin-top: 8px;
+}
+
+.onboarding-system-summary span {
+    padding: 8px 10px;
+}
+
+.onboarding-system-summary strong {
+    font-size: .9rem;
+}
+
+.onboarding-system-summary small {
+    font-size: .78rem;
+}
+
+.onboarding-publish-form {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.onboarding-publish-date {
+    display: grid;
+    grid-template-columns: minmax(160px, 220px);
+    gap: 4px;
+}
+
+.onboarding-publish-date .form-label,
+.onboarding-publish-form .form-label {
+    margin-bottom: 0;
+    font-size: .88rem;
+}
+
+.onboarding-publish-date .form-control {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: .9rem;
+}
+
+.onboarding-publish-form .form-help {
+    font-size: .78rem;
+}
+
 .asset-location-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
