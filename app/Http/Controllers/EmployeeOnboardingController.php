@@ -13,6 +13,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -205,7 +206,12 @@ class EmployeeOnboardingController extends Controller
         $data = $request->validate([
             'photo' => ['nullable', 'image', 'max:4096'],
             'hr_note' => ['nullable', 'string', 'max:3000'],
+            'published_at' => ['nullable', 'date'],
         ]);
+
+        $publishedAt = filled($data['published_at'] ?? null)
+            ? Carbon::parse($data['published_at'])->startOfDay()
+            : now();
 
         if ($request->hasFile('photo')) {
             $onboarding->update([
@@ -270,10 +276,11 @@ class EmployeeOnboardingController extends Controller
                 'raw_payload' => [
                     'employee_code' => $onboarding->employee_code,
                     'start_date' => $onboarding->start_date?->toDateString(),
+                    'published_at' => $publishedAt->toDateString(),
                     'source' => 'hr_onboarding',
                 ],
                 'is_active' => true,
-                'published_at' => now(),
+                'published_at' => $publishedAt,
                 'resigned_at' => null,
                 'imported_at' => now(),
             ],

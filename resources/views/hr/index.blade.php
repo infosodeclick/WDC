@@ -251,6 +251,9 @@
                             @method('PATCH')
                             <label class="form-label">รูปพนักงานสำหรับหน้ารายชื่อ</label>
                             <input class="form-control mb-2" type="file" name="photo" accept="image/*">
+                            <label class="form-label">วันที่เริ่มแสดงในรายชื่อ</label>
+                            <input class="form-control mb-1" type="date" name="published_at" value="{{ old('published_at', now()->toDateString()) }}">
+                            <small class="form-help d-block mb-2">ถ้าเลือกวันอนาคต ระบบจะอนุมัติไว้ก่อน และจะแสดงในรายชื่อพนักงานเมื่อถึงวันที่กำหนด</small>
                             <textarea class="form-control mb-2" name="hr_note" rows="2" placeholder="หมายเหตุ HR ก่อนเผยแพร่"></textarea>
                             <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> อนุมัติให้แสดงในรายชื่อพนักงาน</button>
                         </form>

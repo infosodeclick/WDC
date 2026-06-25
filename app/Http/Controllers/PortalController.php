@@ -435,11 +435,17 @@ class PortalController extends Controller
         return view('search.index', [
             'q' => $q,
             'employees' => $q === '' || ! $user->canAccess('directory.view') ? collect() : Employee::with('user', 'department')
-                ->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$q}%")->orWhere('employee_code', 'like', "%{$q}%"))
-                ->orWhere('position', 'like', "%{$q}%")
+                ->where(function ($query) use ($q) {
+                    $query->whereHas('user', fn ($query) => $query->where('name', 'like', "%{$q}%")->orWhere('employee_code', 'like', "%{$q}%"))
+                        ->orWhere('position', 'like', "%{$q}%");
+                })
+                ->where(function ($query) {
+                    $query->whereDoesntHave('user.directoryEntry')
+                        ->orWhereHas('user.directoryEntry', fn ($query) => $query->visibleInDirectory());
+                })
                 ->limit(8)
                 ->get(),
-            'directoryEntries' => $q === '' || ! $user->canAccess('directory.view') ? collect() : EmployeeDirectoryEntry::where('is_active', true)
+            'directoryEntries' => $q === '' || ! $user->canAccess('directory.view') ? collect() : EmployeeDirectoryEntry::visibleInDirectory()
                 ->where(function ($query) use ($q) {
                     $query->where('display_name', 'like', "%{$q}%")
                         ->orWhere('english_name', 'like', "%{$q}%")

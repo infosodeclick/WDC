@@ -77,6 +77,11 @@ class User extends Authenticatable
         return $this->hasOne(Employee::class);
     }
 
+    public function directoryEntry(): HasOne
+    {
+        return $this->hasOne(EmployeeDirectoryEntry::class);
+    }
+
     public function profileChangeRequests(): HasMany
     {
         return $this->hasMany(ProfileChangeRequest::class);

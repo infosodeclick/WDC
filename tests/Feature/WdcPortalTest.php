@@ -589,17 +589,23 @@ class WdcPortalTest extends TestCase
         $this->assertSame('it_completed', $onboarding->fresh()->status);
 
         $this->actingAs($hr);
+        $displayDate = now()->addDay()->toDateString();
 
         $this->patch(route('hr.onboarding.publish', $onboarding), [
             'photo' => UploadedFile::fake()->image('new-starter.jpg', 640, 640),
             'hr_note' => 'อนุมัติแสดงรายชื่อ',
+            'published_at' => $displayDate,
         ])->assertRedirect();
 
         $onboarding->refresh();
         $createdUser = User::where('employee_code', 'EMP77777')->firstOrFail();
+        $directoryEntry = EmployeeDirectoryEntry::where('source_system', 'wdc')
+            ->where('source_record_id', 'EMP77777')
+            ->firstOrFail();
 
         $this->assertSame('hr_approved', $onboarding->status);
         $this->assertSame('New Starter', $createdUser->name);
+        $this->assertSame($displayDate, $directoryEntry->published_at->toDateString());
         $this->assertDatabaseHas('employees', [
             'user_id' => $createdUser->id,
             'english_name' => 'New Starter',
@@ -616,8 +622,22 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('directory.index', ['q' => 'New Starter']))
             ->assertOk()
+            ->assertDontSee('New Starter (New)');
+
+        $this->get(route('search', ['q' => 'New Starter']))
+            ->assertOk()
+            ->assertDontSee('<strong>New Starter</strong>', false);
+
+        $this->travelTo($directoryEntry->published_at->copy()->addMinute());
+
+        $this->get(route('directory.index', ['q' => 'New Starter']))
+            ->assertOk()
             ->assertSee('New Starter (New)')
             ->assertSee('พนักงาน ใหม่ (ใหม่)');
+
+        $this->get(route('search', ['q' => 'New Starter']))
+            ->assertOk()
+            ->assertSee('<strong>New Starter</strong>', false);
     }
 
     public function test_legacy_systems_hub_is_removed(): void

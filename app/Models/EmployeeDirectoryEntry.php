@@ -177,6 +177,15 @@ class EmployeeDirectoryEntry extends Model
             && $startDate->isSameYear(now());
     }
 
+    public function scopeVisibleInDirectory($query)
+    {
+        return $query->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            });
+    }
+
     /**
      * @param mixed $value
      */

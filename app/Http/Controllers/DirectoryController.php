@@ -22,7 +22,9 @@ class DirectoryController extends Controller
 
         $directoryView = 'all';
 
-        $filteredEntries = EmployeeDirectoryEntry::where('is_active', true)
+        $visibleEntries = EmployeeDirectoryEntry::visibleInDirectory();
+
+        $filteredEntries = (clone $visibleEntries)
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($query) use ($q) {
                     $query->where('display_name', 'like', "%{$q}%")
@@ -77,9 +79,9 @@ class DirectoryController extends Controller
             'team' => $team,
             'location' => $location,
             'entryType' => $entryType,
-            'departments' => EmployeeDirectoryEntry::whereNotNull('department')->distinct()->orderBy('department')->pluck('department'),
-            'teams' => EmployeeDirectoryEntry::whereNotNull('team')->distinct()->orderBy('team')->pluck('team'),
-            'locations' => EmployeeDirectoryEntry::whereNotNull('location')->distinct()->orderBy('location')->pluck('location'),
+            'departments' => (clone $visibleEntries)->whereNotNull('department')->distinct()->orderBy('department')->pluck('department'),
+            'teams' => (clone $visibleEntries)->whereNotNull('team')->distinct()->orderBy('team')->pluck('team'),
+            'locations' => (clone $visibleEntries)->whereNotNull('location')->distinct()->orderBy('location')->pluck('location'),
             'entryTypes' => [
                 'employee' => 'พนักงาน',
                 'mail_group' => 'กลุ่มอีเมล',
