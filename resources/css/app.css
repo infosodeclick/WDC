@@ -2456,8 +2456,18 @@ body.directory-modal-open {
     white-space: nowrap;
 }
 
+.admin-member-modal {
+    z-index: 1080;
+}
+
+.admin-member-modal + .modal-backdrop,
+.modal-backdrop.show {
+    z-index: 1070;
+}
+
 .admin-member-modal .modal-header {
     align-items: flex-start;
+    gap: 14px;
 }
 
 .admin-member-modal .modal-title {
@@ -2472,6 +2482,41 @@ body.directory-modal-open {
 
 .admin-member-modal .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.modal-header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.admin-permission-modal .modal-dialog {
+    width: min(1120px, calc(100vw - 48px));
+    max-width: none;
+    height: calc(100dvh - 64px);
+    margin: 32px auto;
+}
+
+.admin-permission-modal .modal-content {
+    overflow: hidden;
+    height: 100%;
+    max-height: calc(100dvh - 64px);
+    border-radius: 8px;
+}
+
+.admin-permission-modal .modal-header,
+.admin-permission-modal .modal-footer {
+    flex: 0 0 auto;
+    background: #ffffff;
+}
+
+.admin-permission-modal .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
 }
 
 .admin-user-head {
@@ -2759,6 +2804,16 @@ body.directory-modal-open {
         flex-wrap: wrap;
     }
 
+    .admin-permission-modal .modal-dialog {
+        width: calc(100vw - 24px);
+        height: calc(100dvh - 24px);
+        margin: 12px auto;
+    }
+
+    .admin-permission-modal .modal-content {
+        max-height: calc(100dvh - 24px);
+    }
+
     .button-row,
     .quick-actions,
     .filter-row,
@@ -2863,6 +2918,19 @@ body.directory-modal-open {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .admin-member-modal .modal-header {
+        align-items: flex-start;
+    }
+
+    .admin-member-modal .modal-title {
+        font-size: 1.05rem;
+    }
+
+    .modal-header-actions {
+        align-items: flex-end;
+        flex-direction: column-reverse;
     }
 
     .portal-nav,

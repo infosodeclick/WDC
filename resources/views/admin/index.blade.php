@@ -241,7 +241,7 @@
                 </div>
             </div>
 
-            <div class="modal fade admin-member-modal" id="{{ $permissionModalId }}" tabindex="-1" aria-labelledby="{{ $permissionModalId }}-label" aria-hidden="true">
+            <div class="modal fade admin-member-modal admin-permission-modal" id="{{ $permissionModalId }}" tabindex="-1" aria-labelledby="{{ $permissionModalId }}-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
                     <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}">
                         @csrf
@@ -252,7 +252,10 @@
                                 <p class="eyebrow mb-1">ปรับสิทธิ์รายคน</p>
                                 <h2 class="modal-title" id="{{ $permissionModalId }}-label">{{ $managedUser->employee_code }} · {{ $managedUser->name }}</h2>
                             </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                            <div class="modal-header-actions">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-dismiss="modal">ปิด</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                            </div>
                         </div>
                         <div class="modal-body">
                             <div class="admin-access-grid admin-access-grid-modal">
