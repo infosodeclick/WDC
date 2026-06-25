@@ -2534,7 +2534,7 @@ body.directory-modal-open {
 
 .admin-access-grid {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto minmax(120px, auto);
+    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) minmax(220px, 1.15fr) auto minmax(120px, auto);
     gap: 12px;
     align-items: end;
     margin-bottom: 12px;
@@ -2571,6 +2571,26 @@ body.directory-modal-open {
 .permission-count span {
     color: var(--muted);
     font-size: .82rem;
+}
+
+.role-standard-note {
+    display: grid;
+    gap: 2px;
+    align-self: stretch;
+    padding: 9px 12px;
+    border: 1px solid rgba(251, 214, 71, .55);
+    border-radius: 8px;
+    background: #fff9dc;
+}
+
+.role-standard-note strong {
+    font-size: .9rem;
+}
+
+.role-standard-note span {
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.35;
 }
 
 .permission-details {
@@ -2610,11 +2630,33 @@ body.directory-modal-open {
 
 .permission-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
     gap: 10px;
     align-items: center;
     padding: 8px 0;
     border-top: 1px solid #edf2f7;
+}
+
+.permission-row-role-standard {
+    background: linear-gradient(90deg, rgba(255, 222, 70, .18), rgba(255, 222, 70, 0));
+}
+
+.permission-row-effective > div:first-child strong::after {
+    content: "ได้ใช้งาน";
+    display: inline-flex;
+    margin-left: 6px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: #edf7ee;
+    color: #267443;
+    font-size: .68rem;
+    font-weight: 800;
+    vertical-align: middle;
+}
+
+.role-standard-check {
+    color: #7a5d00;
+    font-weight: 800;
 }
 
 .permission-row:first-of-type {

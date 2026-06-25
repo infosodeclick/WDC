@@ -117,6 +117,13 @@
 @endif
 
 @if($activeSection === 'permissions' && ($canManageUsers || $canManageRoles || $canManageDirectory))
+@php
+    $rolePermissionPayload = $roles->mapWithKeys(fn ($role) => [
+        $role->id => $role->isSuperAdmin()
+            ? $allPermissions->pluck('key')->values()
+            : $role->permissions->pluck('key')->values(),
+    ]);
+@endphp
 <section class="panel" id="permission-management">
     <div class="section-title">
         <div>
@@ -180,7 +187,7 @@
 
             <div class="modal fade admin-member-modal" id="{{ $profileModalId }}" tabindex="-1" aria-labelledby="{{ $profileModalId }}-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                    <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}">
+                    <form class="modal-content" method="post" action="{{ route('admin.users.access', $managedUser) }}" data-permission-editor data-role-permissions='@json($rolePermissionPayload)'>
                         @csrf
                         @method('PATCH')
                         <div class="modal-header">
@@ -260,7 +267,7 @@
                         <div class="modal-body">
                             <div class="admin-access-grid admin-access-grid-modal">
                                 <label><span>Role</span>
-                                    <select class="form-select form-select-sm" name="role_id" @disabled(! $canManageUsers || ($managedUser->isSuperAdmin() && ! auth()->user()->isSuperAdmin()))>
+                                    <select class="form-select form-select-sm" name="role_id" data-role-select @disabled(! $canManageUsers || ($managedUser->isSuperAdmin() && ! auth()->user()->isSuperAdmin()))>
                                         @foreach($roles as $role)
                                             <option value="{{ $role->id }}" @selected($managedUser->role_id === $role->id) @disabled($role->isSuperAdmin() && ! auth()->user()->isSuperAdmin())>{{ $role->name }}</option>
                                         @endforeach
@@ -274,6 +281,10 @@
                                         @endforeach
                                     </select>
                                 </label>
+                                <div class="role-standard-note">
+                                    <strong>สิทธิ์มาตรฐานจาก Role</strong>
+                                    <span>เลือก Role แล้วระบบจะใช้สิทธิ์พื้นฐานของ Role นั้นทันที ส่วน เพิ่ม/ปิด ใช้เฉพาะกรณีรายคน</span>
+                                </div>
                                 <label class="form-check small-check">
                                     @if(! ($canManageUsers || $canManageDirectory) || $statusLocked)
                                         <input type="hidden" name="is_active" value="{{ $managedUser->is_active ? 1 : 0 }}">
@@ -284,7 +295,7 @@
                                     <span class="form-check-label">เปิดใช้งาน</span>
                                 </label>
                                 <div class="permission-count">
-                                    <strong>{{ $effectiveKeys->count() }}</strong>
+                                    <strong data-permission-count>{{ $effectiveKeys->count() }}</strong>
                                     <span>สิทธิ์ใช้งานจริง</span>
                                 </div>
                             </div>
@@ -294,17 +305,22 @@
                                         <h3>{{ $group }}</h3>
                                         @foreach($groupPermissions as $permission)
                                             @php($effect = $overrideMap[$permission->key] ?? null)
-                                            <div class="permission-row">
+                                            @php($roleHasPermission = $managedUser->role?->isSuperAdmin() || $managedUser->role?->permissions->contains('key', $permission->key))
+                                            <div class="permission-row {{ $roleHasPermission ? 'permission-row-role-standard' : '' }}" data-permission-key="{{ $permission->key }}">
                                                 <div>
                                                     <strong>{{ $permission->name }}</strong>
                                                     <small>{{ $permission->description }}</small>
                                                 </div>
+                                                <label class="small-check role-standard-check">
+                                                    <input class="form-check-input" type="checkbox" data-role-baseline @checked($roleHasPermission) disabled>
+                                                    ตาม Role
+                                                </label>
                                                 <label class="small-check">
-                                                    <input class="form-check-input" type="checkbox" name="permission_grants[]" value="{{ $permission->key }}" @checked($effect === 'grant') @disabled(! $canManageRoles)>
+                                                    <input class="form-check-input" type="checkbox" name="permission_grants[]" value="{{ $permission->key }}" data-permission-grant @checked($effect === 'grant') @disabled(! $canManageRoles)>
                                                     เพิ่ม
                                                 </label>
                                                 <label class="small-check">
-                                                    <input class="form-check-input" type="checkbox" name="permission_denies[]" value="{{ $permission->key }}" @checked($effect === 'deny') @disabled(! $canManageRoles || $managedUser->isSuperAdmin())>
+                                                    <input class="form-check-input" type="checkbox" name="permission_denies[]" value="{{ $permission->key }}" data-permission-deny @checked($effect === 'deny') @disabled(! $canManageRoles || $managedUser->isSuperAdmin())>
                                                     ปิด
                                                 </label>
                                             </div>

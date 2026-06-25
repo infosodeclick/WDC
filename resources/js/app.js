@@ -123,6 +123,59 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(modal);
         }
     });
+
+    document.querySelectorAll('[data-permission-editor]').forEach((form) => {
+        const roleSelect = form.querySelector('[data-role-select]');
+        const countTarget = form.querySelector('[data-permission-count]');
+
+        if (! roleSelect) {
+            return;
+        }
+
+        let rolePermissions = {};
+
+        try {
+            rolePermissions = JSON.parse(form.dataset.rolePermissions || '{}');
+        } catch {
+            rolePermissions = {};
+        }
+
+        const syncPermissionPreview = () => {
+            const roleKeys = new Set(rolePermissions[roleSelect.value] || []);
+            const grants = new Set();
+            const denies = new Set();
+
+            form.querySelectorAll('[data-permission-grant]:checked').forEach((input) => grants.add(input.value));
+            form.querySelectorAll('[data-permission-deny]:checked').forEach((input) => denies.add(input.value));
+
+            const effectiveKeys = new Set([...roleKeys, ...grants]);
+            denies.forEach((key) => effectiveKeys.delete(key));
+
+            form.querySelectorAll('[data-permission-key]').forEach((row) => {
+                const key = row.dataset.permissionKey;
+                const isRolePermission = roleKeys.has(key);
+                const isEffective = effectiveKeys.has(key);
+                const baseline = row.querySelector('[data-role-baseline]');
+
+                if (baseline) {
+                    baseline.checked = isRolePermission;
+                }
+
+                row.classList.toggle('permission-row-role-standard', isRolePermission);
+                row.classList.toggle('permission-row-effective', isEffective);
+            });
+
+            if (countTarget) {
+                countTarget.textContent = effectiveKeys.size.toString();
+            }
+        };
+
+        roleSelect.addEventListener('change', syncPermissionPreview);
+        form.querySelectorAll('[data-permission-grant], [data-permission-deny]').forEach((input) => {
+            input.addEventListener('change', syncPermissionPreview);
+        });
+        syncPermissionPreview();
+    });
 });
 
 document.addEventListener('DOMContentLoaded', () => {
