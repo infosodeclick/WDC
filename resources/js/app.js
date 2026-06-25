@@ -118,6 +118,14 @@ if (smartflowTemplateSelect && smartflowFieldsets.length > 0) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.admin-member-modal').forEach((modal) => {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
     const announcementModal = document.querySelector('[data-auto-open-announcement-modal]');
 
     if (! announcementModal) {
