@@ -25,7 +25,29 @@ class AdminController extends Controller
 
         abort_unless($this->canOpenAdmin($actor), 403);
 
-        $usersQuery = User::with('role.permissions', 'employee.department', 'permissionOverrides')->orderBy('employee_code');
+        $memberSearch = trim($request->string('q')->toString());
+
+        $usersQuery = User::with('role.permissions', 'employee.department', 'permissionOverrides')
+            ->when($memberSearch !== '', function ($query) use ($memberSearch) {
+                $query->where(function ($query) use ($memberSearch) {
+                    $query->where('employee_code', 'like', "%{$memberSearch}%")
+                        ->orWhere('name', 'like', "%{$memberSearch}%")
+                        ->orWhere('email', 'like', "%{$memberSearch}%")
+                        ->orWhereHas('role', fn ($query) => $query->where('name', 'like', "%{$memberSearch}%"))
+                        ->orWhereHas('employee', function ($query) use ($memberSearch) {
+                            $query->where('english_name', 'like', "%{$memberSearch}%")
+                                ->orWhere('thai_name', 'like', "%{$memberSearch}%")
+                                ->orWhere('nickname', 'like', "%{$memberSearch}%")
+                                ->orWhere('english_nickname', 'like', "%{$memberSearch}%")
+                                ->orWhere('thai_nickname', 'like', "%{$memberSearch}%")
+                                ->orWhere('position', 'like', "%{$memberSearch}%")
+                                ->orWhere('phone', 'like', "%{$memberSearch}%")
+                                ->orWhere('extension_number', 'like', "%{$memberSearch}%");
+                        })
+                        ->orWhereHas('employee.department', fn ($query) => $query->where('name', 'like', "%{$memberSearch}%"));
+                });
+            })
+            ->orderBy('employee_code');
 
         $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
@@ -51,6 +73,7 @@ class AdminController extends Controller
 
         return view('admin.index', [
             'users' => $usersQuery->get(),
+            'memberSearch' => $memberSearch,
             'roles' => $allRoles,
             'permissions' => $allPermissions->groupBy('group'),
             'allPermissions' => $allPermissions,
@@ -143,8 +166,9 @@ class AdminController extends Controller
 
         $canManageAccess = $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']);
         $canManageDirectory = $actor->canAccessAny(['directory.manage', 'hr.employees.manage']);
+        $canManageRoles = $actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']);
 
-        abort_unless($canManageAccess || $canManageDirectory, 403);
+        abort_unless($canManageAccess || $canManageDirectory || $canManageRoles, 403);
         $this->ensureUserEditable($actor, $user->load('role'));
 
         $data = $request->validate([
@@ -202,7 +226,10 @@ class AdminController extends Controller
             }
         }
 
+        $shouldSyncDirectory = false;
+
         if ($userPayload !== []) {
+            $shouldSyncDirectory = array_key_exists('is_active', $userPayload);
             $user->update($userPayload);
         }
 
@@ -240,10 +267,14 @@ class AdminController extends Controller
                 $employeePayload,
             );
 
+            $shouldSyncDirectory = true;
+        }
+
+        if ($shouldSyncDirectory) {
             $this->syncDirectoryEntry($user->fresh(['employee.department']));
         }
 
-        if ($actor->canAccess('admin.roles.manage')) {
+        if ($canManageRoles) {
             $this->syncUserPermissionOverrides(
                 $user,
                 $data['permission_grants'] ?? [],

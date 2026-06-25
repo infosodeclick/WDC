@@ -309,9 +309,18 @@ class WdcPortalTest extends TestCase
         $this->get(route('admin.index', ['section' => 'permissions']))
             ->assertOk()
             ->assertSee('กำหนดสิทธิ์')
-            ->assertSee('รายชื่อพนักงาน')
-            ->assertSee('แสดงในรายชื่อ / ใช้งาน')
+            ->assertSee('ค้นหาสมาชิก')
+            ->assertSee('ข้อมูลพนักงานสำหรับหน้ารายชื่อ')
+            ->assertSee('ปรับสิทธิ์รายคน')
+            ->assertSee('data-bs-target="#employee-profile-', false)
+            ->assertSee('data-bs-target="#employee-permissions-', false)
+            ->assertSee('ใช้งาน')
             ->assertSee('EMP00125');
+
+        $this->get(route('admin.index', ['section' => 'permissions', 'q' => 'somchai']))
+            ->assertOk()
+            ->assertSee('EMP00125')
+            ->assertDontSee('EMP00200');
 
         $this->get(route('admin.index', ['section' => 'role-template']))
             ->assertOk()
