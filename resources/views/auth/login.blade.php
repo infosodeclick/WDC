@@ -19,10 +19,10 @@
             </span>
         </div>
         <h1>ระบบพนักงานกลาง สำหรับบริษัท 200 คน</h1>
-        <p>รวมโปรไฟล์ ข่าวสาร คู่มือวิดีโอ Helpdesk เรื่องร้องเรียน และเอกสาร HR ไว้ในเว็บเดียวด้วยสิทธิ์ Employee, Supervisor, HR, Admin และ Super Admin</p>
+        <p>รวมโปรไฟล์ ข่าวสาร คู่มือวิดีโอ Helpdesk เรื่องร้องเรียน และเอกสาร HR ไว้ในเว็บเดียวด้วยสิทธิ์ Employee, HR, IT Supervisor, IT Support, Admin, Super Admin และ Auditor Read-only</p>
         <div class="login-metrics">
             <span><strong>3</strong> พอร์ทัล</span>
-            <span><strong>5</strong> สิทธิ์</span>
+            <span><strong>7</strong> สิทธิ์</span>
             <span><strong>12+</strong> ตารางข้อมูล</span>
         </div>
     </section>

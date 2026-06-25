@@ -393,25 +393,52 @@ class WdcPortalTest extends TestCase
         $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
         $hrRole = Role::where('slug', 'hr')->with('permissions')->firstOrFail();
         $adminRole = Role::where('slug', 'admin')->with('permissions')->firstOrFail();
-        $iamRole = Role::where('slug', 'iam_admin')->with('permissions')->firstOrFail();
         $auditorRole = Role::where('slug', 'auditor')->with('permissions')->firstOrFail();
-        $assetOfficerRole = Role::where('slug', 'it_asset_officer')->with('permissions')->firstOrFail();
-        $assetAdminRole = Role::where('slug', 'it_asset_admin')->with('permissions')->firstOrFail();
+        $itSupportRole = Role::where('slug', 'it_support')->with('permissions')->firstOrFail();
+        $itSupervisorRole = Role::where('slug', 'it_supervisor')->with('permissions')->firstOrFail();
+
+        $this->assertSame([
+            'employee',
+            'hr',
+            'it_supervisor',
+            'it_support',
+            'admin',
+            'super_admin',
+            'auditor',
+        ], Role::orderByRaw("CASE slug
+            WHEN 'employee' THEN 10
+            WHEN 'hr' THEN 20
+            WHEN 'it_supervisor' THEN 30
+            WHEN 'it_support' THEN 40
+            WHEN 'admin' THEN 50
+            WHEN 'super_admin' THEN 60
+            WHEN 'auditor' THEN 70
+            ELSE 999
+        END")->pluck('slug')->all());
+
+        $this->assertDatabaseMissing('roles', ['slug' => 'supervisor']);
+        $this->assertDatabaseMissing('roles', ['slug' => 'iam_admin']);
+        $this->assertDatabaseMissing('roles', ['slug' => 'it_asset_officer']);
+        $this->assertDatabaseMissing('roles', ['slug' => 'it_asset_admin']);
 
         $this->assertTrue($hrRole->permissions->contains('key', 'directory.manage'));
         $this->assertTrue($hrRole->permissions->contains('key', 'hr.onboarding.manage'));
+        $this->assertTrue($hrRole->permissions->contains('key', 'documents.manage'));
+        $this->assertTrue($hrRole->permissions->contains('key', 'complaints.review'));
         $this->assertTrue($adminRole->permissions->contains('key', 'assets.settings.manage'));
         $this->assertTrue($adminRole->permissions->contains('key', 'assets.delete'));
-        $this->assertTrue($iamRole->permissions->contains('key', 'iam.users.manage'));
-        $this->assertTrue($iamRole->permissions->contains('key', 'iam.roles.manage'));
+        $this->assertTrue($adminRole->permissions->contains('key', 'iam.users.manage'));
+        $this->assertTrue($adminRole->permissions->contains('key', 'iam.roles.manage'));
+        $this->assertTrue($adminRole->permissions->contains('key', 'admin.system.manage'));
         $this->assertTrue($auditorRole->permissions->contains('key', 'audit.logs.view'));
         $this->assertTrue($auditorRole->permissions->contains('key', 'audit.logs.export'));
         $this->assertFalse($auditorRole->permissions->contains('key', 'admin.users.manage'));
-        $this->assertTrue($assetOfficerRole->permissions->contains('key', 'assets.manage'));
-        $this->assertTrue($assetOfficerRole->permissions->contains('key', 'it.onboarding.manage'));
-        $this->assertFalse($assetOfficerRole->permissions->contains('key', 'assets.delete'));
-        $this->assertTrue($assetAdminRole->permissions->contains('key', 'assets.settings.manage'));
-        $this->assertTrue($assetAdminRole->permissions->contains('key', 'assets.delete'));
+        $this->assertTrue($itSupportRole->permissions->contains('key', 'assets.manage'));
+        $this->assertTrue($itSupportRole->permissions->contains('key', 'it.onboarding.manage'));
+        $this->assertFalse($itSupportRole->permissions->contains('key', 'assets.delete'));
+        $this->assertTrue($itSupervisorRole->permissions->contains('key', 'assets.settings.manage'));
+        $this->assertTrue($itSupervisorRole->permissions->contains('key', 'assets.delete'));
+        $this->assertTrue($itSupervisorRole->permissions->contains('key', 'it.onboarding.manage'));
         $this->assertFalse($employee->effectivePermissionKeys()->contains('directory.manage'));
         $this->assertTrue($itUser->effectivePermissionKeys()->contains('assets.settings.manage'));
         $this->assertTrue($itUser->effectivePermissionKeys()->contains('assets.delete'));

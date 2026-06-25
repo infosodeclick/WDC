@@ -49,7 +49,20 @@ class AdminController extends Controller
             })
             ->orderBy('employee_code');
 
-        $allRoles = Role::withCount('users')->with('permissions')->orderBy('id')->get();
+        $allRoles = Role::withCount('users')
+            ->with('permissions')
+            ->orderByRaw("CASE slug
+                WHEN 'employee' THEN 10
+                WHEN 'hr' THEN 20
+                WHEN 'it_supervisor' THEN 30
+                WHEN 'it_support' THEN 40
+                WHEN 'admin' THEN 50
+                WHEN 'super_admin' THEN 60
+                WHEN 'auditor' THEN 70
+                ELSE 999
+            END")
+            ->orderBy('name')
+            ->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
         $directoryManageKeys = ['directory.manage', 'hr.employees.manage'];
         $canManageUsers = $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']);

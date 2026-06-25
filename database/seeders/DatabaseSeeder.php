@@ -30,15 +30,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $roles = collect([
-            ['name' => 'Employee', 'slug' => 'employee', 'description' => 'พนักงานทั่วไป ใช้งานโปรไฟล์ ข่าวสาร คู่มือ คำขอ IT และร้องเรียน'],
-            ['name' => 'Supervisor', 'slug' => 'supervisor', 'description' => 'หัวหน้างาน เห็นทีมและช่วยติดตามคำขอ IT'],
-            ['name' => 'HR', 'slug' => 'hr', 'description' => 'HR จัดการพนักงาน ประกาศ เอกสาร และเรื่องร้องเรียน'],
-            ['name' => 'IAM Admin', 'slug' => 'iam_admin', 'description' => 'ผู้ดูแลบัญชีและสิทธิ์ตาม approval ไม่ถือสิทธิ์ข้อมูลธุรกิจโดยตรง'],
-            ['name' => 'Auditor Read-only', 'slug' => 'auditor', 'description' => 'ผู้ตรวจสอบ อ่าน log รายงาน และหลักฐานโดยไม่แก้ข้อมูล'],
-            ['name' => 'IT Asset Officer', 'slug' => 'it_asset_officer', 'description' => 'เจ้าหน้าที่ IT Asset เพิ่ม แก้ไข และติดตามทรัพย์สินตาม scope'],
-            ['name' => 'IT Asset Admin', 'slug' => 'it_asset_admin', 'description' => 'ผู้ดูแล master data และการจำหน่าย/เก็บประวัติทรัพย์สิน IT'],
-            ['name' => 'Admin', 'slug' => 'admin', 'description' => 'ผู้ดูแลระบบ จัดการผู้ใช้ สิทธิ์ และ Log การใช้งาน'],
-            ['name' => 'Super Admin', 'slug' => 'super_admin', 'description' => 'ผู้ดูแลสูงสุด แก้สิทธิ์และระบบหลังบ้านทั้งหมด'],
+            ['name' => 'Employee', 'slug' => 'employee', 'description' => 'Standard employee portal access'],
+            ['name' => 'HR', 'slug' => 'hr', 'description' => 'HR portal, employee records, announcements, documents, and complaints'],
+            ['name' => 'IT Supervisor', 'slug' => 'it_supervisor', 'description' => 'IT helpdesk, onboarding, inventory administration, and reports'],
+            ['name' => 'IT Support', 'slug' => 'it_support', 'description' => 'IT helpdesk, onboarding, inventory operation, and reports'],
+            ['name' => 'Admin', 'slug' => 'admin', 'description' => 'System administration, users, roles, settings, and logs'],
+            ['name' => 'Super Admin', 'slug' => 'super_admin', 'description' => 'Highest-level administrator with all permissions'],
+            ['name' => 'Auditor Read-only', 'slug' => 'auditor', 'description' => 'Read-only audit, reports, and evidence access'],
         ])->mapWithKeys(function (array $role) {
             return [$role['slug'] => Role::updateOrCreate(['slug' => $role['slug']], $role)];
         });
@@ -75,7 +73,7 @@ class DatabaseSeeder extends Seeder
                 'employee_code' => 'EMP00200',
                 'name' => 'มาลี พัฒนางาน',
                 'email' => 'malee.it@wdc.co.th',
-                'role' => 'supervisor',
+                'role' => 'it_supervisor',
                 'department' => 'IT',
                 'english_name' => 'Malee Pattanangan',
                 'english_nickname' => 'Lee',
@@ -152,21 +150,6 @@ class DatabaseSeeder extends Seeder
 
             return [$profile['employee_code'] => $user];
         });
-
-        if (isset($users['EMP00200'])) {
-            $itPermissionIds = Permission::whereIn('key', [
-                'tickets.manage',
-                'it.portal.view',
-                'assets.view',
-                'assets.manage',
-                'assets.reports',
-                'assets.settings.manage',
-                'assets.delete',
-            ])->pluck('id');
-            $users['EMP00200']->permissionOverrides()->syncWithoutDetaching(
-                $itPermissionIds->mapWithKeys(fn (int $permissionId) => [$permissionId => ['effect' => 'grant']])->all(),
-            );
-        }
 
         $announcements = collect([
             [
@@ -352,23 +335,6 @@ class DatabaseSeeder extends Seeder
                     'complaints.create',
                 ],
             ],
-            'supervisor' => [
-                'scope' => 'department',
-                'permissions' => [
-                    'portal.dashboard.view',
-                    'profile.view',
-                    'directory.view',
-                    'meeting_rooms.view',
-                    'announcements.view',
-                    'knowledge.view',
-                    'documents.view',
-                    'payroll.link',
-                    'tickets.create',
-                    'workflows.create',
-                    'workflows.manage',
-                    'complaints.create',
-                ],
-            ],
             'hr' => [
                 'scope' => 'all',
                 'permissions' => [
@@ -391,6 +357,52 @@ class DatabaseSeeder extends Seeder
                     'hr.onboarding.manage',
                     'hr.employees.manage',
                     'hr.announcements.manage',
+                ],
+            ],
+            'it_supervisor' => [
+                'scope' => 'all',
+                'permissions' => [
+                    'portal.dashboard.view',
+                    'profile.view',
+                    'directory.view',
+                    'meeting_rooms.view',
+                    'announcements.view',
+                    'knowledge.view',
+                    'documents.view',
+                    'payroll.link',
+                    'tickets.create',
+                    'tickets.manage',
+                    'it.portal.view',
+                    'it.onboarding.manage',
+                    'assets.view',
+                    'assets.manage',
+                    'assets.reports',
+                    'assets.settings.manage',
+                    'assets.delete',
+                    'workflows.create',
+                    'workflows.manage',
+                ],
+            ],
+            'it_support' => [
+                'scope' => 'department',
+                'permissions' => [
+                    'portal.dashboard.view',
+                    'profile.view',
+                    'directory.view',
+                    'meeting_rooms.view',
+                    'announcements.view',
+                    'knowledge.view',
+                    'documents.view',
+                    'payroll.link',
+                    'tickets.create',
+                    'tickets.manage',
+                    'it.portal.view',
+                    'it.onboarding.manage',
+                    'assets.view',
+                    'assets.manage',
+                    'assets.reports',
+                    'workflows.create',
+                    'workflows.manage',
                 ],
             ],
             'admin' => [
@@ -420,21 +432,17 @@ class DatabaseSeeder extends Seeder
                     'complaints.create',
                     'complaints.review',
                     'hr.portal.view',
+                    'hr.onboarding.manage',
                     'hr.employees.manage',
                     'hr.announcements.manage',
                     'admin.users.manage',
+                    'admin.roles.manage',
                     'admin.activity.view',
-                ],
-            ],
-            'iam_admin' => [
-                'scope' => 'all',
-                'permissions' => [
-                    'portal.dashboard.view',
-                    'profile.view',
-                    'directory.view',
+                    'admin.system.manage',
                     'iam.users.manage',
                     'iam.roles.manage',
                     'audit.logs.view',
+                    'audit.logs.export',
                 ],
             ],
             'auditor' => [
@@ -449,38 +457,6 @@ class DatabaseSeeder extends Seeder
                     'assets.reports',
                     'audit.logs.view',
                     'audit.logs.export',
-                ],
-            ],
-            'it_asset_officer' => [
-                'scope' => 'department',
-                'permissions' => [
-                    'portal.dashboard.view',
-                    'profile.view',
-                    'directory.view',
-                    'tickets.create',
-                    'it.portal.view',
-                    'it.onboarding.manage',
-                    'assets.view',
-                    'assets.manage',
-                    'assets.reports',
-                ],
-            ],
-            'it_asset_admin' => [
-                'scope' => 'all',
-                'permissions' => [
-                    'portal.dashboard.view',
-                    'profile.view',
-                    'directory.view',
-                    'tickets.create',
-                    'tickets.manage',
-                    'it.portal.view',
-                    'it.onboarding.manage',
-                    'assets.view',
-                    'assets.manage',
-                    'assets.reports',
-                    'assets.settings.manage',
-                    'assets.delete',
-                    'audit.logs.view',
                 ],
             ],
             'super_admin' => [
