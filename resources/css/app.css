@@ -2457,12 +2457,8 @@ body.directory-modal-open {
 }
 
 .admin-member-modal {
+    --bs-modal-zindex: 1080;
     z-index: 1080;
-}
-
-.admin-member-modal + .modal-backdrop,
-.modal-backdrop.show {
-    z-index: 1070;
 }
 
 .admin-member-modal .modal-header {
