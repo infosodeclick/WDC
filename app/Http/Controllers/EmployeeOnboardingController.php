@@ -20,6 +20,13 @@ use Illuminate\View\View;
 
 class EmployeeOnboardingController extends Controller
 {
+    private const DEFAULT_ONBOARDING_SYSTEMS = [
+        'WDC Portal',
+        'Active Directory',
+        'EMAIL',
+        'ทรัพย์สิน',
+    ];
+
     public function show(EmployeeOnboardingRequest $onboarding, Request $request): View
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
@@ -88,21 +95,19 @@ class EmployeeOnboardingController extends Controller
             'status' => 'pending_it',
         ]);
 
-        $systemNames = collect($data['requested_systems'] ?? [])
+        $systemNames = collect(self::DEFAULT_ONBOARDING_SYSTEMS)
+            ->merge($data['requested_systems'] ?? [])
             ->merge(collect(preg_split('/[\r\n,]+/', (string) ($data['other_systems'] ?? ''))))
-            ->map(fn (string $system) => trim($system))
+            ->map(fn (string $system) => $this->normalizeSystemName($system))
             ->filter()
             ->unique()
             ->values();
-
-        if ($systemNames->isEmpty()) {
-            $systemNames = collect(['WDC Portal', 'Email']);
-        }
 
         $systemNames->each(fn (string $systemName) => EmployeeOnboardingSystem::create([
             'employee_onboarding_request_id' => $onboarding->id,
             'system_name' => $systemName,
             'requested_access' => 'เปิดสิทธิ์เริ่มงานใหม่',
+            'username' => $systemName === 'WDC Portal' ? $onboarding->employee_code : null,
             'status' => 'pending',
         ]));
 
@@ -138,7 +143,9 @@ class EmployeeOnboardingController extends Controller
 
             $system->update([
                 'status' => $systemData['status'] ?? $system->status,
-                'username' => $systemData['username'] ?? null,
+                'username' => $system->system_name === 'WDC Portal'
+                    ? $onboarding->employee_code
+                    : ($systemData['username'] ?? null),
                 'email' => $systemData['email'] ?? null,
                 'it_asset_id' => $systemData['it_asset_id'] ?? null,
                 'notes' => $systemData['notes'] ?? null,
@@ -367,5 +374,18 @@ class EmployeeOnboardingController extends Controller
             ->map(fn ($name) => trim((string) $name))
             ->filter()
             ->join(' ');
+    }
+
+    private function normalizeSystemName(string $system): string
+    {
+        $system = trim($system);
+        $lower = strtolower($system);
+
+        return match ($lower) {
+            'email', 'e-mail', 'mail' => 'EMAIL',
+            'ad', 'active directory' => 'Active Directory',
+            'asset', 'assets', 'inventory', 'it asset', 'it assets' => 'ทรัพย์สิน',
+            default => $system,
+        };
     }
 }

@@ -61,39 +61,59 @@
         <form method="post" action="{{ route('it.onboarding.update', $onboarding) }}">
             @csrf
             @method('PATCH')
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr><th>ระบบ</th><th>สถานะ</th><th>User / Email</th><th>ทรัพย์สิน</th><th>หมายเหตุ</th></tr>
-                    </thead>
-                    <tbody>
+            <div class="content-grid onboarding-system-grid">
                     @foreach($onboarding->systems as $system)
-                        <tr>
-                            <td><strong>{{ $system->system_name }}</strong><small class="d-block muted">{{ $system->requested_access }}</small></td>
-                            <td>
-                                <select class="form-select form-select-sm" name="systems[{{ $system->id }}][status]">
+                        @php
+                            $isWdcPortal = $system->system_name === 'WDC Portal';
+                            $isAssetSystem = $system->system_name === 'ทรัพย์สิน';
+                            $isEmailSystem = $system->system_name === 'EMAIL';
+                            $isDirectorySystem = $system->system_name === 'Active Directory';
+                            $usernameValue = $isWdcPortal ? $onboarding->employee_code : $system->username;
+                        @endphp
+                        <article class="list-card">
+                            <div class="section-title">
+                                <div>
+                                    <h3>{{ $system->system_name }}</h3>
+                                    <p>{{ $isWdcPortal ? 'รหัสเข้าใช้งาน WDC Portal ล็อกตามรหัสพนักงาน' : $system->requested_access }}</p>
+                                </div>
+                                <span class="status-pill">{{ $system->statusLabel() }}</span>
+                            </div>
+                            <div class="form-grid onboarding-system-form">
+                                <label><span>สถานะ</span>
+                                    <select class="form-select" name="systems[{{ $system->id }}][status]">
                                     <option value="pending" @selected($system->status === 'pending')>รอดำเนินการ</option>
                                     <option value="provisioned" @selected($system->status === 'provisioned')>เปิดแล้ว</option>
                                     <option value="skipped" @selected($system->status === 'skipped')>ไม่ต้องเปิด</option>
-                                </select>
-                            </td>
-                            <td>
-                                <input class="form-control form-control-sm mb-1" name="systems[{{ $system->id }}][username]" value="{{ $system->username }}" placeholder="username">
-                                <input class="form-control form-control-sm" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="email@wdc.co.th">
-                            </td>
-                            <td>
-                                <select class="form-select form-select-sm" name="systems[{{ $system->id }}][it_asset_id]">
-                                    <option value="">ไม่ผูกทรัพย์สิน</option>
-                                    @foreach($availableAssets as $asset)
-                                        <option value="{{ $asset->id }}" @selected($system->it_asset_id === $asset->id)>{{ $asset->code }} · {{ $asset->name }}</option>
-                                    @endforeach
-                                </select>
-                            </td>
-                            <td><input class="form-control form-control-sm" name="systems[{{ $system->id }}][notes]" value="{{ $system->notes }}" placeholder="หมายเหตุ"></td>
-                        </tr>
+                                    </select>
+                                </label>
+                                @if(! $isAssetSystem)
+                                    <label><span>{{ $isWdcPortal ? 'รหัสเข้าใช้งาน WDC' : 'Username' }}</span>
+                                        <input class="form-control" name="systems[{{ $system->id }}][username]" value="{{ $usernameValue }}" placeholder="username" @readonly($isWdcPortal)>
+                                    </label>
+                                @endif
+                                @if($isEmailSystem)
+                                    <label><span>Email</span><input class="form-control" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="email@wdc.co.th"></label>
+                                @elseif($isDirectorySystem)
+                                    <label><span>Domain / Email อ้างอิง</span><input class="form-control" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="ถ้ามี"></label>
+                                @else
+                                    <input type="hidden" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}">
+                                @endif
+                                @if($isAssetSystem)
+                                    <label class="span-2"><span>ทรัพย์สิน</span>
+                                        <select class="form-select" name="systems[{{ $system->id }}][it_asset_id]">
+                                            <option value="">เลือกทรัพย์สิน</option>
+                                            @foreach($availableAssets as $asset)
+                                                <option value="{{ $asset->id }}" @selected($system->it_asset_id === $asset->id)>{{ $asset->code }} · {{ $asset->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                @else
+                                    <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
+                                @endif
+                                <label class="span-2"><span>หมายเหตุ</span><input class="form-control" name="systems[{{ $system->id }}][notes]" value="{{ $system->notes }}" placeholder="หมายเหตุ"></label>
+                            </div>
+                        </article>
                     @endforeach
-                    </tbody>
-                </table>
             </div>
             <label class="form-label">หมายเหตุ IT</label>
             <textarea class="form-control mb-2" name="it_note" rows="3">{{ $onboarding->it_note }}</textarea>
@@ -120,7 +140,7 @@
                     <tr>
                         <td><strong>{{ $system->system_name }}</strong><small class="d-block muted">{{ $system->requested_access }}</small></td>
                         <td>{{ $system->statusLabel() }}</td>
-                        <td>{{ $system->username ?: '-' }}</td>
+                        <td>{{ ($system->system_name === 'WDC Portal' ? $onboarding->employee_code : $system->username) ?: '-' }}</td>
                         <td>{{ $system->email ?: '-' }}</td>
                         <td>{{ $system->asset?->code ?? '-' }}</td>
                         <td>{{ $system->notes ?: '-' }}</td>

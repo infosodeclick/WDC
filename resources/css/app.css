@@ -1742,6 +1742,10 @@ body.directory-modal-open {
     align-items: start;
 }
 
+.onboarding-system-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+}
+
 .panel,
 .list-card,
 .video-card,
@@ -2245,6 +2249,11 @@ body.directory-modal-open {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
     align-items: end;
+}
+
+.onboarding-system-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
 }
 
 .stack-form {

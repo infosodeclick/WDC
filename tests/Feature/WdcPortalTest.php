@@ -509,7 +509,16 @@ class WdcPortalTest extends TestCase
         $administrator = User::where('employee_code', 'administrator')->firstOrFail();
 
         $this->assertSame('pending_it', $onboarding->status);
-        $this->assertCount(3, $onboarding->systems);
+        $this->assertCount(5, $onboarding->systems);
+        $this->assertEqualsCanonicalizing(
+            ['WDC Portal', 'Active Directory', 'EMAIL', 'ทรัพย์สิน', 'ERP'],
+            $onboarding->systems->pluck('system_name')->all(),
+        );
+        $this->assertDatabaseHas('employee_onboarding_systems', [
+            'employee_onboarding_request_id' => $onboarding->id,
+            'system_name' => 'WDC Portal',
+            'username' => 'EMP77777',
+        ]);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $administrator->id,
             'type' => 'onboarding',
@@ -533,15 +542,23 @@ class WdcPortalTest extends TestCase
             ->assertSee('New Starter')
             ->assertSee('พนักงาน ใหม่')
             ->assertSee('เริ่มงานเดือนนี้')
+            ->assertSee('Active Directory')
+            ->assertSee('EMAIL')
+            ->assertSee('ทรัพย์สิน')
+            ->assertSee('รหัสเข้าใช้งาน WDC Portal ล็อกตามรหัสพนักงาน')
             ->assertSee('อนุมัติเปิดระบบและส่งกลับ HR');
 
-        $emailSystem = $onboarding->systems->firstWhere('system_name', 'Email');
+        $emailSystem = $onboarding->systems->firstWhere('system_name', 'EMAIL');
+        $assetSystem = $onboarding->systems->firstWhere('system_name', 'ทรัพย์สิน');
 
         $this->actingAs($itUser);
 
         $this->get(route('onboarding.show', $onboarding))
             ->assertOk()
             ->assertSee('รายการเปิดระบบโดย IT')
+            ->assertSee('รหัสเข้าใช้งาน WDC')
+            ->assertSee('Domain / Email อ้างอิง')
+            ->assertSee('เลือกทรัพย์สิน')
             ->assertSee('บันทึกข้อมูล IT');
 
         $this->patch(route('it.onboarding.update', $onboarding), [
@@ -550,12 +567,22 @@ class WdcPortalTest extends TestCase
                     'status' => 'provisioned',
                     'username' => 'new.starter',
                     'email' => 'new.starter@wdc.co.th',
+                    'notes' => 'เปิดอีเมลแล้ว',
+                ],
+                $assetSystem->id => [
+                    'status' => 'provisioned',
                     'it_asset_id' => $asset->id,
-                    'notes' => 'เปิดอีเมลและมอบเครื่องแล้ว',
+                    'notes' => 'มอบเครื่องแล้ว',
                 ],
             ],
             'it_note' => 'พร้อมให้ HR ตรวจสอบ',
         ])->assertRedirect();
+
+        $this->assertDatabaseHas('employee_onboarding_systems', [
+            'employee_onboarding_request_id' => $onboarding->id,
+            'system_name' => 'WDC Portal',
+            'username' => 'EMP77777',
+        ]);
 
         $this->patch(route('it.onboarding.complete', $onboarding))->assertRedirect();
 
