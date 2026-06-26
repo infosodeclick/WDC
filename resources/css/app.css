@@ -1680,6 +1680,25 @@ body.directory-modal-open {
     margin-top: 10px;
 }
 
+.onboarding-cancel-panel {
+    margin-top: 10px;
+}
+
+.onboarding-cancel-panel summary {
+    display: inline-flex;
+    cursor: pointer;
+    list-style: none;
+}
+
+.onboarding-cancel-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.onboarding-cancel-panel .form-stack {
+    display: grid;
+    gap: 10px;
+}
+
 .onboarding-publish-date {
     display: grid;
     grid-template-columns: minmax(160px, 220px);

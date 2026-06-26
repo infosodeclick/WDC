@@ -6,7 +6,7 @@
 @php
     $claimedByMe = $onboarding->claimed_by_id === auth()->id();
     $claimedByOther = $onboarding->claimed_by_id && ! $claimedByMe;
-    $canEditChecklist = $canManageItOnboarding && $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true);
+    $canEditChecklist = $canManageItOnboarding && $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true);
 @endphp
 
 <div class="page-heading">
@@ -50,6 +50,42 @@
             </tbody>
         </table>
     </div>
+    @if($onboarding->cancel_reason)
+        <div class="alert-panel compact-alert">
+            <strong>เหตุผลการยกเลิก</strong>
+            <p>{{ $onboarding->cancel_reason }}</p>
+            <small>
+                ขอโดย {{ $onboarding->cancelRequester?->name ?? '-' }}
+                {{ $onboarding->cancel_requested_at ? '· '.$onboarding->cancel_requested_at->format('d/m/Y H:i') : '' }}
+                @if($onboarding->cancelConfirmer)
+                    · ยืนยันโดย {{ $onboarding->cancelConfirmer->name }} {{ $onboarding->cancel_confirmed_at ? $onboarding->cancel_confirmed_at->format('d/m/Y H:i') : '' }}
+                @endif
+            </small>
+        </div>
+    @endif
+    @if(auth()->user()->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']) && ! in_array($onboarding->status, ['hr_approved', 'cancelled'], true))
+        @php
+            $itStartedForCancel = $onboarding->hasItStarted();
+        @endphp
+        <details class="onboarding-cancel-panel mt-3">
+            <summary class="btn btn-outline-primary"><i class="bi bi-x-circle"></i> ขอยกเลิกคำขอ</summary>
+            <form method="post" action="{{ route('hr.onboarding.cancel', $onboarding) }}" class="form-stack mt-2" onsubmit="return confirm('ยืนยันยกเลิกคำขอพนักงานใหม่นี้หรือไม่?');">
+                @csrf
+                @method('PATCH')
+                <label>
+                    <span>เหตุผลการยกเลิก</span>
+                    <textarea class="form-control" name="cancel_reason" rows="2" required placeholder="เช่น พนักงานไม่มาเริ่มงาน / ติดต่อไม่ได้ / เลื่อนเริ่มงาน">{{ old('cancel_reason') }}</textarea>
+                </label>
+                @if($itStartedForCancel)
+                    <label class="form-check">
+                        <input class="form-check-input" type="checkbox" name="cancel_acknowledged" value="1" required>
+                        <span class="form-check-label">ยืนยันว่า IT เริ่มเปิดระบบแล้ว ต้องให้ IT ตรวจสอบการยกเลิกก่อนปิดงาน</span>
+                    </label>
+                @endif
+                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-x-circle"></i> ยืนยันขอยกเลิก</button>
+            </form>
+        </details>
+    @endif
 </section>
 
 <section class="panel">
@@ -64,13 +100,13 @@
             @else
                 <span class="status-pill status-warning">ยังไม่มีคนรับงาน</span>
             @endif
-            @if($canManageItOnboarding && ! $onboarding->claimed_by_id && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true))
+            @if($canManageItOnboarding && ! $onboarding->claimed_by_id && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true))
                 <form method="post" action="{{ route('it.onboarding.claim', $onboarding) }}">
                     @csrf
                     @method('PATCH')
                     <button class="btn btn-primary" type="submit"><i class="bi bi-person-check"></i> รับงาน</button>
                 </form>
-            @elseif($canManageItOnboarding && $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true))
+            @elseif($canManageItOnboarding && $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true))
                 <form method="post" action="{{ route('it.onboarding.release', $onboarding) }}">
                     @csrf
                     @method('PATCH')
@@ -82,6 +118,12 @@
 
     @if($claimedByOther)
         <div class="alert-panel compact-alert">รายการนี้มี {{ $onboarding->claimedBy?->name ?? 'ทีม IT คนอื่น' }} กำลังดำเนินการอยู่ จึงเปิดดูได้แต่ยังแก้ checklist ไม่ได้</div>
+    @endif
+    @if($onboarding->status === 'cancel_requested')
+        <div class="alert-panel compact-alert">
+            <strong>HR ขอให้ยกเลิกคำขอ</strong>
+            <p>{{ $onboarding->cancel_reason ?: 'ไม่มีเหตุผลระบุ' }}</p>
+        </div>
     @endif
 
     @if($canManageItOnboarding)
@@ -160,6 +202,15 @@
                 @csrf
                 @method('PATCH')
                 <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> อนุมัติเปิดระบบและส่งกลับ HR</button>
+            </form>
+        @endif
+        @if($onboarding->status === 'cancel_requested' && ($claimedByMe || ! $onboarding->claimed_by_id || auth()->user()->canAccessAny(['admin.system.manage', 'admin.users.manage'])))
+            <form method="post" action="{{ route('it.onboarding.cancel', $onboarding) }}" class="mt-3" onsubmit="return confirm('ยืนยันว่า IT ตรวจสอบการยกเลิกและคืนงานเรียบร้อยแล้ว?');">
+                @csrf
+                @method('PATCH')
+                <label class="form-label">หมายเหตุ IT ก่อนยืนยันยกเลิก</label>
+                <textarea class="form-control mb-2" name="it_note" rows="2">{{ $onboarding->it_note }}</textarea>
+                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-check2-circle"></i> ยืนยันยกเลิกและแจ้ง HR</button>
             </form>
         @endif
     @else

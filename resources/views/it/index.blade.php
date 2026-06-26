@@ -29,7 +29,7 @@
             @php
                 $claimedByMe = $onboarding->claimed_by_id === auth()->id();
                 $claimedByOther = $onboarding->claimed_by_id && ! $claimedByMe;
-                $canEditChecklist = $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true);
+                $canEditChecklist = $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true);
             @endphp
             <article class="list-card onboarding-queue-card">
                 <div class="onboarding-queue-head">
@@ -47,13 +47,13 @@
                         <p>{{ $onboarding->position ?: '-' }} · เริ่มงาน {{ optional($onboarding->start_date)->format('d/m/Y') ?: '-' }}</p>
                     </div>
                     <div class="button-row onboarding-queue-actions">
-                        @if(! $onboarding->claimed_by_id && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true))
+                        @if(! $onboarding->claimed_by_id && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true))
                             <form method="post" action="{{ route('it.onboarding.claim', $onboarding) }}">
                                 @csrf
                                 @method('PATCH')
                                 <button class="btn btn-primary" type="submit"><i class="bi bi-person-check"></i> รับงาน</button>
                             </form>
-                        @elseif($claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true))
+                        @elseif($claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true))
                             <form method="post" action="{{ route('it.onboarding.release', $onboarding) }}">
                                 @csrf
                                 @method('PATCH')
@@ -66,6 +66,12 @@
 
                 @if($claimedByOther)
                     <div class="alert-panel compact-alert">รายการนี้มี {{ $onboarding->claimedBy?->name ?? 'ทีม IT คนอื่น' }} กำลังดำเนินการอยู่ จึงเปิดดูได้แต่ยังแก้ checklist ไม่ได้</div>
+                @endif
+                @if($onboarding->status === 'cancel_requested')
+                    <div class="alert-panel compact-alert">
+                        <strong>HR ขอให้ยกเลิกคำขอ</strong>
+                        <p>{{ $onboarding->cancel_reason ?: 'ไม่มีเหตุผลระบุ' }}</p>
+                    </div>
                 @endif
 
                 <form method="post" action="{{ route('it.onboarding.update', $onboarding) }}" class="mt-3">
@@ -148,6 +154,14 @@
                         @csrf
                         @method('PATCH')
                         <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> เปิดระบบเรียบร้อย แจ้ง HR</button>
+                    </form>
+                @endif
+                @if($onboarding->status === 'cancel_requested' && ($claimedByMe || ! $onboarding->claimed_by_id || auth()->user()->canAccessAny(['admin.system.manage', 'admin.users.manage'])))
+                    <form method="post" action="{{ route('it.onboarding.cancel', $onboarding) }}" class="mt-2" onsubmit="return confirm('ยืนยันว่า IT ตรวจสอบการยกเลิกและคืนงานเรียบร้อยแล้ว?');">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="it_note" value="{{ $onboarding->it_note }}">
+                        <button class="btn btn-outline-danger" type="submit"><i class="bi bi-check2-circle"></i> ยืนยันยกเลิกและแจ้ง HR</button>
                     </form>
                 @endif
             </article>

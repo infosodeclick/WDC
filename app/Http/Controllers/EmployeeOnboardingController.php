@@ -37,8 +37,8 @@ class EmployeeOnboardingController extends Controller
         abort_unless($this->canViewOnboarding($actor), 403);
 
         return view('onboarding.show', [
-            'onboarding' => $onboarding->load('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy', 'itCompleter', 'hrApprover'),
-            'canManageItOnboarding' => $this->canManageItOnboarding($actor) && $onboarding->status !== 'hr_approved',
+            'onboarding' => $onboarding->load('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy', 'itCompleter', 'hrApprover', 'cancelRequester', 'cancelConfirmer'),
+            'canManageItOnboarding' => $this->canManageItOnboarding($actor) && ! in_array($onboarding->status, ['hr_approved', 'cancelled'], true),
             'availableAssets' => $actor->canManageItAssets()
                 ? ItAsset::whereIn('status', ['active', 'repair'])->orderBy('code')->get()
                 : collect(),
@@ -55,6 +55,8 @@ class EmployeeOnboardingController extends Controller
             EmployeeOnboardingRequest::with([
                 'department',
                 'claimedBy',
+                'cancelRequester',
+                'cancelConfirmer',
                 'itCompleter',
                 'systems.asset',
                 'systems.provisioner',
@@ -148,7 +150,7 @@ class EmployeeOnboardingController extends Controller
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
         abort_unless($this->canManageItOnboarding($actor), 403);
-        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved'], true), 422);
+        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true), 422);
 
         $updated = EmployeeOnboardingRequest::query()
             ->whereKey($onboarding->id)
@@ -179,7 +181,7 @@ class EmployeeOnboardingController extends Controller
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
         abort_unless($this->canManageItOnboarding($actor), 403);
-        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved'], true), 422);
+        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true), 422);
         abort_unless($this->canWorkOnClaim($onboarding->fresh(), $actor), 403);
 
         $onboarding->update([
@@ -198,7 +200,7 @@ class EmployeeOnboardingController extends Controller
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
         abort_unless($actor->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage']), 403);
-        abort_if($onboarding->status === 'hr_approved', 422);
+        abort_if(in_array($onboarding->status, ['hr_approved', 'cancel_requested', 'cancelled'], true), 422);
         abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
 
         $data = $request->validate([
@@ -260,7 +262,7 @@ class EmployeeOnboardingController extends Controller
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
         abort_unless($actor->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage']), 403);
-        abort_if($onboarding->status === 'hr_approved', 422);
+        abort_if(in_array($onboarding->status, ['hr_approved', 'cancel_requested', 'cancelled'], true), 422);
         abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
 
         $onboarding->load('systems.asset');
@@ -289,6 +291,99 @@ class EmployeeOnboardingController extends Controller
         $this->log($request, 'complete_employee_onboarding_it', EmployeeOnboardingRequest::class, $onboarding->id, "Completed IT onboarding {$onboarding->employee_code}");
 
         return back()->with('status', 'แจ้ง HR ว่าเปิดระบบเรียบร้อยแล้ว');
+    }
+
+    public function cancel(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($actor->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']), 403);
+        abort_if(in_array($onboarding->status, ['hr_approved', 'cancelled'], true), 422);
+
+        $onboarding->load('systems');
+        $itStarted = $onboarding->hasItStarted();
+
+        $rules = [
+            'cancel_reason' => ['required', 'string', 'max:3000'],
+        ];
+
+        if ($itStarted) {
+            $rules['cancel_acknowledged'] = ['accepted'];
+        }
+
+        $data = $request->validate($rules);
+        $now = now();
+
+        if ($itStarted) {
+            $onboarding->update([
+                'status' => 'cancel_requested',
+                'cancel_reason' => $data['cancel_reason'],
+                'cancel_requested_by' => $actor->id,
+                'cancel_requested_at' => $now,
+            ]);
+
+            $this->notifyUsers(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'], 'HR ขอให้ยกเลิกคำขอพนักงานใหม่', $onboarding->displayName(), route('onboarding.show', $onboarding));
+            $this->log($request, 'request_cancel_employee_onboarding', EmployeeOnboardingRequest::class, $onboarding->id, "Requested onboarding cancellation {$onboarding->employee_code}");
+
+            return back()->with('status', 'ส่งคำขอยกเลิกให้ IT ตรวจสอบแล้ว');
+        }
+
+        $onboarding->update([
+            'status' => 'cancelled',
+            'cancel_reason' => $data['cancel_reason'],
+            'cancel_requested_by' => $actor->id,
+            'cancel_requested_at' => $now,
+            'cancel_confirmed_by' => $actor->id,
+            'cancel_confirmed_at' => $now,
+            'cancelled_at' => $now,
+        ]);
+
+        $this->notifyUsers(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'], 'HR ยกเลิกคำขอพนักงานใหม่แล้ว', $onboarding->displayName(), route('onboarding.show', $onboarding));
+        $this->log($request, 'cancel_employee_onboarding', EmployeeOnboardingRequest::class, $onboarding->id, "Cancelled onboarding {$onboarding->employee_code}");
+
+        return back()->with('status', 'ยกเลิกคำขอพนักงานใหม่แล้ว');
+    }
+
+    public function confirmCancel(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canManageItOnboarding($actor), 403);
+        abort_unless($onboarding->status === 'cancel_requested', 422);
+        abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
+
+        $data = $request->validate([
+            'it_note' => ['nullable', 'string', 'max:3000'],
+        ]);
+
+        $onboarding->load('systems.asset');
+
+        foreach ($onboarding->systems as $system) {
+            if (! $system->asset) {
+                continue;
+            }
+
+            $system->asset->update([
+                'owner_id' => null,
+                'owner_name' => null,
+                'status' => 'active',
+            ]);
+        }
+
+        $onboarding->update([
+            'status' => 'cancelled',
+            'it_note' => $data['it_note'] ?? $onboarding->it_note,
+            'cancel_confirmed_by' => $actor->id,
+            'cancel_confirmed_at' => now(),
+            'cancelled_at' => now(),
+            'claimed_by_id' => $actor->id,
+            'claimed_at' => $onboarding->claimed_at ?: now(),
+        ]);
+
+        $this->notifyUsers(['hr.onboarding.manage', 'hr.employees.manage'], 'IT ตรวจสอบและยืนยันการยกเลิกแล้ว', $onboarding->displayName(), route('onboarding.show', $onboarding));
+        $this->log($request, 'confirm_cancel_employee_onboarding_it', EmployeeOnboardingRequest::class, $onboarding->id, "Confirmed onboarding cancellation {$onboarding->employee_code}");
+
+        return back()->with('status', 'ยืนยันการยกเลิกและแจ้งกลับ HR แล้ว');
     }
 
     public function publish(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
@@ -479,6 +574,11 @@ class EmployeeOnboardingController extends Controller
             }
 
             $row['Remark'] = $request->it_note;
+            $row['Cancel reason'] = $request->cancel_reason;
+            $row['Cancel requested by'] = $request->cancelRequester?->name;
+            $row['Cancel requested at'] = $request->cancel_requested_at?->format('d/m/Y H:i');
+            $row['Cancel confirmed by'] = $request->cancelConfirmer?->name;
+            $row['Cancel confirmed at'] = $request->cancel_confirmed_at?->format('d/m/Y H:i');
             $row['สถานะงาน'] = $request->statusLabel();
             $row['ส่งกลับ HR โดย'] = $request->itCompleter?->name;
             $row['ส่งกลับ HR เมื่อ'] = $request->it_completed_at?->format('d/m/Y H:i');

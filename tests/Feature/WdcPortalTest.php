@@ -705,6 +705,105 @@ class WdcPortalTest extends TestCase
             ->assertSee('<strong>New Starter</strong>', false);
     }
 
+    public function test_hr_can_cancel_onboarding_before_it_starts(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+
+        $this->actingAs($hr);
+
+        $this->post(route('hr.onboarding.store'), [
+            'employee_code' => 'EMP88001',
+            'english_first_name' => 'Cancel',
+            'english_last_name' => 'Beforeit',
+            'thai_first_name' => 'ทดสอบ',
+            'thai_last_name' => 'ยกเลิก',
+            'english_nickname' => 'Can',
+            'thai_nickname' => 'แคน',
+            'department_id' => $hr->employee->department_id,
+            'position' => 'IT Support',
+            'team' => 'Team A',
+            'location' => 'Lumpini',
+            'corporate_email' => 'cancel.beforeit@wdc.co.th',
+            'start_date' => now()->toDateString(),
+        ])->assertRedirect();
+
+        $onboarding = EmployeeOnboardingRequest::where('employee_code', 'EMP88001')->firstOrFail();
+
+        $this->patch(route('hr.onboarding.cancel', $onboarding), [
+            'cancel_reason' => 'พนักงานแจ้งว่าไม่มาเริ่มงาน',
+        ])->assertRedirect();
+
+        $onboarding->refresh();
+
+        $this->assertSame('cancelled', $onboarding->status);
+        $this->assertSame($hr->id, $onboarding->cancel_requested_by);
+        $this->assertSame($hr->id, $onboarding->cancel_confirmed_by);
+        $this->assertNotNull($onboarding->cancelled_at);
+        $this->assertDatabaseMissing('users', ['employee_code' => 'EMP88001']);
+    }
+
+    public function test_hr_cancel_onboarding_after_it_started_requires_it_confirmation(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+
+        $this->actingAs($hr);
+
+        $this->post(route('hr.onboarding.store'), [
+            'employee_code' => 'EMP88002',
+            'english_first_name' => 'Cancel',
+            'english_last_name' => 'Afterit',
+            'thai_first_name' => 'ทดสอบ',
+            'thai_last_name' => 'ไอที',
+            'english_nickname' => 'Cat',
+            'thai_nickname' => 'แคท',
+            'department_id' => $hr->employee->department_id,
+            'position' => 'IT Support',
+            'team' => 'Team A',
+            'location' => 'Lumpini',
+            'corporate_email' => 'cancel.afterit@wdc.co.th',
+            'start_date' => now()->toDateString(),
+        ])->assertRedirect();
+
+        $onboarding = EmployeeOnboardingRequest::where('employee_code', 'EMP88002')->firstOrFail();
+
+        $this->actingAs($itUser);
+        $this->patch(route('it.onboarding.claim', $onboarding))->assertRedirect();
+
+        $this->actingAs($hr);
+        $this->patch(route('hr.onboarding.cancel', $onboarding), [
+            'cancel_reason' => 'พนักงานขอเลื่อนแบบไม่มีกำหนด',
+            'cancel_acknowledged' => '1',
+        ])->assertRedirect();
+
+        $onboarding->refresh();
+
+        $this->assertSame('cancel_requested', $onboarding->status);
+        $this->assertSame($hr->id, $onboarding->cancel_requested_by);
+        $this->assertNull($onboarding->cancelled_at);
+
+        $this->actingAs($itUser);
+
+        $this->patch(route('it.onboarding.cancel', $onboarding), [
+            'it_note' => 'ตรวจสอบแล้ว ยังไม่มีระบบที่ต้องคืน',
+        ])->assertRedirect();
+
+        $onboarding->refresh();
+
+        $this->assertSame('cancelled', $onboarding->status);
+        $this->assertSame($itUser->id, $onboarding->cancel_confirmed_by);
+        $this->assertNotNull($onboarding->cancelled_at);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $hr->id,
+            'type' => 'onboarding',
+            'title' => 'IT ตรวจสอบและยืนยันการยกเลิกแล้ว',
+        ]);
+    }
+
     public function test_legacy_systems_hub_is_removed(): void
     {
         $this->seed(DatabaseSeeder::class);

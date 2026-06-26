@@ -304,6 +304,12 @@
                             <span><strong>{{ $system->system_name }}</strong><small>{{ $system->statusLabel() }} {{ $system->username ? '· '.$system->username : '' }}</small></span>
                         @endforeach
                     </div>
+                    @if($onboarding->cancel_reason)
+                        <div class="alert-panel compact-alert">
+                            <strong>เหตุผลการยกเลิก</strong>
+                            <p>{{ $onboarding->cancel_reason }}</p>
+                        </div>
+                    @endif
                     @if($onboarding->status === 'it_completed')
                         <form class="onboarding-publish-form" method="post" action="{{ route('hr.onboarding.publish', $onboarding) }}" enctype="multipart/form-data">
                             @csrf
@@ -317,6 +323,29 @@
                             <small class="form-help d-block">ถ้าเลือกวันอนาคต ระบบจะอนุมัติไว้ก่อน และจะแสดงในรายชื่อพนักงานเมื่อถึงวันที่กำหนด</small>
                             <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> อนุมัติให้แสดงในรายชื่อพนักงาน</button>
                         </form>
+                    @endif
+                    @if(! in_array($onboarding->status, ['hr_approved', 'cancelled'], true))
+                        @php
+                            $itStartedForCancel = $onboarding->hasItStarted();
+                        @endphp
+                        <details class="onboarding-cancel-panel">
+                            <summary class="btn btn-outline-primary"><i class="bi bi-x-circle"></i> ขอยกเลิกคำขอ</summary>
+                            <form method="post" action="{{ route('hr.onboarding.cancel', $onboarding) }}" class="form-stack mt-2" onsubmit="return confirm('ยืนยันยกเลิกคำขอพนักงานใหม่นี้หรือไม่?');">
+                                @csrf
+                                @method('PATCH')
+                                <label>
+                                    <span>เหตุผลการยกเลิก</span>
+                                    <textarea class="form-control" name="cancel_reason" rows="2" required placeholder="เช่น พนักงานไม่มาเริ่มงาน / ติดต่อไม่ได้ / เลื่อนเริ่มงาน"></textarea>
+                                </label>
+                                @if($itStartedForCancel)
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="cancel_acknowledged" value="1" required>
+                                        <span class="form-check-label">ยืนยันว่า IT เริ่มเปิดระบบแล้ว ต้องให้ IT ตรวจสอบการยกเลิกก่อนปิดงาน</span>
+                                    </label>
+                                @endif
+                                <button class="btn btn-outline-danger" type="submit"><i class="bi bi-x-circle"></i> ยืนยันขอยกเลิก</button>
+                            </form>
+                        </details>
                     @endif
                 </article>
             @empty

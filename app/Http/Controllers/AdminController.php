@@ -97,7 +97,7 @@ class AdminController extends Controller
             'departments' => Department::orderBy('name')->get(),
             'adminNotifications' => Notification::where('user_id', $actor->id)->latest()->take(40)->get(),
             'pendingAdminOnboardingRequests' => EmployeeOnboardingRequest::with('department', 'systems')
-                ->whereIn('status', ['pending_it', 'in_progress'])
+                ->whereIn('status', ['pending_it', 'in_progress', 'cancel_requested'])
                 ->latest()
                 ->take(20)
                 ->get(),

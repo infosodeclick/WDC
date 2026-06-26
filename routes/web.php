@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/hr/employees/export', [HrController::class, 'exportEmployees'])->name('hr.employees.export');
     Route::post('/hr/onboarding', [EmployeeOnboardingController::class, 'store'])->name('hr.onboarding.store');
     Route::patch('/hr/onboarding/{onboarding}/publish', [EmployeeOnboardingController::class, 'publish'])->name('hr.onboarding.publish');
+    Route::patch('/hr/onboarding/{onboarding}/cancel', [EmployeeOnboardingController::class, 'cancel'])->name('hr.onboarding.cancel');
     Route::post('/hr/offboarding', [EmployeeOffboardingController::class, 'store'])->name('hr.offboarding.store');
     Route::patch('/hr/offboarding/{offboarding}/approve', [EmployeeOffboardingController::class, 'approve'])->name('hr.offboarding.approve');
     Route::post('/hr/announcements', [HrController::class, 'storeAnnouncement'])->name('hr.announcements.store');
@@ -77,6 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/it/onboarding/{onboarding}/release', [EmployeeOnboardingController::class, 'release'])->name('it.onboarding.release');
     Route::patch('/it/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'updateIt'])->name('it.onboarding.update');
     Route::patch('/it/onboarding/{onboarding}/complete', [EmployeeOnboardingController::class, 'completeIt'])->name('it.onboarding.complete');
+    Route::patch('/it/onboarding/{onboarding}/cancel', [EmployeeOnboardingController::class, 'confirmCancel'])->name('it.onboarding.cancel');
     Route::get('/offboarding/{offboarding}', [EmployeeOffboardingController::class, 'show'])->name('offboarding.show');
     Route::patch('/it/offboarding/{offboarding}/claim', [EmployeeOffboardingController::class, 'claim'])->name('it.offboarding.claim');
     Route::patch('/it/offboarding/{offboarding}/release', [EmployeeOffboardingController::class, 'release'])->name('it.offboarding.release');

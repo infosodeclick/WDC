@@ -45,7 +45,7 @@ class TicketController extends Controller
             'requests' => (clone $workflowScope)->paginate(12),
             'onboardingRequests' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
                 ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy')
-                    ->whereIn('status', ['pending_it', 'in_progress', 'it_completed'])
+                    ->whereIn('status', ['pending_it', 'in_progress', 'it_completed', 'cancel_requested'])
                     ->latest()
                     ->take(12)
                     ->get()
