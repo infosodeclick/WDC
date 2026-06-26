@@ -14,10 +14,12 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeOnboardingController extends Controller
 {
@@ -35,12 +37,35 @@ class EmployeeOnboardingController extends Controller
         abort_unless($this->canViewOnboarding($actor), 403);
 
         return view('onboarding.show', [
-            'onboarding' => $onboarding->load('department', 'systems.asset', 'requester', 'itCompleter', 'hrApprover'),
+            'onboarding' => $onboarding->load('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy', 'itCompleter', 'hrApprover'),
             'canManageItOnboarding' => $this->canManageItOnboarding($actor) && $onboarding->status !== 'hr_approved',
             'availableAssets' => $actor->canManageItAssets()
                 ? ItAsset::whereIn('status', ['active', 'repair'])->orderBy('code')->get()
                 : collect(),
         ]);
+    }
+
+    public function exportItChecklist(Request $request): StreamedResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canManageItOnboarding($actor), 403);
+
+        $rows = $this->onboardingExportRows(
+            EmployeeOnboardingRequest::with([
+                'department',
+                'claimedBy',
+                'itCompleter',
+                'systems.asset',
+                'systems.provisioner',
+            ])
+                ->latest()
+                ->get()
+        );
+
+        return $request->string('format')->lower()->toString() === 'csv'
+            ? $this->streamOnboardingCsv($rows)
+            : $this->streamOnboardingExcel($rows);
     }
 
     public function store(Request $request): RedirectResponse
@@ -118,12 +143,63 @@ class EmployeeOnboardingController extends Controller
         return back()->with('status', 'ส่งรายการพนักงานใหม่ให้ IT แล้ว');
     }
 
+    public function claim(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canManageItOnboarding($actor), 403);
+        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved'], true), 422);
+
+        $updated = EmployeeOnboardingRequest::query()
+            ->whereKey($onboarding->id)
+            ->where(function ($query) use ($actor): void {
+                $query->whereNull('claimed_by_id')
+                    ->orWhere('claimed_by_id', $actor->id);
+            })
+            ->update([
+                'claimed_by_id' => $actor->id,
+                'claimed_at' => now(),
+                'status' => 'in_progress',
+                'updated_at' => now(),
+            ]);
+
+        if (! $updated) {
+            $owner = $onboarding->fresh('claimedBy')?->claimedBy?->name ?? 'ทีม IT คนอื่น';
+
+            return back()->withErrors("รายการนี้มี {$owner} รับงานอยู่แล้ว");
+        }
+
+        $this->log($request, 'claim_employee_onboarding_it', EmployeeOnboardingRequest::class, $onboarding->id, "Claimed IT onboarding {$onboarding->employee_code}");
+
+        return back()->with('status', 'รับงานนี้แล้ว สามารถบันทึก checklist ได้');
+    }
+
+    public function release(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canManageItOnboarding($actor), 403);
+        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved'], true), 422);
+        abort_unless($this->canWorkOnClaim($onboarding->fresh(), $actor), 403);
+
+        $onboarding->update([
+            'claimed_by_id' => null,
+            'claimed_at' => null,
+            'status' => 'pending_it',
+        ]);
+
+        $this->log($request, 'release_employee_onboarding_it', EmployeeOnboardingRequest::class, $onboarding->id, "Released IT onboarding {$onboarding->employee_code}");
+
+        return back()->with('status', 'ปล่อยงานกลับเข้าคิว IT แล้ว');
+    }
+
     public function updateIt(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
 
         abort_unless($actor->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage']), 403);
         abort_if($onboarding->status === 'hr_approved', 422);
+        abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
 
         $data = $request->validate([
             'systems' => ['nullable', 'array'],
@@ -142,14 +218,30 @@ class EmployeeOnboardingController extends Controller
                 continue;
             }
 
+            $newStatus = $systemData['status'] ?? $system->status;
+            $provisionedAt = $system->provisioned_at;
+            $provisionedById = $system->provisioned_by_id;
+
+            if ($newStatus === 'provisioned' && $system->status !== 'provisioned') {
+                $provisionedAt = now();
+                $provisionedById = $actor->id;
+            }
+
+            if ($newStatus === 'pending') {
+                $provisionedAt = null;
+                $provisionedById = null;
+            }
+
             $system->update([
-                'status' => $systemData['status'] ?? $system->status,
+                'status' => $newStatus,
                 'username' => $system->system_name === 'WDC Portal'
                     ? $onboarding->employee_code
                     : ($systemData['username'] ?? null),
                 'email' => $systemData['email'] ?? null,
                 'it_asset_id' => $systemData['it_asset_id'] ?? null,
                 'notes' => $systemData['notes'] ?? null,
+                'provisioned_by_id' => $provisionedById,
+                'provisioned_at' => $provisionedAt,
             ]);
         }
 
@@ -169,6 +261,7 @@ class EmployeeOnboardingController extends Controller
 
         abort_unless($actor->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage']), 403);
         abort_if($onboarding->status === 'hr_approved', 422);
+        abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
 
         $onboarding->load('systems.asset');
 
@@ -188,6 +281,8 @@ class EmployeeOnboardingController extends Controller
             'status' => 'it_completed',
             'it_completed_by' => $actor->id,
             'it_completed_at' => now(),
+            'claimed_by_id' => $actor->id,
+            'claimed_at' => $onboarding->claimed_at ?: now(),
         ]);
 
         $this->notifyUsers(['hr.onboarding.manage', 'hr.employees.manage'], 'IT เปิดระบบพนักงานใหม่เรียบร้อยแล้ว', $onboarding->displayName(), route('onboarding.show', $onboarding));
@@ -314,6 +409,150 @@ class EmployeeOnboardingController extends Controller
         $this->log($request, 'publish_employee_onboarding', EmployeeOnboardingRequest::class, $onboarding->id, "Published onboarding {$onboarding->employee_code}");
 
         return back()->with('status', 'อนุมัติและแสดงพนักงานใหม่ในรายชื่อพนักงานแล้ว');
+    }
+
+    private function claimIfAvailable(EmployeeOnboardingRequest $onboarding, User $actor): bool
+    {
+        $onboarding->refresh();
+
+        if ($onboarding->claimed_by_id === $actor->id) {
+            return true;
+        }
+
+        if ($onboarding->claimed_by_id) {
+            return false;
+        }
+
+        return (bool) EmployeeOnboardingRequest::query()
+            ->whereKey($onboarding->id)
+            ->whereNull('claimed_by_id')
+            ->update([
+                'claimed_by_id' => $actor->id,
+                'claimed_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+
+    private function canWorkOnClaim(EmployeeOnboardingRequest $onboarding, User $actor): bool
+    {
+        return $onboarding->claimed_by_id === null
+            || $onboarding->claimed_by_id === $actor->id
+            || $actor->canAccessAny(['admin.system.manage', 'admin.users.manage']);
+    }
+
+    private function onboardingExportRows(Collection $requests): Collection
+    {
+        $systemColumns = [
+            'AD' => ['ad', 'active directory'],
+            'E-Mail' => ['email', 'e-mail', 'mail'],
+            'Printer access' => ['printer', 'printer access'],
+            'E-memo/smartflow' => ['e-memo', 'ememo', 'smartflow', 'e-memo/smartflow'],
+            'AI CRM' => ['ai crm', 'aicrm'],
+            'SAP B1' => ['sap b1', 'sap'],
+            'Status เครื่อง' => ['status เครื่อง', 'machine status'],
+            'Mail welcome' => ['mail welcome', 'welcome mail'],
+            'Telephone Directory' => ['telephone directory', 'phone directory'],
+        ];
+
+        return $requests->map(function (EmployeeOnboardingRequest $request) use ($systemColumns): array {
+            $systems = $request->systems->keyBy(fn (EmployeeOnboardingSystem $system): string => Str::lower(trim($system->system_name)));
+            $row = [
+                'Department' => $request->department?->name ?? $request->business_unit,
+                'Staff ID' => $request->employee_code,
+                'ชื่อ-สกุล (Eng)' => $request->english_name,
+                'ชื่อ-นามสกุล (ไทย)' => $request->thai_name,
+                'ชื่อเล่น' => $request->thai_nickname ?: $request->english_nickname,
+                'ตำแหน่ง' => $request->position,
+                'ทีม' => $request->team,
+                'สาขา' => $request->location,
+                'อุปกรณ์สำนักงาน' => $this->assetSummary($request),
+                'WDC Portal user' => $request->employee_code,
+                'คนรับงาน IT' => $request->claimedBy?->name,
+                'เวลารับงาน IT' => $request->claimed_at?->format('d/m/Y H:i'),
+            ];
+
+            foreach ($systemColumns as $column => $aliases) {
+                $system = $this->findExportSystem($systems, $aliases);
+                $row[$column] = $system?->status === 'provisioned' ? 'TRUE' : 'FALSE';
+                $row["{$column} by"] = $system?->provisioner?->name;
+                $row["{$column} at"] = $system?->provisioned_at?->format('d/m/Y H:i');
+            }
+
+            $row['Remark'] = $request->it_note;
+            $row['สถานะงาน'] = $request->statusLabel();
+            $row['ส่งกลับ HR โดย'] = $request->itCompleter?->name;
+            $row['ส่งกลับ HR เมื่อ'] = $request->it_completed_at?->format('d/m/Y H:i');
+
+            return $row;
+        });
+    }
+
+    private function findExportSystem(Collection $systems, array $aliases): ?EmployeeOnboardingSystem
+    {
+        foreach ($aliases as $alias) {
+            $key = Str::lower(trim($alias));
+
+            if ($systems->has($key)) {
+                return $systems->get($key);
+            }
+        }
+
+        return $systems->first(function (EmployeeOnboardingSystem $system) use ($aliases): bool {
+            $name = Str::lower($system->system_name);
+
+            return collect($aliases)->contains(fn (string $alias): bool => Str::contains($name, Str::lower($alias)));
+        });
+    }
+
+    private function assetSummary(EmployeeOnboardingRequest $request): string
+    {
+        return $request->systems
+            ->pluck('asset')
+            ->filter()
+            ->map(fn (ItAsset $asset): string => trim("{$asset->code} {$asset->name}"))
+            ->filter()
+            ->join(', ');
+    }
+
+    private function streamOnboardingCsv(Collection $rows): StreamedResponse
+    {
+        $filename = 'wdc-it-onboarding-checklist-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($rows): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, array_keys($rows->first() ?? []));
+
+            foreach ($rows as $row) {
+                fputcsv($handle, array_values($row));
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function streamOnboardingExcel(Collection $rows): StreamedResponse
+    {
+        $filename = 'wdc-it-onboarding-checklist-'.now()->format('Ymd-His').'.xls';
+
+        return response()->streamDownload(function () use ($rows): void {
+            echo '<html><head><meta charset="UTF-8"></head><body><table border="1">';
+            echo '<thead><tr>';
+            foreach (array_keys($rows->first() ?? []) as $header) {
+                echo '<th>'.e($header).'</th>';
+            }
+            echo '</tr></thead><tbody>';
+
+            foreach ($rows as $row) {
+                echo '<tr>';
+                foreach ($row as $value) {
+                    echo '<td>'.e((string) ($value ?? '')).'</td>';
+                }
+                echo '</tr>';
+            }
+
+            echo '</tbody></table></body></html>';
+        }, $filename, ['Content-Type' => 'application/vnd.ms-excel; charset=UTF-8']);
     }
 
     private function notifyUsers(array $permissionKeys, string $title, string $body, string $url): void

@@ -15,13 +15,22 @@ class EmployeeOnboardingSystem extends Model
     protected $fillable = [
         'employee_onboarding_request_id',
         'it_asset_id',
+        'provisioned_by_id',
         'system_name',
         'requested_access',
         'username',
         'email',
         'status',
         'notes',
+        'provisioned_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'provisioned_at' => 'datetime',
+        ];
+    }
 
     public function request(): BelongsTo
     {
@@ -31,6 +40,11 @@ class EmployeeOnboardingSystem extends Model
     public function asset(): BelongsTo
     {
         return $this->belongsTo(ItAsset::class, 'it_asset_id');
+    }
+
+    public function provisioner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'provisioned_by_id');
     }
 
     public function statusLabel(): string

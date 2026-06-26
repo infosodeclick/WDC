@@ -1805,6 +1805,70 @@ body.directory-modal-open {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
 }
 
+.onboarding-queue-list {
+    gap: 14px;
+}
+
+.onboarding-queue-card {
+    display: grid;
+    gap: 12px;
+}
+
+.onboarding-queue-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.onboarding-queue-actions {
+    flex: 0 0 auto;
+}
+
+.onboarding-checklist-table {
+    min-width: 1120px;
+}
+
+.onboarding-checklist-table th,
+.onboarding-checklist-table td {
+    vertical-align: top;
+}
+
+.onboarding-checklist-table th {
+    white-space: nowrap;
+}
+
+.onboarding-system-card {
+    min-height: 100%;
+}
+
+.onboarding-audit-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    background: #fffdf3;
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+.status-soft {
+    background: #eef2ff;
+    color: #3730a3;
+}
+
+.status-warning {
+    background: #fff4d6;
+    color: #8a5a00;
+}
+
+.compact-alert {
+    padding: 10px 12px;
+}
+
 .panel,
 .list-card,
 .video-card,
@@ -2789,6 +2853,16 @@ body.directory-modal-open {
 .demo-users code {
     color: var(--wdc-black);
     font-weight: 800;
+}
+
+@media (max-width: 1060px) {
+    .onboarding-queue-head {
+        display: grid;
+    }
+
+    .onboarding-queue-actions {
+        justify-content: flex-start;
+    }
 }
 
 @media (max-width: 1060px) {

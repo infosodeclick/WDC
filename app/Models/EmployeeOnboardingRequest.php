@@ -15,6 +15,7 @@ class EmployeeOnboardingRequest extends Model
 
     protected $fillable = [
         'requested_by',
+        'claimed_by_id',
         'it_completed_by',
         'hr_approved_by',
         'user_id',
@@ -37,6 +38,7 @@ class EmployeeOnboardingRequest extends Model
         'status',
         'hr_note',
         'it_note',
+        'claimed_at',
         'it_completed_at',
         'hr_approved_at',
     ];
@@ -45,6 +47,7 @@ class EmployeeOnboardingRequest extends Model
     {
         return [
             'start_date' => 'date',
+            'claimed_at' => 'datetime',
             'it_completed_at' => 'datetime',
             'hr_approved_at' => 'datetime',
         ];
@@ -58,6 +61,11 @@ class EmployeeOnboardingRequest extends Model
     public function itCompleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'it_completed_by');
+    }
+
+    public function claimedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'claimed_by_id');
     }
 
     public function hrApprover(): BelongsTo

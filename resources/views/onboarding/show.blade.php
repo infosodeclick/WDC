@@ -3,6 +3,12 @@
 @section('title', 'คำขอพนักงานใหม่ | WDC Portal')
 
 @section('content')
+@php
+    $claimedByMe = $onboarding->claimed_by_id === auth()->id();
+    $claimedByOther = $onboarding->claimed_by_id && ! $claimedByMe;
+    $canEditChecklist = $canManageItOnboarding && $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true);
+@endphp
+
 <div class="page-heading">
     <div>
         <p class="eyebrow">New Employee Request</p>
@@ -26,7 +32,7 @@
     <div class="section-title">
         <div>
             <h2>ข้อมูลที่ HR ส่งมา</h2>
-            <p>ตรวจสอบข้อมูลพนักงานใหม่ก่อนเปิดระบบ อีเมล และสิทธิ์ที่เกี่ยวข้อง</p>
+            <p>ข้อมูลนี้ใช้เปิดระบบ อีเมล และสิทธิ์ที่เกี่ยวข้องให้พนักงานใหม่</p>
         </div>
         <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
     </div>
@@ -50,79 +56,106 @@
     <div class="section-title">
         <div>
             <h2>รายการเปิดระบบโดย IT</h2>
-            <p>บันทึก user, email, ทรัพย์สิน หรือหมายเหตุของแต่ละระบบ ก่อนกดอนุมัติส่งกลับ HR</p>
+            <p>รับงานก่อนแก้ checklist เพื่อให้ทีมเห็นว่าใครกำลังดำเนินการอยู่</p>
         </div>
-        @if($onboarding->it_completed_at)
-            <span class="status-pill">ส่งกลับ HR แล้ว {{ $onboarding->it_completed_at->format('d/m/Y H:i') }}</span>
-        @endif
+        <div class="button-row">
+            @if($onboarding->claimedBy)
+                <span class="status-pill status-soft">รับงานโดย {{ $onboarding->claimedBy->name }}{{ $onboarding->claimed_at ? ' · '.$onboarding->claimed_at->format('d/m/Y H:i') : '' }}</span>
+            @else
+                <span class="status-pill status-warning">ยังไม่มีคนรับงาน</span>
+            @endif
+            @if($canManageItOnboarding && ! $onboarding->claimed_by_id && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true))
+                <form method="post" action="{{ route('it.onboarding.claim', $onboarding) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-person-check"></i> รับงาน</button>
+                </form>
+            @elseif($canManageItOnboarding && $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved'], true))
+                <form method="post" action="{{ route('it.onboarding.release', $onboarding) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> ปล่อยงาน</button>
+                </form>
+            @endif
+        </div>
     </div>
+
+    @if($claimedByOther)
+        <div class="alert-panel compact-alert">รายการนี้มี {{ $onboarding->claimedBy?->name ?? 'ทีม IT คนอื่น' }} กำลังดำเนินการอยู่ จึงเปิดดูได้แต่ยังแก้ checklist ไม่ได้</div>
+    @endif
 
     @if($canManageItOnboarding)
         <form method="post" action="{{ route('it.onboarding.update', $onboarding) }}">
             @csrf
             @method('PATCH')
             <div class="content-grid onboarding-system-grid">
-                    @foreach($onboarding->systems as $system)
-                        @php
-                            $isWdcPortal = $system->system_name === 'WDC Portal';
-                            $isAssetSystem = $system->system_name === 'ทรัพย์สิน';
-                            $isEmailSystem = $system->system_name === 'EMAIL';
-                            $isDirectorySystem = $system->system_name === 'Active Directory';
-                            $usernameValue = $isWdcPortal ? $onboarding->employee_code : $system->username;
-                        @endphp
-                        <article class="list-card">
-                            <div class="section-title">
-                                <div>
-                                    <h3>{{ $system->system_name }}</h3>
-                                    <p>{{ $isWdcPortal ? 'รหัสเข้าใช้งาน WDC Portal ล็อกตามรหัสพนักงาน' : $system->requested_access }}</p>
-                                </div>
-                                <span class="status-pill">{{ $system->statusLabel() }}</span>
+                @foreach($onboarding->systems as $system)
+                    @php
+                        $systemName = $system->system_name;
+                        $lowerSystemName = \Illuminate\Support\Str::lower($systemName);
+                        $isWdcPortal = $systemName === 'WDC Portal';
+                        $isAssetSystem = $systemName === 'ทรัพย์สิน' || \Illuminate\Support\Str::contains($lowerSystemName, ['asset', 'inventory']);
+                        $isEmailSystem = $systemName === 'EMAIL';
+                        $isDirectorySystem = $systemName === 'Active Directory';
+                        $usernameValue = $isWdcPortal ? $onboarding->employee_code : $system->username;
+                    @endphp
+                    <article class="list-card onboarding-system-card">
+                        <div class="section-title">
+                            <div>
+                                <h3>{{ $systemName }}</h3>
+                                <p>{{ $isWdcPortal ? 'รหัสเข้าใช้งาน WDC Portal ล็อกตามรหัสพนักงาน' : $system->requested_access }}</p>
                             </div>
-                            <div class="form-grid onboarding-system-form">
-                                <label><span>สถานะ</span>
-                                    <select class="form-select" name="systems[{{ $system->id }}][status]">
+                            <span class="status-pill">{{ $system->statusLabel() }}</span>
+                        </div>
+                        <div class="form-grid onboarding-system-form">
+                            <label><span>สถานะ</span>
+                                <select class="form-select" name="systems[{{ $system->id }}][status]" @disabled(! $canEditChecklist)>
                                     <option value="pending" @selected($system->status === 'pending')>รอดำเนินการ</option>
                                     <option value="provisioned" @selected($system->status === 'provisioned')>เปิดแล้ว</option>
                                     <option value="skipped" @selected($system->status === 'skipped')>ไม่ต้องเปิด</option>
+                                </select>
+                            </label>
+                            @if(! $isAssetSystem)
+                                <label><span>{{ $isWdcPortal ? 'รหัสเข้าใช้งาน WDC' : 'Username' }}</span>
+                                    <input class="form-control" name="systems[{{ $system->id }}][username]" value="{{ $usernameValue }}" placeholder="username" @readonly($isWdcPortal) @disabled(! $canEditChecklist)>
+                                </label>
+                            @endif
+                            @if($isEmailSystem)
+                                <label><span>Email</span><input class="form-control" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="email@wdc.co.th" @disabled(! $canEditChecklist)></label>
+                            @elseif($isDirectorySystem)
+                                <label><span>Domain / Email อ้างอิง</span><input class="form-control" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="ถ้ามี" @disabled(! $canEditChecklist)></label>
+                            @else
+                                <input type="hidden" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}">
+                            @endif
+                            @if($isAssetSystem)
+                                <label class="span-2"><span>ทรัพย์สิน</span>
+                                    <select class="form-select" name="systems[{{ $system->id }}][it_asset_id]" @disabled(! $canEditChecklist)>
+                                        <option value="">เลือกทรัพย์สิน</option>
+                                        @foreach($availableAssets as $asset)
+                                            <option value="{{ $asset->id }}" @selected($system->it_asset_id === $asset->id)>{{ $asset->code }} · {{ $asset->name }}</option>
+                                        @endforeach
                                     </select>
                                 </label>
-                                @if(! $isAssetSystem)
-                                    <label><span>{{ $isWdcPortal ? 'รหัสเข้าใช้งาน WDC' : 'Username' }}</span>
-                                        <input class="form-control" name="systems[{{ $system->id }}][username]" value="{{ $usernameValue }}" placeholder="username" @readonly($isWdcPortal)>
-                                    </label>
-                                @endif
-                                @if($isEmailSystem)
-                                    <label><span>Email</span><input class="form-control" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="email@wdc.co.th"></label>
-                                @elseif($isDirectorySystem)
-                                    <label><span>Domain / Email อ้างอิง</span><input class="form-control" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}" placeholder="ถ้ามี"></label>
-                                @else
-                                    <input type="hidden" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}">
-                                @endif
-                                @if($isAssetSystem)
-                                    <label class="span-2"><span>ทรัพย์สิน</span>
-                                        <select class="form-select" name="systems[{{ $system->id }}][it_asset_id]">
-                                            <option value="">เลือกทรัพย์สิน</option>
-                                            @foreach($availableAssets as $asset)
-                                                <option value="{{ $asset->id }}" @selected($system->it_asset_id === $asset->id)>{{ $asset->code }} · {{ $asset->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </label>
-                                @else
-                                    <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
-                                @endif
-                                <label class="span-2"><span>หมายเหตุ</span><input class="form-control" name="systems[{{ $system->id }}][notes]" value="{{ $system->notes }}" placeholder="หมายเหตุ"></label>
+                            @else
+                                <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
+                            @endif
+                            <div class="span-2 onboarding-audit-note">
+                                <span>ผู้เปิด: <strong>{{ $system->provisioner?->name ?? '-' }}</strong></span>
+                                <span>{{ $system->provisioned_at?->format('d/m/Y H:i') ?: '' }}</span>
                             </div>
-                        </article>
-                    @endforeach
+                            <label class="span-2"><span>หมายเหตุ</span><input class="form-control" name="systems[{{ $system->id }}][notes]" value="{{ $system->notes }}" placeholder="หมายเหตุ" @disabled(! $canEditChecklist)></label>
+                        </div>
+                    </article>
+                @endforeach
             </div>
             <label class="form-label">หมายเหตุ IT</label>
-            <textarea class="form-control mb-2" name="it_note" rows="3">{{ $onboarding->it_note }}</textarea>
+            <textarea class="form-control mb-2" name="it_note" rows="3" @disabled(! $canEditChecklist)>{{ $onboarding->it_note }}</textarea>
             <div class="button-row">
-                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-save"></i> บันทึกข้อมูล IT</button>
+                <button class="btn btn-outline-primary" type="submit" @disabled(! $canEditChecklist)><i class="bi bi-save"></i> บันทึกข้อมูล IT</button>
             </div>
         </form>
 
-        @if($onboarding->status !== 'it_completed')
+        @if($canEditChecklist)
             <form method="post" action="{{ route('it.onboarding.complete', $onboarding) }}" class="mt-3">
                 @csrf
                 @method('PATCH')
@@ -133,7 +166,7 @@
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>
-                    <tr><th>ระบบ</th><th>สถานะ</th><th>User</th><th>Email</th><th>ทรัพย์สิน</th><th>หมายเหตุ</th></tr>
+                    <tr><th>ระบบ</th><th>สถานะ</th><th>User</th><th>Email</th><th>ทรัพย์สิน</th><th>ผู้เปิด</th><th>หมายเหตุ</th></tr>
                 </thead>
                 <tbody>
                 @foreach($onboarding->systems as $system)
@@ -143,6 +176,7 @@
                         <td>{{ ($system->system_name === 'WDC Portal' ? $onboarding->employee_code : $system->username) ?: '-' }}</td>
                         <td>{{ $system->email ?: '-' }}</td>
                         <td>{{ $system->asset?->code ?? '-' }}</td>
+                        <td>{{ $system->provisioner?->name ?? '-' }}<small class="d-block muted">{{ $system->provisioned_at?->format('d/m/Y H:i') ?: '' }}</small></td>
                         <td>{{ $system->notes ?: '-' }}</td>
                     </tr>
                 @endforeach

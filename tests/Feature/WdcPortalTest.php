@@ -587,20 +587,24 @@ class WdcPortalTest extends TestCase
             ->assertSee('EMAIL')
             ->assertSee('ทรัพย์สิน')
             ->assertSee('รหัสเข้าใช้งาน WDC Portal ล็อกตามรหัสพนักงาน')
-            ->assertSee('อนุมัติเปิดระบบและส่งกลับ HR');
+            ->assertSee('รับงาน');
 
         $emailSystem = $onboarding->systems->firstWhere('system_name', 'EMAIL');
         $assetSystem = $onboarding->systems->firstWhere('system_name', 'ทรัพย์สิน');
 
         $this->actingAs($itUser);
 
+        $this->patch(route('it.onboarding.claim', $onboarding))->assertRedirect();
+
         $this->get(route('onboarding.show', $onboarding))
             ->assertOk()
             ->assertSee('รายการเปิดระบบโดย IT')
+            ->assertSee('รับงานโดย')
             ->assertSee('รหัสเข้าใช้งาน WDC')
             ->assertSee('Domain / Email อ้างอิง')
             ->assertSee('เลือกทรัพย์สิน')
-            ->assertSee('บันทึกข้อมูล IT');
+            ->assertSee('บันทึกข้อมูล IT')
+            ->assertSee('อนุมัติเปิดระบบและส่งกลับ HR');
 
         $this->patch(route('it.onboarding.update', $onboarding), [
             'systems' => [
@@ -624,6 +628,25 @@ class WdcPortalTest extends TestCase
             'system_name' => 'WDC Portal',
             'username' => 'EMP77777',
         ]);
+        $this->assertDatabaseHas('employee_onboarding_requests', [
+            'id' => $onboarding->id,
+            'claimed_by_id' => $itUser->id,
+        ]);
+        $this->assertDatabaseHas('employee_onboarding_systems', [
+            'id' => $emailSystem->id,
+            'status' => 'provisioned',
+            'provisioned_by_id' => $itUser->id,
+        ]);
+
+        $export = $this->get(route('it.onboarding.export', ['format' => 'csv']));
+
+        $export->assertOk();
+        $exportContent = $export->streamedContent();
+
+        $this->assertStringContainsString('Staff ID', $exportContent);
+        $this->assertStringContainsString('EMP77777', $exportContent);
+        $this->assertStringContainsString('E-Mail by', $exportContent);
+        $this->assertStringContainsString($itUser->name, $exportContent);
 
         $this->patch(route('it.onboarding.complete', $onboarding))->assertRedirect();
 
