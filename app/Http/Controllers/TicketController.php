@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\ItAsset;
 use App\Models\Notification;
@@ -44,6 +45,13 @@ class TicketController extends Controller
             'requests' => (clone $workflowScope)->paginate(12),
             'onboardingRequests' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
                 ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy')
+                    ->whereIn('status', ['pending_it', 'in_progress', 'it_completed'])
+                    ->latest()
+                    ->take(12)
+                    ->get()
+                : collect(),
+            'offboardingRequests' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
+                ? EmployeeOffboardingRequest::with('systems.asset', 'systems.completer', 'requester', 'claimedBy', 'employeeUser.employee.department')
                     ->whereIn('status', ['pending_it', 'in_progress', 'it_completed'])
                     ->latest()
                     ->take(12)

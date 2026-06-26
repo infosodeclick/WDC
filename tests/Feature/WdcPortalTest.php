@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Complaint;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\Announcement;
 use App\Models\AnnouncementFile;
@@ -1419,5 +1420,89 @@ class WdcPortalTest extends TestCase
         ]);
 
         $this->get(route('assets.index'))->assertForbidden();
+    }
+
+    public function test_hr_it_offboarding_flow_disables_employee_and_releases_asset(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $asset = ItAsset::where('code', 'WDC-NB-0001')->firstOrFail();
+        $asset->update([
+            'owner_id' => $employee->id,
+            'owner_name' => $employee->name,
+        ]);
+
+        $this->actingAs($hr);
+
+        $this->post(route('hr.offboarding.store'), [
+            'employee_user_id' => $employee->id,
+            'resignation_date' => now()->toDateString(),
+            'hr_note' => 'ปิดระบบหลังวันสุดท้าย',
+        ])->assertRedirect();
+
+        $offboarding = EmployeeOffboardingRequest::with('systems')->where('employee_user_id', $employee->id)->firstOrFail();
+
+        $this->assertSame('pending_it', $offboarding->status);
+        $this->assertTrue($offboarding->systems->contains('system_name', 'WDC Portal'));
+        $this->assertTrue($offboarding->systems->contains('system_name', "คืนทรัพย์สิน: {$asset->code}"));
+
+        $this->get(route('hr.index', ['section' => 'offboarding']))
+            ->assertOk()
+            ->assertSee('แจ้งพนักงานลาออก')
+            ->assertSee($employee->employee_code);
+
+        $this->actingAs($itUser);
+
+        $this->patch(route('it.offboarding.claim', $offboarding))->assertRedirect();
+
+        $offboarding->refresh()->load('systems');
+        $assetSystem = $offboarding->systems->firstWhere('it_asset_id', $asset->id);
+        $portalSystem = $offboarding->systems->firstWhere('system_name', 'WDC Portal');
+
+        $this->get(route('offboarding.show', $offboarding))
+            ->assertOk()
+            ->assertSee('รายการปิดระบบโดย IT')
+            ->assertSee('รับงานโดย')
+            ->assertSee('ปิดระบบเรียบร้อย แจ้ง HR');
+
+        $this->patch(route('it.offboarding.update', $offboarding), [
+            'systems' => [
+                $portalSystem->id => [
+                    'status' => 'completed',
+                    'notes' => 'ปิด WDC แล้ว',
+                ],
+                $assetSystem->id => [
+                    'status' => 'completed',
+                    'notes' => 'รับคืนเครื่องแล้ว',
+                ],
+            ],
+            'it_note' => 'ปิดระบบหลักและรับคืนทรัพย์สินแล้ว',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('employee_offboarding_systems', [
+            'id' => $portalSystem->id,
+            'status' => 'completed',
+            'completed_by_id' => $itUser->id,
+        ]);
+
+        $this->patch(route('it.offboarding.complete', $offboarding))->assertRedirect();
+        $this->assertSame('it_completed', $offboarding->fresh()->status);
+        $this->assertNull($asset->fresh()->owner_id);
+
+        $this->actingAs($hr);
+
+        $this->patch(route('hr.offboarding.approve', $offboarding))->assertRedirect();
+
+        $this->assertFalse($employee->fresh()->is_active);
+        $this->assertSame('hr_approved', $offboarding->fresh()->status);
+        $this->assertDatabaseHas('employee_directory_entries', [
+            'source_system' => 'wdc',
+            'source_record_id' => $employee->employee_code,
+            'employment_status' => 'resigned',
+            'is_active' => false,
+        ]);
     }
 }

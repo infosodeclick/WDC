@@ -157,6 +157,62 @@
     </div>
 </section>
 
+<section class="panel">
+    <div class="section-title">
+        <div>
+            <h2>คิวพนักงานลาออก</h2>
+            <p>รับงานก่อนปิดระบบหรือรับคืนทรัพย์สิน เพื่อกันทีม IT ทำซ้ำกัน</p>
+        </div>
+        <span class="tag">{{ $offboardingRequests->count() }} รายการ</span>
+    </div>
+    <div class="item-list onboarding-queue-list">
+        @forelse($offboardingRequests as $offboarding)
+            @php
+                $claimedByMe = $offboarding->claimed_by_id === auth()->id();
+                $claimedByOther = $offboarding->claimed_by_id && ! $claimedByMe;
+            @endphp
+            <article class="list-card onboarding-queue-card">
+                <div class="onboarding-queue-head">
+                    <div>
+                        <div class="meta-row">
+                            <span class="status-pill">{{ $offboarding->statusLabel() }}</span>
+                            @if($offboarding->claimedBy)
+                                <span class="status-pill status-soft">รับงานโดย {{ $offboarding->claimedBy->name }}{{ $offboarding->claimed_at ? ' · '.$offboarding->claimed_at->format('d/m H:i') : '' }}</span>
+                            @else
+                                <span class="status-pill status-warning">ยังไม่มีคนรับงาน</span>
+                            @endif
+                            <span>{{ optional($offboarding->resignation_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันลาออก' }}</span>
+                        </div>
+                        <h3><a class="text-link" href="{{ route('offboarding.show', $offboarding) }}">{{ $offboarding->displayName() }}</a></h3>
+                        <p>{{ $offboarding->position ?: '-' }} · {{ $offboarding->department ?: '-' }}</p>
+                    </div>
+                    <div class="button-row onboarding-queue-actions">
+                        @if(! $offboarding->claimed_by_id && ! in_array($offboarding->status, ['it_completed', 'hr_approved'], true))
+                            <form method="post" action="{{ route('it.offboarding.claim', $offboarding) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-person-check"></i> รับงาน</button>
+                            </form>
+                        @elseif($claimedByMe && ! in_array($offboarding->status, ['it_completed', 'hr_approved'], true))
+                            <form method="post" action="{{ route('it.offboarding.release', $offboarding) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> ปล่อยงาน</button>
+                            </form>
+                        @endif
+                        <a class="btn btn-outline-primary" href="{{ route('offboarding.show', $offboarding) }}"><i class="bi bi-box-arrow-up-right"></i> เปิดรายละเอียด</a>
+                    </div>
+                </div>
+                @if($claimedByOther)
+                    <div class="alert-panel compact-alert">รายการนี้มี {{ $offboarding->claimedBy?->name ?? 'ทีม IT คนอื่น' }} กำลังดำเนินการอยู่</div>
+                @endif
+            </article>
+        @empty
+            <div class="empty-state">ยังไม่มีรายการพนักงานลาออกจาก HR</div>
+        @endforelse
+    </div>
+</section>
+
 <div class="metric-grid">
     <div class="metric-card"><span>งานใหม่</span><strong>{{ $newTickets }}</strong><small>ส่งคำขอแล้ว</small></div>
     <div class="metric-card"><span>งานค้าง</span><strong>{{ $pendingTickets }}</strong><small>ตรวจสอบ/รับเรื่อง/ดำเนินการ</small></div>

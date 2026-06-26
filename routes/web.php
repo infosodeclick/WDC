@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EmployeeOnboardingController;
+use App\Http\Controllers\EmployeeOffboardingController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\TicketController;
@@ -63,6 +64,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/hr/employees/export', [HrController::class, 'exportEmployees'])->name('hr.employees.export');
     Route::post('/hr/onboarding', [EmployeeOnboardingController::class, 'store'])->name('hr.onboarding.store');
     Route::patch('/hr/onboarding/{onboarding}/publish', [EmployeeOnboardingController::class, 'publish'])->name('hr.onboarding.publish');
+    Route::post('/hr/offboarding', [EmployeeOffboardingController::class, 'store'])->name('hr.offboarding.store');
+    Route::patch('/hr/offboarding/{offboarding}/approve', [EmployeeOffboardingController::class, 'approve'])->name('hr.offboarding.approve');
     Route::post('/hr/announcements', [HrController::class, 'storeAnnouncement'])->name('hr.announcements.store');
     Route::patch('/hr/profile-requests/{profileChangeRequest}', [HrController::class, 'reviewProfileChangeRequest'])->name('hr.profile-requests.review');
     Route::patch('/hr/employees/{user}/status', [HrController::class, 'updateEmployeeStatus'])->name('hr.employees.status');
@@ -74,6 +77,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/it/onboarding/{onboarding}/release', [EmployeeOnboardingController::class, 'release'])->name('it.onboarding.release');
     Route::patch('/it/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'updateIt'])->name('it.onboarding.update');
     Route::patch('/it/onboarding/{onboarding}/complete', [EmployeeOnboardingController::class, 'completeIt'])->name('it.onboarding.complete');
+    Route::get('/offboarding/{offboarding}', [EmployeeOffboardingController::class, 'show'])->name('offboarding.show');
+    Route::patch('/it/offboarding/{offboarding}/claim', [EmployeeOffboardingController::class, 'claim'])->name('it.offboarding.claim');
+    Route::patch('/it/offboarding/{offboarding}/release', [EmployeeOffboardingController::class, 'release'])->name('it.offboarding.release');
+    Route::patch('/it/offboarding/{offboarding}', [EmployeeOffboardingController::class, 'updateIt'])->name('it.offboarding.update');
+    Route::patch('/it/offboarding/{offboarding}/complete', [EmployeeOffboardingController::class, 'completeIt'])->name('it.offboarding.complete');
 
     Route::get('/assets', [AssetController::class, 'index'])->name('assets.index');
     Route::get('/assets/export', [AssetController::class, 'export'])->name('assets.export');

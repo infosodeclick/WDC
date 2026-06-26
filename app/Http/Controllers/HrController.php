@@ -8,6 +8,7 @@ use App\Models\AnnouncementFile;
 use App\Models\Complaint;
 use App\Models\Department;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\Notification;
 use App\Models\ProfileChangeRequest;
@@ -44,6 +45,7 @@ class HrController extends Controller
 
         if ($canManageEmployees) {
             $allowedSections[] = 'employees';
+            $allowedSections[] = 'offboarding';
         }
 
         if ($canManageOnboarding) {
@@ -74,6 +76,12 @@ class HrController extends Controller
                 ->take(20)
                 ->get()
             : collect();
+        $offboardingRequests = $canManageEmployees
+            ? EmployeeOffboardingRequest::with('systems.asset', 'employeeUser.employee.department', 'requester', 'claimedBy', 'itCompleter')
+                ->latest()
+                ->take(20)
+                ->get()
+            : collect();
         $profileChangeRequests = $canManageEmployees
             ? ProfileChangeRequest::with('user.employee.department')->where('status', 'pending')->latest()->take(10)->get()
             : collect();
@@ -91,11 +99,13 @@ class HrController extends Controller
             'announcements' => Announcement::with('files')->latest()->take(8)->get(),
             'complaints' => $complaints,
             'onboardingRequests' => $onboardingRequests,
+            'offboardingRequests' => $offboardingRequests,
             'profileChangeRequests' => $profileChangeRequests,
             'employeeCount' => $employees->count(),
             'activeEmployeeCount' => $employees->where('is_active', true)->count(),
             'inactiveEmployeeCount' => $employees->where('is_active', false)->count(),
             'pendingOnboardingCount' => $onboardingRequests->where('status', '!=', 'hr_approved')->count(),
+            'pendingOffboardingCount' => $offboardingRequests->where('status', '!=', 'hr_approved')->count(),
             'pendingProfileChangeCount' => $profileChangeRequests->count(),
             'complaintCount' => $complaints->count(),
             'canManageAnnouncements' => $canManageAnnouncements,

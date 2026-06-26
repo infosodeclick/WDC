@@ -7,6 +7,7 @@
     $hrMenu = [
         ['section' => 'dashboard', 'label' => 'แดชบอร์ด', 'icon' => 'bi-speedometer2', 'show' => true],
         ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
+        ['section' => 'offboarding', 'label' => 'พนักงานลาออก', 'icon' => 'bi-person-dash', 'show' => $canManageEmployees],
         ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
         ['section' => 'complaints', 'label' => 'เรื่องร้องเรียนล่าสุด', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
     ];
@@ -32,6 +33,7 @@
         @endif
         @if($canManageEmployees)
             <div class="metric-card"><span>คำขอแก้โปรไฟล์</span><strong>{{ number_format($pendingProfileChangeCount) }}</strong><small>รอ HR ตรวจสอบ</small></div>
+            <div class="metric-card"><span>พนักงานลาออกรอดำเนินการ</span><strong>{{ number_format($pendingOffboardingCount) }}</strong><small>รอ IT หรือ HR ปิดบัญชี</small></div>
         @endif
         @if($canReviewComplaints)
             <div class="metric-card"><span>เรื่องร้องเรียน</span><strong>{{ number_format($complaintCount) }}</strong><small>รายการล่าสุดที่เกี่ยวข้อง</small></div>
@@ -125,6 +127,7 @@
                 @if($canManageOnboarding)
                     <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
                 @endif
+                <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'offboarding']) }}"><i class="bi bi-person-dash"></i> แจ้งพนักงานลาออก</a>
                 <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'profile-requests']) }}"><i class="bi bi-person-gear"></i> คำขอแก้ข้อมูลโปรไฟล์</a>
                 <div class="dropdown">
                     <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -161,6 +164,62 @@
         @else
             <div class="empty-state">ยังไม่มีรายชื่อพนักงานในระบบ</div>
         @endif
+    </section>
+@endif
+
+@if($activeSection === 'offboarding' && $canManageEmployees)
+    <section class="panel">
+        <div class="section-title">
+            <div>
+                <h2>แจ้งพนักงานลาออก</h2>
+                <p class="muted">HR ส่งรายการให้ IT ปิดระบบและรับคืนทรัพย์สิน ก่อน HR ปิดบัญชีและย้ายไปสถานะลาออก</p>
+            </div>
+            <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'employees']) }}" aria-label="ปิดหน้าแจ้งพนักงานลาออก"><i class="bi bi-x-lg"></i></a>
+        </div>
+        <form method="post" action="{{ route('hr.offboarding.store') }}" class="form-grid">
+            @csrf
+            <label class="span-2"><span>พนักงาน</span>
+                <select class="form-select" name="employee_user_id" required>
+                    <option value="">เลือกพนักงาน</option>
+                    @foreach($employees->where('is_active', true) as $employeeUser)
+                        <option value="{{ $employeeUser->id }}">{{ $employeeUser->employee_code }} · {{ $employeeUser->name }} · {{ $employeeUser->employee?->department?->name ?? '-' }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label><span>วันที่ลาออก / วันสุดท้าย</span><input class="form-control" type="date" name="resignation_date"></label>
+            <label class="span-3"><span>หมายเหตุ HR</span><textarea class="form-control" name="hr_note" rows="3" placeholder="เช่น ปิดระบบหลังเลิกงาน รับคืนอุปกรณ์ทั้งหมด"></textarea></label>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งให้ IT ปิดระบบ</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>คำขอพนักงานลาออก</h2>
+        <div class="item-list">
+            @forelse($offboardingRequests as $offboarding)
+                <article class="list-card onboarding-request-card">
+                    <div class="meta-row">
+                        <span class="status-pill">{{ $offboarding->statusLabel() }}</span>
+                        <span>{{ optional($offboarding->resignation_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันลาออก' }}</span>
+                    </div>
+                    <h3><a class="text-link" href="{{ route('offboarding.show', $offboarding) }}">{{ $offboarding->displayName() }}</a></h3>
+                    <p>{{ $offboarding->thai_name ?: '-' }} · {{ $offboarding->position ?: '-' }} · {{ $offboarding->department ?: '-' }}</p>
+                    <div class="asset-chip-list onboarding-system-summary">
+                        @foreach($offboarding->systems as $system)
+                            <span><strong>{{ $system->system_name }}</strong><small>{{ $system->statusLabel() }}</small></span>
+                        @endforeach
+                    </div>
+                    @if($offboarding->status === 'it_completed')
+                        <form method="post" action="{{ route('hr.offboarding.approve', $offboarding) }}" class="mt-2">
+                            @csrf
+                            @method('PATCH')
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-person-x"></i> ปิดบัญชีและย้ายเป็นลาออก</button>
+                        </form>
+                    @endif
+                </article>
+            @empty
+                <div class="empty-state">ยังไม่มีรายการพนักงานลาออก</div>
+            @endforelse
+        </div>
     </section>
 @endif
 
