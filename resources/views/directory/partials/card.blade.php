@@ -43,11 +43,11 @@
                 @else
                     <span class="directory-modal-avatar">{{ $entry->avatarInitials() }}</span>
                 @endif
-            </div>
-            <div class="directory-modal-summary">
                 @if($isNewHire)
                     <span class="new-hire-badge modal-new-hire-badge">พนักงานใหม่</span>
                 @endif
+            </div>
+            <div class="directory-modal-summary">
                 <h2 class="directory-name-line">
                     <span>{{ $englishDisplayName }}</span>
                     <button class="copy-button" type="button" data-copy="{{ $englishDisplayName }}" title="คัดลอกชื่อ" aria-label="คัดลอกชื่อ"><i class="bi bi-copy"></i></button>

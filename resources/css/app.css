@@ -1160,6 +1160,13 @@ a {
     gap: 0;
     padding: 0;
     overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.directory-card-with-photo:hover {
+    transform: translateY(-2px);
+    border-color: rgba(243, 188, 74, .76);
+    box-shadow: 0 16px 34px rgba(34, 31, 32, .10);
 }
 
 .directory-photo-button {
@@ -1174,6 +1181,17 @@ a {
     background: #f4f7fb;
     cursor: pointer;
     overflow: hidden;
+}
+
+.directory-photo-button::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 46%;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(34, 31, 32, 0), rgba(34, 31, 32, .34));
+    opacity: 0;
+    transition: opacity .18s ease;
 }
 
 .directory-photo-button:focus-visible,
@@ -1208,6 +1226,10 @@ a {
 .directory-photo-button:hover .directory-photo,
 .directory-photo-button:hover .directory-avatar {
     transform: scale(1.025);
+}
+
+.directory-photo-button:hover::after {
+    opacity: 1;
 }
 
 .directory-card-body {
@@ -1276,31 +1298,28 @@ a {
     align-items: center;
     justify-content: center;
     width: max-content;
-    min-height: 30px;
-    padding: 5px 10px;
-    border: 1px solid rgba(34, 31, 32, .18);
+    min-height: 28px;
+    padding: 5px 11px;
+    border: 1px solid rgba(34, 31, 32, .24);
     border-radius: 999px;
     background: var(--wdc-yellow-2);
     color: var(--wdc-black);
-    font-size: .82rem;
+    font-size: .78rem;
     font-weight: 850;
     box-shadow: 0 10px 24px rgba(34, 31, 32, .16);
+    white-space: nowrap;
 }
 
 .directory-photo-button .new-hire-badge {
     position: absolute;
     top: 10px;
     left: 10px;
-    z-index: 1;
+    z-index: 2;
 }
 
 .directory-card.is-new-hire {
     border-color: var(--wdc-yellow-3);
     box-shadow: 0 14px 30px rgba(243, 188, 74, .18);
-}
-
-.modal-new-hire-badge {
-    margin-bottom: 4px;
 }
 
 .directory-name-line,
@@ -1414,6 +1433,7 @@ a {
 }
 
 .directory-modal-media {
+    position: relative;
     display: grid;
     min-height: 260px;
     place-items: center;
@@ -1421,6 +1441,14 @@ a {
     border-radius: 8px;
     background: #f4f7fb;
     overflow: hidden;
+}
+
+.directory-modal-media .modal-new-hire-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 2;
+    box-shadow: 0 12px 26px rgba(34, 31, 32, .22);
 }
 
 .directory-modal-media img {
@@ -1445,9 +1473,9 @@ a {
 .directory-modal-summary {
     display: grid;
     align-content: start;
-    gap: 10px;
+    gap: 12px;
     min-width: 0;
-    padding-top: 56px;
+    padding-top: 36px;
 }
 
 .directory-modal-summary h2 {
