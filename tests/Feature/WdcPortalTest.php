@@ -649,6 +649,16 @@ class WdcPortalTest extends TestCase
         $this->assertStringContainsString('E-Mail by', $exportContent);
         $this->assertStringContainsString($itUser->name, $exportContent);
 
+        $this->get(route('it.index'))
+            ->assertOk()
+            ->assertSee('it-access-registry')
+            ->assertSee('it-access-table')
+            ->assertSee('EMP77777')
+            ->assertSee('new.starter')
+            ->assertSee('new.starter@wdc.co.th')
+            ->assertSee($asset->code)
+            ->assertSee($itUser->name);
+
         $this->patch(route('it.onboarding.complete', $onboarding))->assertRedirect();
 
         $this->assertSame('it_completed', $onboarding->fresh()->status);
@@ -684,6 +694,13 @@ class WdcPortalTest extends TestCase
             'is_active' => true,
         ]);
         $this->assertSame($createdUser->id, $asset->fresh()->owner_id);
+
+        $this->get(route('hr.index', ['section' => 'employees']))
+            ->assertOk()
+            ->assertSee('employee-registry-table')
+            ->assertSee('EMP77777')
+            ->assertSee('New Starter')
+            ->assertSee('new.starter@wdc.co.th');
 
         $this->get(route('directory.index', ['q' => 'New Starter']))
             ->assertOk()

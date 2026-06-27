@@ -140,22 +140,50 @@
                 </div>
             </div>
         </div>
-        @if($employeeRows->isNotEmpty())
-            <div class="table-responsive">
-                <table class="table align-middle">
+        @if($employees->isNotEmpty())
+            <div class="table-responsive employee-registry-table-wrap">
+                <table class="table align-middle employee-registry-table">
                     <thead>
                         <tr>
-                            @foreach(array_keys($employeeRows->first()) as $column)
-                                <th>{{ $column }}</th>
-                            @endforeach
+                            <th>รหัสพนักงาน</th>
+                            <th>วันที่เริ่มงาน</th>
+                            <th>ชื่ออังกฤษ</th>
+                            <th>ชื่อเล่นอังกฤษ</th>
+                            <th>ชื่อไทย</th>
+                            <th>ชื่อเล่นไทย</th>
+                            <th>ตำแหน่ง</th>
+                            <th>แผนก/BU</th>
+                            <th>ทีม</th>
+                            <th>สาขา</th>
+                            <th>อีเมล</th>
+                            <th>โทร</th>
+                            <th>เบอร์โต๊ะ</th>
+                            <th>สถานะ</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($employeeRows as $row)
+                        @foreach($employees as $employeeUser)
                             <tr>
-                                @foreach($row as $value)
-                                    <td>{{ $value ?: '-' }}</td>
-                                @endforeach
+                                <td data-label="รหัสพนักงาน"><strong>{{ $employeeUser->employee_code ?: '-' }}</strong></td>
+                                <td data-label="วันที่เริ่มงาน">{{ $employeeUser->employee?->start_date?->format('d/m/Y') ?: '-' }}</td>
+                                <td data-label="ชื่ออังกฤษ">
+                                    <div class="employee-table-name">{{ $employeeUser->employee?->english_name ?: $employeeUser->name ?: '-' }}</div>
+                                </td>
+                                <td data-label="ชื่อเล่นอังกฤษ">{{ $employeeUser->employee?->english_nickname ?: '-' }}</td>
+                                <td data-label="ชื่อไทย">
+                                    <div class="employee-table-name">{{ $employeeUser->employee?->thai_name ?: '-' }}</div>
+                                </td>
+                                <td data-label="ชื่อเล่นไทย">{{ $employeeUser->employee?->thai_nickname ?: '-' }}</td>
+                                <td data-label="ตำแหน่ง">{{ $employeeUser->employee?->position ?: '-' }}</td>
+                                <td data-label="แผนก/BU">{{ $employeeUser->employee?->department?->name ?? $employeeUser->employee?->business_unit ?? '-' }}</td>
+                                <td data-label="ทีม">{{ $employeeUser->employee?->team ?: '-' }}</td>
+                                <td data-label="สาขา">{{ $employeeUser->employee?->location ?: '-' }}</td>
+                                <td data-label="อีเมล"><span class="text-nowrap">{{ $employeeUser->email ?: '-' }}</span></td>
+                                <td data-label="โทร">{{ $employeeUser->employee?->phone ?: '-' }}</td>
+                                <td data-label="เบอร์โต๊ะ">{{ $employeeUser->employee?->extension_number ?: '-' }}</td>
+                                <td data-label="สถานะ">
+                                    <span class="status-pill {{ $employeeUser->is_active ? 'status-done' : 'status-open' }}">{{ $employeeUser->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก' }}</span>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

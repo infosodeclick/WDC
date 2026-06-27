@@ -50,6 +50,13 @@ class TicketController extends Controller
                     ->take(12)
                     ->get()
                 : collect(),
+            'itEmployeeAccessRows' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
+                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy', 'itCompleter')
+                    ->whereNotIn('status', ['cancelled'])
+                    ->latest('updated_at')
+                    ->take(80)
+                    ->get()
+                : collect(),
             'offboardingRequests' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
                 ? EmployeeOffboardingRequest::with('systems.asset', 'systems.completer', 'requester', 'claimedBy', 'employeeUser.employee.department')
                     ->whereIn('status', ['pending_it', 'in_progress', 'it_completed'])

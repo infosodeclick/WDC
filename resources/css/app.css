@@ -1937,6 +1937,104 @@ body.directory-modal-open {
     white-space: nowrap;
 }
 
+.employee-registry-table-wrap,
+.it-access-table-wrap {
+    border: 1px solid var(--line);
+    background: #fff;
+}
+
+.employee-registry-table {
+    min-width: 1320px;
+    font-size: .92rem;
+}
+
+.employee-registry-table th,
+.it-access-table th {
+    color: #4d4943;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    background: #fffaf0;
+}
+
+.employee-registry-table td,
+.it-access-table td {
+    vertical-align: top;
+}
+
+.employee-registry-table tbody tr:hover,
+.it-access-table tbody tr:hover {
+    background: #fffdf4;
+}
+
+.employee-table-name {
+    color: var(--ink);
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.it-access-table {
+    min-width: 1240px;
+    font-size: .9rem;
+}
+
+.access-chip-list,
+.access-account-list {
+    display: grid;
+    gap: 6px;
+}
+
+.access-chip-list {
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+
+.access-system-chip {
+    display: grid;
+    gap: 2px;
+    min-height: 54px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf4;
+    color: var(--ink);
+    font-weight: 800;
+}
+
+.access-system-chip small {
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.access-system-chip.is-ready {
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+}
+
+.access-system-chip.is-skipped {
+    border-color: #e5e7eb;
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.access-account-list div {
+    display: grid;
+    gap: 2px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--line);
+}
+
+.access-account-list div:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.access-account-list span {
+    color: var(--muted);
+    font-size: .84rem;
+}
+
 .onboarding-system-card {
     min-height: 100%;
 }

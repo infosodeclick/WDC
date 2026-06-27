@@ -171,6 +171,106 @@
     </div>
 </section>
 
+<section class="panel" id="it-access-registry">
+    <div class="section-title">
+        <div>
+            <h2>ทะเบียนสิทธิ์พนักงาน</h2>
+            <p>ดูระบบที่เปิดไว้, user/email, ทรัพย์สิน และผู้ดำเนินการจาก checklist พนักงานเริ่มงานใหม่</p>
+        </div>
+        <span class="tag">{{ $itEmployeeAccessRows->count() }} รายการ</span>
+    </div>
+    @if($itEmployeeAccessRows->isNotEmpty())
+        <div class="table-responsive it-access-table-wrap">
+            <table class="table align-middle it-access-table">
+                <thead>
+                    <tr>
+                        <th>พนักงาน</th>
+                        <th>แผนก/BU</th>
+                        <th>ระบบ / สิทธิ์</th>
+                        <th>User / Email</th>
+                        <th>ทรัพย์สิน</th>
+                        <th>ผู้เปิดระบบ</th>
+                        <th>สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($itEmployeeAccessRows as $accessRequest)
+                        <tr>
+                            <td data-label="พนักงาน">
+                                <strong>{{ $accessRequest->employee_code ?: '-' }}</strong>
+                                <div class="employee-table-name">{{ $accessRequest->displayName() }}</div>
+                                <small class="muted">{{ $accessRequest->thai_name ?: '-' }}</small>
+                            </td>
+                            <td data-label="แผนก/BU">
+                                <strong>{{ $accessRequest->department?->name ?? $accessRequest->business_unit ?? '-' }}</strong>
+                                <small class="d-block muted">{{ $accessRequest->position ?: '-' }}</small>
+                            </td>
+                            <td data-label="ระบบ / สิทธิ์">
+                                <div class="access-chip-list">
+                                    @forelse($accessRequest->systems as $system)
+                                        <span class="access-system-chip {{ $system->status === 'provisioned' ? 'is-ready' : ($system->status === 'skipped' ? 'is-skipped' : '') }}">
+                                            {{ $system->system_name }}
+                                            <small>{{ $system->statusLabel() }}</small>
+                                        </span>
+                                    @empty
+                                        <span class="muted">-</span>
+                                    @endforelse
+                                </div>
+                            </td>
+                            <td data-label="User / Email">
+                                <div class="access-account-list">
+                                    @forelse($accessRequest->systems as $system)
+                                        @php
+                                            $username = $system->system_name === 'WDC Portal' ? $accessRequest->employee_code : $system->username;
+                                            $accountLine = collect([$username, $system->email])->filter()->implode(' / ');
+                                        @endphp
+                                        <div>
+                                            <strong>{{ $system->system_name }}</strong>
+                                            <span>{{ $accountLine ?: '-' }}</span>
+                                        </div>
+                                    @empty
+                                        <span class="muted">-</span>
+                                    @endforelse
+                                </div>
+                            </td>
+                            <td data-label="ทรัพย์สิน">
+                                @php
+                                    $assets = $accessRequest->systems->pluck('asset')->filter();
+                                @endphp
+                                @forelse($assets as $asset)
+                                    <span class="status-pill status-soft">{{ $asset->code }} · {{ $asset->name }}</span>
+                                @empty
+                                    <span class="muted">-</span>
+                                @endforelse
+                            </td>
+                            <td data-label="ผู้เปิดระบบ">
+                                <div class="access-account-list">
+                                    @forelse($accessRequest->systems->where('status', 'provisioned') as $system)
+                                        <div>
+                                            <strong>{{ $system->system_name }}</strong>
+                                            <span>{{ $system->provisioner?->name ?? '-' }}{{ $system->provisioned_at ? ' · '.$system->provisioned_at->format('d/m/Y H:i') : '' }}</span>
+                                        </div>
+                                    @empty
+                                        <span class="muted">ยังไม่มีรายการเปิดระบบ</span>
+                                    @endforelse
+                                </div>
+                            </td>
+                            <td data-label="สถานะ">
+                                <span class="status-pill">{{ $accessRequest->statusLabel() }}</span>
+                                @if($accessRequest->claimedBy)
+                                    <small class="d-block muted">รับงานโดย {{ $accessRequest->claimedBy->name }}</small>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <div class="empty-state">ยังไม่มีข้อมูลสิทธิ์พนักงานจาก HR</div>
+    @endif
+</section>
+
 <section class="panel" id="it-offboarding">
     <div class="section-title">
         <div>
