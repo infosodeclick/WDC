@@ -220,34 +220,6 @@ a {
     background: rgba(255, 255, 255, .84);
 }
 
-.portal-subnav {
-    display: grid;
-    gap: 2px;
-    margin: 0 0 8px 30px;
-    padding-left: 12px;
-    border-left: 1px solid rgba(255, 222, 70, .22);
-}
-
-.portal-nav-group:not(.is-open) .portal-subnav {
-    display: none;
-}
-
-.portal-subnav a {
-    display: block;
-    padding: 6px 8px;
-    color: #cfc9b8;
-    border-radius: 8px;
-    font-size: .82rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.portal-subnav a:hover,
-.portal-subnav a:focus-visible {
-    color: #ffffff;
-    background: rgba(255, 222, 70, .12);
-}
-
 .portal-divider {
     height: 1px;
     margin: 22px 0;

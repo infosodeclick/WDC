@@ -78,80 +78,32 @@
 
         <nav class="nav flex-column portal-nav">
             @if($canShowItNav)
-                <div class="portal-nav-group {{ request()->routeIs('it.*') ? 'is-open' : '' }}">
+                <div class="portal-nav-group">
                     <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}">
                         <i class="bi bi-tools"></i><span>IT</span>
                         @if($itQueueCount > 0)<span class="nav-badge">{{ $itQueueCount }}</span>@endif
                     </a>
-                    <div class="portal-subnav">
-                        <a href="{{ route('it.index') }}#it-onboarding">พนักงานเข้าใหม่</a>
-                        <a href="{{ route('it.index') }}#it-offboarding">พนักงานลาออก</a>
-                        <a href="{{ route('it.index') }}#it-helpdesk">Helpdesk</a>
-                    </div>
                 </div>
             @endif
             @if($canShowInventoryNav)
-                <div class="portal-nav-group {{ request()->routeIs('assets.*') ? 'is-open' : '' }}">
+                <div class="portal-nav-group">
                     <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
-                    <div class="portal-subnav">
-                        <a href="{{ route('assets.index') }}#asset-registry">ทะเบียนทรัพย์สิน</a>
-                        @if($currentUser?->canAccess('assets.manage'))
-                            <a href="{{ route('assets.index') }}#new-asset">เพิ่มทรัพย์สิน</a>
-                        @endif
-                        @if($currentUser?->canAccess('assets.reports'))
-                            <a href="{{ route('assets.index') }}#asset-inspections">รายงาน/ตรวจนับ</a>
-                        @endif
-                        @if($currentUser?->canAccess('assets.settings.manage'))
-                            <a href="{{ route('assets.index') }}#asset-settings">ตั้งค่า Inventory</a>
-                        @endif
-                    </div>
                 </div>
             @endif
             @if($canShowHrNav)
-                <div class="portal-nav-group {{ request()->routeIs('hr.*') ? 'is-open' : '' }}">
+                <div class="portal-nav-group">
                     <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}">
                         <i class="bi bi-people"></i><span>HR</span>
                         @if($hrQueueCount > 0)<span class="nav-badge">{{ $hrQueueCount }}</span>@endif
                     </a>
-                    <div class="portal-subnav">
-                        <a href="{{ route('hr.index', ['section' => 'dashboard']) }}">แดชบอร์ด</a>
-                        @if($currentUser?->canAccess('hr.employees.manage'))
-                            <a href="{{ route('hr.index', ['section' => 'employees']) }}">รายชื่อพนักงาน</a>
-                            <a href="{{ route('hr.index', ['section' => 'offboarding']) }}">พนักงานลาออก</a>
-                            <a href="{{ route('hr.index', ['section' => 'profile-requests']) }}">คำขอแก้โปรไฟล์</a>
-                        @endif
-                        @if($currentUser?->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']))
-                            <a href="{{ route('hr.index', ['section' => 'onboarding']) }}">เพิ่มพนักงานใหม่</a>
-                        @endif
-                        @if($currentUser?->canAccess('hr.announcements.manage'))
-                            <a href="{{ route('hr.index', ['section' => 'announcements']) }}">สร้างประกาศ</a>
-                        @endif
-                        @if($currentUser?->canAccess('complaints.review'))
-                            <a href="{{ route('hr.index', ['section' => 'complaints']) }}">ร้องเรียน</a>
-                        @endif
-                    </div>
                 </div>
             @endif
             @if($canShowAdminNav)
-                <div class="portal-nav-group {{ request()->routeIs('admin.*') ? 'is-open' : '' }}">
+                <div class="portal-nav-group">
                     <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.index') }}">
                         <i class="bi bi-sliders"></i><span>Admin</span>
                         @if($adminQueueCount > 0)<span class="nav-badge">{{ $adminQueueCount }}</span>@endif
                     </a>
-                    <div class="portal-subnav">
-                        <a href="{{ route('admin.index', ['section' => 'system']) }}">ระบบ</a>
-                        @if($currentUser?->canAccessAny(['admin.users.manage', 'iam.users.manage', 'directory.manage', 'hr.employees.manage']))
-                            <a href="{{ route('admin.index', ['section' => 'permissions']) }}">กำหนดสิทธิ์</a>
-                            <a href="{{ route('admin.index', ['section' => 'create-user']) }}">เพิ่มผู้ใช้งาน</a>
-                        @endif
-                        <a href="{{ route('admin.index', ['section' => 'notifications']) }}">แจ้งเตือน</a>
-                        @if($currentUser?->canAccessAny(['admin.roles.manage', 'iam.roles.manage']))
-                            <a href="{{ route('admin.index', ['section' => 'role-template']) }}">Role Template</a>
-                        @endif
-                        @if($currentUser?->canAccessAny(['admin.activity.view', 'audit.logs.view']))
-                            <a href="{{ route('admin.index', ['section' => 'activity-logs']) }}">Activity Logs</a>
-                        @endif
-                    </div>
                 </div>
             @endif
         </nav>
