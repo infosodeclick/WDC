@@ -12,7 +12,7 @@
     <a class="btn btn-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-plus-circle"></i> เปิดคำขอ IT</a>
 </div>
 
-<section class="panel">
+<section class="panel" id="it-onboarding">
     <div class="section-title">
         <div>
             <h2>คิวพนักงานเริ่มงานใหม่</h2>
@@ -171,7 +171,7 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel" id="it-offboarding">
     <div class="section-title">
         <div>
             <h2>คิวพนักงานลาออก</h2>
@@ -227,7 +227,7 @@
     </div>
 </section>
 
-<div class="metric-grid">
+<div class="metric-grid" id="it-helpdesk">
     <div class="metric-card"><span>งานใหม่</span><strong>{{ $newTickets }}</strong><small>ส่งคำขอแล้ว</small></div>
     <div class="metric-card"><span>งานค้าง</span><strong>{{ $pendingTickets }}</strong><small>ตรวจสอบ/รับเรื่อง/ดำเนินการ</small></div>
     <div class="metric-card"><span>งานเสร็จ</span><strong>{{ $doneTickets }}</strong><small>อนุมัติหรือปิดงานแล้ว</small></div>

@@ -10,10 +10,27 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="portal-body">
-@php($currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department'))
-@php($helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0))
-@php($isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId)
-@php($hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*'))
+@php
+    $currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department');
+    $helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0);
+    $isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId;
+    $hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*');
+    $canShowItNav = $currentUser?->canAccessAny(['it.portal.view', 'tickets.manage', 'it.onboarding.manage']);
+    $canShowInventoryNav = $currentUser?->canAccessItAssets();
+    $canShowHrNav = $currentUser?->canAccessAny(['hr.portal.view', 'hr.onboarding.manage', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']);
+    $canShowAdminNav = $currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']);
+    $itQueueCount = $canShowItNav
+        ? \App\Models\EmployeeOnboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'cancel_requested'])->count()
+            + \App\Models\EmployeeOffboardingRequest::whereIn('status', ['pending_it', 'in_progress'])->count()
+        : 0;
+    $hrQueueCount = $canShowHrNav
+        ? \App\Models\EmployeeOnboardingRequest::where('status', 'it_completed')->count()
+            + \App\Models\EmployeeOffboardingRequest::where('status', 'it_completed')->count()
+            + \App\Models\ProfileChangeRequest::where('status', 'pending')->count()
+            + \App\Models\Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count()
+        : 0;
+    $adminQueueCount = $canShowAdminNav ? ($unreadNotificationCount ?? 0) : 0;
+@endphp
 <div class="portal-shell">
     <aside class="portal-sidebar">
         <a class="brand-lockup" href="{{ route('dashboard') }}">
@@ -27,6 +44,9 @@
         <nav class="nav flex-column portal-nav">
             @if($currentUser?->canAccess('portal.dashboard.view'))
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}"><i class="bi bi-grid"></i><span>หน้าแรก</span></a>
+            @endif
+            @if($currentUser?->canAccess('profile.view'))
+                <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
             @endif
             @if($currentUser?->canAccess('directory.view'))
                 <a class="nav-link {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
@@ -57,17 +77,82 @@
         <div class="portal-divider"></div>
 
         <nav class="nav flex-column portal-nav">
-            @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
-                <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>IT</span></a>
+            @if($canShowItNav)
+                <div class="portal-nav-group {{ request()->routeIs('it.*') ? 'is-open' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('it.*') ? 'active' : '' }}" href="{{ route('it.index') }}">
+                        <i class="bi bi-tools"></i><span>IT</span>
+                        @if($itQueueCount > 0)<span class="nav-badge">{{ $itQueueCount }}</span>@endif
+                    </a>
+                    <div class="portal-subnav">
+                        <a href="{{ route('it.index') }}#it-onboarding">พนักงานเข้าใหม่</a>
+                        <a href="{{ route('it.index') }}#it-offboarding">พนักงานลาออก</a>
+                        <a href="{{ route('it.index') }}#it-helpdesk">Helpdesk</a>
+                    </div>
+                </div>
             @endif
-            @if($currentUser?->canAccessItAssets())
-                <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
+            @if($canShowInventoryNav)
+                <div class="portal-nav-group {{ request()->routeIs('assets.*') ? 'is-open' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('assets.*') ? 'active' : '' }}" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
+                    <div class="portal-subnav">
+                        <a href="{{ route('assets.index') }}#asset-registry">ทะเบียนทรัพย์สิน</a>
+                        @if($currentUser?->canAccess('assets.manage'))
+                            <a href="{{ route('assets.index') }}#new-asset">เพิ่มทรัพย์สิน</a>
+                        @endif
+                        @if($currentUser?->canAccess('assets.reports'))
+                            <a href="{{ route('assets.index') }}#asset-inspections">รายงาน/ตรวจนับ</a>
+                        @endif
+                        @if($currentUser?->canAccess('assets.settings.manage'))
+                            <a href="{{ route('assets.index') }}#asset-settings">ตั้งค่า Inventory</a>
+                        @endif
+                    </div>
+                </div>
             @endif
-            @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
-                <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span></a>
+            @if($canShowHrNav)
+                <div class="portal-nav-group {{ request()->routeIs('hr.*') ? 'is-open' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('hr.*') ? 'active' : '' }}" href="{{ route('hr.index') }}">
+                        <i class="bi bi-people"></i><span>HR</span>
+                        @if($hrQueueCount > 0)<span class="nav-badge">{{ $hrQueueCount }}</span>@endif
+                    </a>
+                    <div class="portal-subnav">
+                        <a href="{{ route('hr.index', ['section' => 'dashboard']) }}">แดชบอร์ด</a>
+                        @if($currentUser?->canAccess('hr.employees.manage'))
+                            <a href="{{ route('hr.index', ['section' => 'employees']) }}">รายชื่อพนักงาน</a>
+                            <a href="{{ route('hr.index', ['section' => 'offboarding']) }}">พนักงานลาออก</a>
+                            <a href="{{ route('hr.index', ['section' => 'profile-requests']) }}">คำขอแก้โปรไฟล์</a>
+                        @endif
+                        @if($currentUser?->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage']))
+                            <a href="{{ route('hr.index', ['section' => 'onboarding']) }}">เพิ่มพนักงานใหม่</a>
+                        @endif
+                        @if($currentUser?->canAccess('hr.announcements.manage'))
+                            <a href="{{ route('hr.index', ['section' => 'announcements']) }}">สร้างประกาศ</a>
+                        @endif
+                        @if($currentUser?->canAccess('complaints.review'))
+                            <a href="{{ route('hr.index', ['section' => 'complaints']) }}">ร้องเรียน</a>
+                        @endif
+                    </div>
+                </div>
             @endif
-            @if($currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']))
-                <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span></a>
+            @if($canShowAdminNav)
+                <div class="portal-nav-group {{ request()->routeIs('admin.*') ? 'is-open' : '' }}">
+                    <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.index') }}">
+                        <i class="bi bi-sliders"></i><span>Admin</span>
+                        @if($adminQueueCount > 0)<span class="nav-badge">{{ $adminQueueCount }}</span>@endif
+                    </a>
+                    <div class="portal-subnav">
+                        <a href="{{ route('admin.index', ['section' => 'system']) }}">ระบบ</a>
+                        @if($currentUser?->canAccessAny(['admin.users.manage', 'iam.users.manage', 'directory.manage', 'hr.employees.manage']))
+                            <a href="{{ route('admin.index', ['section' => 'permissions']) }}">กำหนดสิทธิ์</a>
+                            <a href="{{ route('admin.index', ['section' => 'create-user']) }}">เพิ่มผู้ใช้งาน</a>
+                        @endif
+                        <a href="{{ route('admin.index', ['section' => 'notifications']) }}">แจ้งเตือน</a>
+                        @if($currentUser?->canAccessAny(['admin.roles.manage', 'iam.roles.manage']))
+                            <a href="{{ route('admin.index', ['section' => 'role-template']) }}">Role Template</a>
+                        @endif
+                        @if($currentUser?->canAccessAny(['admin.activity.view', 'audit.logs.view']))
+                            <a href="{{ route('admin.index', ['section' => 'activity-logs']) }}">Activity Logs</a>
+                        @endif
+                    </div>
+                </div>
             @endif
         </nav>
     </aside>
@@ -165,6 +250,9 @@
         <div class="mobile-more-section">
             <h3>งานประจำวัน</h3>
             <div class="mobile-more-grid">
+                @if($currentUser?->canAccess('profile.view'))
+                    <a href="{{ route('profile') }}"><i class="bi bi-person-badge"></i><span>โปรไฟล์พนักงาน</span></a>
+                @endif
                 @if($currentUser?->canAccess('directory.view'))
                     <a href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i><span>รายชื่อพนักงาน</span></a>
                 @endif
@@ -189,17 +277,17 @@
         <div class="mobile-more-section">
             <h3>หลังบ้าน</h3>
             <div class="mobile-more-grid">
-                @if($currentUser?->canAccessAny(['it.portal.view', 'tickets.manage']))
-                    <a href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>IT</span></a>
+                @if($canShowItNav)
+                    <a href="{{ route('it.index') }}"><i class="bi bi-tools"></i><span>IT</span>@if($itQueueCount > 0)<strong>{{ $itQueueCount }}</strong>@endif</a>
                 @endif
-                @if($currentUser?->canAccessItAssets())
+                @if($canShowInventoryNav)
                     <a href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i><span>INVENTORY</span></a>
                 @endif
-                @if($currentUser?->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']))
-                    <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span></a>
+                @if($canShowHrNav)
+                    <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span>@if($hrQueueCount > 0)<strong>{{ $hrQueueCount }}</strong>@endif</a>
                 @endif
-                @if($currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']))
-                    <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span></a>
+                @if($canShowAdminNav)
+                    <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span>@if($adminQueueCount > 0)<strong>{{ $adminQueueCount }}</strong>@endif</a>
                 @endif
             </div>
         </div>

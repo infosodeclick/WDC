@@ -101,7 +101,7 @@
 @endif
 
 @if($canManageAssetSettings)
-    <div class="content-grid asset-admin-grid">
+    <div class="content-grid asset-admin-grid" id="asset-settings">
         <section class="panel" id="asset-categories">
             <div class="section-title">
                 <h2>หมวดหมู่ทรัพย์สิน</h2>
@@ -166,7 +166,7 @@
     </div>
 @endif
 
-<section class="panel">
+<section class="panel" id="asset-registry">
     <div class="section-title">
         <h2>ทะเบียนทรัพย์สิน</h2>
         <span class="tag">{{ number_format($assets->total()) }} รายการ</span>
@@ -231,7 +231,7 @@
     {{ $assets->links() }}
 </section>
 
-<div class="content-grid">
+<div class="content-grid" id="asset-inspections">
     <section class="panel">
         <div class="section-title">
             <h2>เอกสารตรวจนับ</h2>
