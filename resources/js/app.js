@@ -179,6 +179,34 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.announcement-attachment-modal').forEach((modal) => {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        modal.querySelectorAll('[data-announcement-preview-image]').forEach((image) => {
+            image.addEventListener('error', () => {
+                const fallback = document.createElement('div');
+                const icon = document.createElement('i');
+                const title = document.createElement('h3');
+                const message = document.createElement('p');
+                const link = document.createElement('a');
+
+                fallback.className = 'announcement-attachment-file-preview';
+                icon.className = 'bi bi-image';
+                title.textContent = image.dataset.fileName || 'ไฟล์แนบ';
+                message.textContent = 'ไม่สามารถแสดงรูปนี้ได้ในตัวอย่าง อาจเกิดจากไฟล์ต้นทางไม่พร้อมใช้งานบนเซิร์ฟเวอร์';
+                link.className = 'btn btn-primary';
+                link.href = image.dataset.fileUrl || image.src;
+                link.innerHTML = '<i class="bi bi-box-arrow-up-right"></i> เปิดไฟล์';
+                fallback.append(icon, title, message, link);
+                image.replaceWith(fallback);
+            }, { once: true });
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
     const announcementModal = document.querySelector('[data-auto-open-announcement-modal]');
 
     if (! announcementModal) {

@@ -2357,6 +2357,10 @@ body.directory-modal-open {
     overflow-wrap: anywhere;
 }
 
+.announcement-attachment-modal {
+    --bs-modal-zindex: 1085;
+}
+
 .announcement-attachment-modal .modal-dialog {
     width: min(1120px, calc(100vw - 32px));
     max-width: none;

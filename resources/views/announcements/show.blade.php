@@ -52,7 +52,7 @@
                                 </div>
                                 <div class="modal-body">
                                     @if($file->isImage())
-                                        <img class="announcement-attachment-preview-image" src="{{ $fileUrl }}" alt="{{ $file->file_name }}">
+                                        <img class="announcement-attachment-preview-image" src="{{ $fileUrl }}" alt="{{ $file->file_name }}" data-announcement-preview-image data-file-url="{{ $fileUrl }}" data-file-name="{{ $file->file_name }}">
                                     @elseif($fileType === 'pdf')
                                         <iframe class="announcement-attachment-preview-frame" src="{{ $fileUrl }}" title="{{ $file->file_name }}"></iframe>
                                     @else
