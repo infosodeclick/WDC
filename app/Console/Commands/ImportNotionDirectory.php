@@ -13,7 +13,8 @@ class ImportNotionDirectory extends Command
 {
     protected $signature = 'portal:import-notion-directory
         {--limit=1000 : Maximum rows to request from Notion}
-        {--dry-run : Read and parse Notion without writing to the database}';
+        {--dry-run : Read and parse Notion without writing to the database}
+        {--no-verify-ssl : Disable SSL verification for Notion HTTP requests}';
 
     protected $description = 'Import WDC Information Directory records from the public Notion database.';
 
@@ -149,7 +150,7 @@ class ImportNotionDirectory extends Command
     {
         $request = Http::timeout($timeout)->retry(2, 250);
 
-        if (! filter_var(env('NOTION_IMPORT_VERIFY_SSL', true), FILTER_VALIDATE_BOOL)) {
+        if ($this->option('no-verify-ssl') || ! filter_var(env('NOTION_IMPORT_VERIFY_SSL', true), FILTER_VALIDATE_BOOL)) {
             $request = $request->withOptions(['verify' => false]);
         }
 
