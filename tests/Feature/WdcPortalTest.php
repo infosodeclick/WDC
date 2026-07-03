@@ -1157,6 +1157,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('เบอร์โทรโต๊ะ')
             ->assertDontSee('ข้อมูลต้นทาง')
             ->assertDontSee('class="tag"', false)
+            ->assertDontSee('เพิ่มข้อมูลรายชื่อ')
             ->assertSee('pdpa-note-toggle', false)
             ->assertSee('ข้อมูลนี้ใช้เพื่อการติดต่อและประสานงานภายในองค์กรเท่านั้น ห้ามเผยแพร่ คัดลอก หรือใช้เพื่อวัตถุประสงค์อื่นโดยไม่ได้รับอนุญาตจากบริษัท');
     }
