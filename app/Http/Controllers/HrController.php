@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -27,7 +28,8 @@ class HrController extends Controller
 
         abort_unless($actor->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']), 403);
 
-        $employees = $this->employeeListQuery($actor);
+        $employeeUsers = $this->employeeListQuery($actor)->get();
+        $employees = $this->employeeDirectoryQuery($actor)->get();
 
         $complaints = Complaint::with('reporter')->latest()->take(8);
 
@@ -68,7 +70,6 @@ class HrController extends Controller
             $activeSection = 'dashboard';
         }
 
-        $employees = $employees->get();
         $employeeRows = $this->employeeExportRows($employees);
         $onboardingRequests = $canManageOnboarding
             ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'requester', 'itCompleter')
@@ -90,6 +91,7 @@ class HrController extends Controller
         return view('hr.index', [
             'activeSection' => $activeSection,
             'employees' => $employees,
+            'employeeUsers' => $employeeUsers,
             'employeeRows' => $employeeRows,
             'departments' => Department::orderBy('name')->get(),
             'onboardingPositions' => $this->onboardingPositions(),
@@ -122,7 +124,7 @@ class HrController extends Controller
         abort_unless($actor->canAccess('hr.employees.manage'), 403);
 
         $format = $request->string('format')->lower()->toString();
-        $employees = $this->employeeListQuery($actor)->get();
+        $employees = $this->employeeDirectoryQuery($actor)->get();
         $rows = $this->employeeExportRows($employees);
 
         return $format === 'csv'
@@ -275,6 +277,67 @@ class HrController extends Controller
         return back()->with('status', 'อัปเดตสถานะพนักงานแล้ว');
     }
 
+    public function updateDirectoryEntry(EmployeeDirectoryEntry $directoryEntry, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($actor->canAccessAny(['hr.employees.manage', 'directory.manage']), 403);
+        abort_unless($directoryEntry->entry_type === 'employee', 403);
+        abort_unless($this->canAccessDirectoryEntry($actor, $directoryEntry), 403);
+
+        $validated = $request->validate([
+            'employee_code' => ['nullable', 'string', 'max:80'],
+            'start_date' => ['nullable', 'date'],
+            'english_name' => ['nullable', 'string', 'max:255'],
+            'english_nickname' => ['nullable', 'string', 'max:100'],
+            'thai_name' => ['nullable', 'string', 'max:255'],
+            'thai_nickname' => ['nullable', 'string', 'max:100'],
+            'position' => ['nullable', 'string', 'max:255'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'team' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:100'],
+            'extension_number' => ['nullable', 'string', 'max:100'],
+            'employment_status' => ['required', Rule::in(['active', 'resigned'])],
+        ]);
+
+        $rawPayload = $directoryEntry->raw_payload ?: [];
+        $rawPayload['employee_code'] = $validated['employee_code'] ?? null;
+        $rawPayload['start_date'] = $validated['start_date'] ?? null;
+
+        $directoryEntry->update([
+            'display_name' => $validated['english_name'] ?: $directoryEntry->display_name,
+            'english_name' => $validated['english_name'] ?? null,
+            'english_nickname' => $validated['english_nickname'] ?? null,
+            'thai_name' => $validated['thai_name'] ?? null,
+            'thai_nickname' => $validated['thai_nickname'] ?? null,
+            'position' => $validated['position'] ?? null,
+            'department' => $validated['department'] ?? null,
+            'team' => $validated['team'] ?? null,
+            'location' => $validated['location'] ?? null,
+            'email' => $validated['email'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'extension_number' => $validated['extension_number'] ?? null,
+            'employment_status' => $validated['employment_status'],
+            'is_active' => $validated['employment_status'] === 'active',
+            'resigned_at' => $validated['employment_status'] === 'resigned' ? ($directoryEntry->resigned_at ?: now()) : null,
+            'raw_payload' => $rawPayload,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $actor->id,
+            'action' => 'update_directory_employee',
+            'subject_type' => EmployeeDirectoryEntry::class,
+            'subject_id' => $directoryEntry->id,
+            'description' => "Updated directory employee {$directoryEntry->display_name}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return back()->with('status', 'บันทึกข้อมูลรายชื่อพนักงานแล้ว');
+    }
+
     private function employeeListQuery(User $actor)
     {
         $employees = User::with('role', 'employee.department')
@@ -292,23 +355,57 @@ class HrController extends Controller
         return $employees;
     }
 
+    private function employeeDirectoryQuery(User $actor)
+    {
+        $entries = EmployeeDirectoryEntry::query()
+            ->where('entry_type', 'employee')
+            ->where(function ($query) {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->orderBy('display_name');
+
+        if (! $actor->canSeeAllData()) {
+            if ($actor->canSeeDepartmentData() && $actor->employee?->department?->name) {
+                $entries->where('department', $actor->employee->department->name);
+            } else {
+                $entries->where('user_id', $actor->id);
+            }
+        }
+
+        return $entries;
+    }
+
+    private function canAccessDirectoryEntry(User $actor, EmployeeDirectoryEntry $entry): bool
+    {
+        if ($actor->canSeeAllData()) {
+            return true;
+        }
+
+        if ($actor->canSeeDepartmentData() && $actor->employee?->department?->name) {
+            return $entry->department === $actor->employee->department->name;
+        }
+
+        return $entry->user_id === $actor->id;
+    }
+
     private function employeeExportRows(Collection $employees): Collection
     {
-        return $employees->map(fn (User $user) => [
-            'รหัสพนักงาน' => $user->employee_code,
-            'วันที่เริ่มงาน' => $user->employee?->start_date?->format('Y-m-d'),
-            'ชื่ออังกฤษ' => $user->employee?->english_name,
-            'ชื่อเล่นอังกฤษ' => $user->employee?->english_nickname,
-            'ชื่อไทย' => $user->employee?->thai_name,
-            'ชื่อเล่นไทย' => $user->employee?->thai_nickname,
-            'ตำแหน่ง' => $user->employee?->position,
-            'แผนก/BU' => $user->employee?->department?->name ?? $user->employee?->business_unit,
-            'ทีม' => $user->employee?->team,
-            'สาขา' => $user->employee?->location,
-            'อีเมล' => $user->email,
-            'โทร' => $user->employee?->phone,
-            'เบอร์โต๊ะ' => $user->employee?->extension_number,
-            'สถานะ' => $user->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก',
+        return $employees->map(fn (EmployeeDirectoryEntry $entry) => [
+            'รหัสพนักงาน' => $entry->employeeCode(),
+            'วันที่เริ่มงาน' => $entry->startDate()?->format('Y-m-d'),
+            'ชื่ออังกฤษ' => $entry->english_name ?: $entry->display_name,
+            'ชื่อเล่นอังกฤษ' => $entry->englishNickname(),
+            'ชื่อไทย' => $entry->thai_name,
+            'ชื่อเล่นไทย' => $entry->thaiNickname(),
+            'ตำแหน่ง' => $entry->position,
+            'แผนก/BU' => $entry->department,
+            'ทีม' => $entry->team,
+            'สาขา' => $entry->location,
+            'อีเมล' => $entry->email,
+            'โทร' => $entry->phone,
+            'เบอร์โต๊ะ' => $entry->extension_number,
+            'สถานะ' => $entry->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก',
         ]);
     }
 

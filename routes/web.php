@@ -71,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/hr/announcements', [HrController::class, 'storeAnnouncement'])->name('hr.announcements.store');
     Route::patch('/hr/profile-requests/{profileChangeRequest}', [HrController::class, 'reviewProfileChangeRequest'])->name('hr.profile-requests.review');
     Route::patch('/hr/employees/{user}/status', [HrController::class, 'updateEmployeeStatus'])->name('hr.employees.status');
+    Route::patch('/hr/directory-entries/{directoryEntry}', [HrController::class, 'updateDirectoryEntry'])->name('hr.directory-entries.update');
 
     Route::get('/it', [TicketController::class, 'itDashboard'])->name('it.index');
     Route::get('/it/onboarding/export', [EmployeeOnboardingController::class, 'exportItChecklist'])->name('it.onboarding.export');

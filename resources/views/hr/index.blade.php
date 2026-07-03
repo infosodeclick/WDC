@@ -159,36 +159,94 @@
                             <th>โทร</th>
                             <th>เบอร์โต๊ะ</th>
                             <th>สถานะ</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($employees as $employeeUser)
+                        @foreach($employees as $employeeEntry)
+                            @php
+                                $employeeCode = $employeeEntry->employeeCode();
+                                $startDate = $employeeEntry->startDate();
+                            @endphp
                             <tr>
-                                <td data-label="รหัสพนักงาน"><strong>{{ $employeeUser->employee_code ?: '-' }}</strong></td>
-                                <td data-label="วันที่เริ่มงาน">{{ $employeeUser->employee?->start_date?->format('d/m/Y') ?: '-' }}</td>
+                                <td data-label="รหัสพนักงาน"><strong>{{ $employeeCode }}</strong></td>
+                                <td data-label="วันที่เริ่มงาน">{{ $startDate?->format('d/m/Y') }}</td>
                                 <td data-label="ชื่ออังกฤษ">
-                                    <div class="employee-table-name">{{ $employeeUser->employee?->english_name ?: $employeeUser->name ?: '-' }}</div>
+                                    <div class="employee-table-name">{{ $employeeEntry->english_name ?: $employeeEntry->display_name }}</div>
                                 </td>
-                                <td data-label="ชื่อเล่นอังกฤษ">{{ $employeeUser->employee?->english_nickname ?: '-' }}</td>
+                                <td data-label="ชื่อเล่นอังกฤษ">{{ $employeeEntry->englishNickname() }}</td>
                                 <td data-label="ชื่อไทย">
-                                    <div class="employee-table-name">{{ $employeeUser->employee?->thai_name ?: '-' }}</div>
+                                    <div class="employee-table-name">{{ $employeeEntry->thai_name }}</div>
                                 </td>
-                                <td data-label="ชื่อเล่นไทย">{{ $employeeUser->employee?->thai_nickname ?: '-' }}</td>
-                                <td data-label="ตำแหน่ง">{{ $employeeUser->employee?->position ?: '-' }}</td>
-                                <td data-label="แผนก/BU">{{ $employeeUser->employee?->department?->name ?? $employeeUser->employee?->business_unit ?? '-' }}</td>
-                                <td data-label="ทีม">{{ $employeeUser->employee?->team ?: '-' }}</td>
-                                <td data-label="สาขา">{{ $employeeUser->employee?->location ?: '-' }}</td>
-                                <td data-label="อีเมล"><span class="text-nowrap">{{ $employeeUser->email ?: '-' }}</span></td>
-                                <td data-label="โทร">{{ $employeeUser->employee?->phone ?: '-' }}</td>
-                                <td data-label="เบอร์โต๊ะ">{{ $employeeUser->employee?->extension_number ?: '-' }}</td>
+                                <td data-label="ชื่อเล่นไทย">{{ $employeeEntry->thaiNickname() }}</td>
+                                <td data-label="ตำแหน่ง">{{ $employeeEntry->position }}</td>
+                                <td data-label="แผนก/BU">{{ $employeeEntry->department }}</td>
+                                <td data-label="ทีม">{{ $employeeEntry->team }}</td>
+                                <td data-label="สาขา">{{ $employeeEntry->location }}</td>
+                                <td data-label="อีเมล"><span class="text-nowrap">{{ $employeeEntry->email }}</span></td>
+                                <td data-label="โทร">{{ $employeeEntry->phone }}</td>
+                                <td data-label="เบอร์โต๊ะ">{{ $employeeEntry->extension_number }}</td>
                                 <td data-label="สถานะ">
-                                    <span class="status-pill {{ $employeeUser->is_active ? 'status-done' : 'status-open' }}">{{ $employeeUser->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก' }}</span>
+                                    <span class="status-pill {{ $employeeEntry->is_active ? 'status-done' : 'status-open' }}">{{ $employeeEntry->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก' }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#directoryEmployeeEdit{{ $employeeEntry->id }}">
+                                        <i class="bi bi-pencil-square"></i> แก้ไข
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            @foreach($employees as $employeeEntry)
+                @php
+                    $employeeCode = $employeeEntry->employeeCode();
+                    $startDate = $employeeEntry->startDate();
+                @endphp
+                <div class="modal fade" id="directoryEmployeeEdit{{ $employeeEntry->id }}" tabindex="-1" aria-labelledby="directoryEmployeeEditLabel{{ $employeeEntry->id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <form class="modal-content" method="post" action="{{ route('hr.directory-entries.update', $employeeEntry) }}">
+                            @csrf
+                            @method('patch')
+                            <div class="modal-header">
+                                <div>
+                                    <p class="eyebrow mb-1">แก้ไขรายชื่อพนักงาน</p>
+                                    <h2 class="modal-title h5" id="directoryEmployeeEditLabel{{ $employeeEntry->id }}">{{ $employeeEntry->english_name ?: $employeeEntry->display_name }}</h2>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-grid">
+                                    <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" value="{{ old('employee_code', $employeeCode) }}"></label>
+                                    <label><span>วันที่เริ่มงาน</span><input class="form-control" type="date" name="start_date" value="{{ old('start_date', $startDate?->format('Y-m-d')) }}"></label>
+                                    <label><span>สถานะ</span>
+                                        <select class="form-select" name="employment_status">
+                                            <option value="active" @selected(old('employment_status', $employeeEntry->employment_status) === 'active')>ใช้งานอยู่</option>
+                                            <option value="resigned" @selected(old('employment_status', $employeeEntry->employment_status) === 'resigned')>ไม่แสดง/ลาออก</option>
+                                        </select>
+                                    </label>
+                                    <label><span>ชื่ออังกฤษ</span><input class="form-control" name="english_name" value="{{ old('english_name', $employeeEntry->english_name ?: $employeeEntry->display_name) }}"></label>
+                                    <label><span>ชื่อเล่นอังกฤษ</span><input class="form-control" name="english_nickname" value="{{ old('english_nickname', $employeeEntry->englishNickname()) }}"></label>
+                                    <label><span>ชื่อไทย</span><input class="form-control" name="thai_name" value="{{ old('thai_name', $employeeEntry->thai_name) }}"></label>
+                                    <label><span>ชื่อเล่นไทย</span><input class="form-control" name="thai_nickname" value="{{ old('thai_nickname', $employeeEntry->thaiNickname()) }}"></label>
+                                    <label><span>ตำแหน่ง</span><input class="form-control" name="position" value="{{ old('position', $employeeEntry->position) }}"></label>
+                                    <label><span>แผนก/BU</span><input class="form-control" name="department" value="{{ old('department', $employeeEntry->department) }}"></label>
+                                    <label><span>ทีม</span><input class="form-control" name="team" value="{{ old('team', $employeeEntry->team) }}"></label>
+                                    <label><span>สาขา</span><input class="form-control" name="location" value="{{ old('location', $employeeEntry->location) }}"></label>
+                                    <label><span>อีเมล</span><input class="form-control" type="email" name="email" value="{{ old('email', $employeeEntry->email) }}"></label>
+                                    <label><span>โทร</span><input class="form-control" name="phone" value="{{ old('phone', $employeeEntry->phone) }}"></label>
+                                    <label><span>เบอร์โต๊ะ</span><input class="form-control" name="extension_number" value="{{ old('extension_number', $employeeEntry->extension_number) }}"></label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">ปิด</button>
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> บันทึก</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
         @else
             <div class="empty-state">ยังไม่มีรายชื่อพนักงานในระบบ</div>
         @endif
@@ -209,7 +267,7 @@
             <label class="span-2"><span>พนักงาน</span>
                 <select class="form-select" name="employee_user_id" required>
                     <option value="">เลือกพนักงาน</option>
-                    @foreach($employees->where('is_active', true) as $employeeUser)
+                    @foreach($employeeUsers->where('is_active', true) as $employeeUser)
                         <option value="{{ $employeeUser->id }}">{{ $employeeUser->employee_code }} · {{ $employeeUser->name }} · {{ $employeeUser->employee?->department?->name ?? '-' }}</option>
                     @endforeach
                 </select>

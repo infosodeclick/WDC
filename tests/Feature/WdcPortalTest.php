@@ -223,9 +223,11 @@ class WdcPortalTest extends TestCase
         $employeesResponse = $this->get(route('hr.index', ['section' => 'employees']))
             ->assertOk()
             ->assertSee('รายชื่อพนักงาน')
-            ->assertSee('EMP00125')
-            ->assertSee('สมชาย ใจดี')
+            ->assertSee('Bundit Hirunyanitiwatna')
+            ->assertSee('Chief Executive Officer')
+            ->assertSee('Board Management')
             ->assertSee('<table', false)
+            ->assertSee('bi-pencil-square', false)
             ->assertSee('รหัสพนักงาน')
             ->assertSee('วันที่เริ่มงาน')
             ->assertSee('ชื่ออังกฤษ')
@@ -247,6 +249,8 @@ class WdcPortalTest extends TestCase
             ->assertSee('CSV (.csv)')
             ->assertDontSee('แสดงรายชื่อพนักงานทั้งหมด')
             ->assertDontSee('administrator ·')
+            ->assertDontSee('accountwdc@wdc.co.th')
+            ->assertDontSee('Flagship Showroom')
             ->assertDontSee('เลขที่ประกาศ');
         $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-plus'));
         $this->assertStringContainsString('btn btn-outline-primary', $employeesResponse->getContent());
@@ -261,7 +265,9 @@ class WdcPortalTest extends TestCase
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
         $csvContent = $csvExport->streamedContent();
 
-        $this->assertStringContainsString('EMP00125', $csvContent);
+        $this->assertStringContainsString('Bundit Hirunyanitiwatna', $csvContent);
+        $this->assertStringNotContainsString('accountwdc@wdc.co.th', $csvContent);
+        $this->assertStringNotContainsString('Flagship Showroom', $csvContent);
         $this->assertStringContainsString('วันที่เริ่มงาน', $csvContent);
         $this->assertStringContainsString('ชื่อเล่นไทย', $csvContent);
         $this->assertStringNotContainsString('administrator', $csvContent);
@@ -271,10 +277,50 @@ class WdcPortalTest extends TestCase
             ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
         $excelContent = $excelExport->streamedContent();
 
-        $this->assertStringContainsString('EMP00125', $excelContent);
+        $this->assertStringContainsString('Bundit Hirunyanitiwatna', $excelContent);
+        $this->assertStringNotContainsString('accountwdc@wdc.co.th', $excelContent);
+        $this->assertStringNotContainsString('Flagship Showroom', $excelContent);
         $this->assertStringContainsString('วันที่เริ่มงาน', $excelContent);
         $this->assertStringContainsString('ชื่อเล่นไทย', $excelContent);
         $this->assertStringContainsString('<table', $excelContent);
+    }
+
+    public function test_hr_can_update_directory_employee_from_employee_list(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $entry = EmployeeDirectoryEntry::where('entry_type', 'employee')
+            ->where('display_name', 'Bundit Hirunyanitiwatna')
+            ->firstOrFail();
+
+        $this->actingAs($hr);
+
+        $this->patch(route('hr.directory-entries.update', $entry), [
+            'employee_code' => '8000',
+            'start_date' => '2026-06-01',
+            'english_name' => 'Bundit Hirunyanitiwatna',
+            'english_nickname' => 'Bank',
+            'thai_name' => 'บัณฑิต หิรัญญนิธิวัฒนา',
+            'thai_nickname' => 'แบ้งค์',
+            'position' => 'Chief Executive Officer',
+            'department' => 'Board Management',
+            'team' => 'Executive',
+            'location' => 'Lumpini',
+            'email' => 'bundit.hi@wdc.co.th',
+            'phone' => '0800000000',
+            'extension_number' => '8000',
+            'employment_status' => 'active',
+        ])->assertRedirect();
+
+        $entry->refresh();
+
+        $this->assertSame('8000', $entry->employeeCode());
+        $this->assertSame('2026-06-01', $entry->startDate()->toDateString());
+        $this->assertSame('Bank', $entry->englishNickname());
+        $this->assertSame('Executive', $entry->team);
+        $this->assertSame('bundit.hi@wdc.co.th', $entry->email);
+        $this->assertTrue($entry->is_active);
     }
 
     public function test_admin_can_open_admin_portal(): void
@@ -698,9 +744,9 @@ class WdcPortalTest extends TestCase
         $this->get(route('hr.index', ['section' => 'employees']))
             ->assertOk()
             ->assertSee('employee-registry-table')
-            ->assertSee('EMP77777')
-            ->assertSee('New Starter')
-            ->assertSee('new.starter@wdc.co.th');
+            ->assertDontSee('EMP77777')
+            ->assertDontSee('New Starter')
+            ->assertDontSee('new.starter@wdc.co.th');
 
         $this->get(route('directory.index', ['q' => 'New Starter']))
             ->assertOk()
@@ -711,6 +757,13 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('<strong>New Starter</strong>', false);
 
         $this->travelTo($directoryEntry->published_at->copy()->addMinute());
+
+        $this->get(route('hr.index', ['section' => 'employees']))
+            ->assertOk()
+            ->assertSee('employee-registry-table')
+            ->assertSee('EMP77777')
+            ->assertSee('New Starter')
+            ->assertSee('new.starter@wdc.co.th');
 
         $this->get(route('directory.index', ['q' => 'New Starter']))
             ->assertOk()
