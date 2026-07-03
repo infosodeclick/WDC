@@ -5,9 +5,7 @@
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Announcements</p>
         <h1>ประกาศ</h1>
-        <p>นโยบายและประกาศบริษัท</p>
     </div>
 </div>
 

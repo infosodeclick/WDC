@@ -5,9 +5,7 @@
 @section('content')
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Google Calendar</p>
         <h1>ห้องประชุม</h1>
-        <p>ตารางจองห้องประชุมจาก Google Calendar และปุ่มจองใน WDC โดยไม่ต้องเปิดแท็บใหม่</p>
     </div>
     <div class="page-actions">
         @if($sheetUrl)

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\EmployeeDirectoryEntry;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -98,8 +99,7 @@ class ImportNotionDirectory extends Command
      */
     private function loadPage(): array
     {
-        return Http::timeout(30)
-            ->retry(2, 250)
+        return $this->notionHttp(30)
             ->asJson()
             ->post('https://www.notion.so/api/v3/loadCachedPageChunk', [
                 'pageId' => self::PAGE_ID,
@@ -117,8 +117,7 @@ class ImportNotionDirectory extends Command
      */
     private function queryCollection(string $collectionId, int $limit): array
     {
-        return Http::timeout(45)
-            ->retry(2, 250)
+        return $this->notionHttp(45)
             ->asJson()
             ->post('https://www.notion.so/api/v3/queryCollection', [
                 'collection' => [
@@ -144,6 +143,17 @@ class ImportNotionDirectory extends Command
             ])
             ->throw()
             ->json();
+    }
+
+    private function notionHttp(int $timeout): PendingRequest
+    {
+        $request = Http::timeout($timeout)->retry(2, 250);
+
+        if (! filter_var(env('NOTION_IMPORT_VERIFY_SSL', true), FILTER_VALIDATE_BOOL)) {
+            $request = $request->withOptions(['verify' => false]);
+        }
+
+        return $request;
     }
 
     /**
