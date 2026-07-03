@@ -1219,6 +1219,67 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('Bundit Hirunyanitiwatna');
     }
 
+    public function test_directory_employee_filter_without_search_shows_all_active_employees_with_new_hires_first(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'manual',
+            'source_record_id' => 'active-employee-no-filter',
+            'entry_type' => 'employee',
+            'employment_status' => 'active',
+            'display_name' => 'Aaa Active Employee',
+            'english_name' => 'Aaa Active Employee',
+            'department' => '000 Operations',
+            'position' => 'Operations Officer',
+            'location' => 'Lumpini',
+            'email' => 'active.employee@wdc.co.th',
+            'is_active' => true,
+            'published_at' => now(),
+        ]);
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'manual',
+            'source_record_id' => 'new-employee-no-filter',
+            'entry_type' => 'employee',
+            'employment_status' => 'active',
+            'display_name' => 'Aaa New Employee',
+            'english_name' => 'Aaa New Employee',
+            'department' => '000 Operations',
+            'position' => 'Operations Officer',
+            'location' => 'Lumpini',
+            'email' => 'new.employee@wdc.co.th',
+            'raw_payload' => [
+                'start_date' => now()->toDateString(),
+                'employee_code' => 'EMPNEW01',
+            ],
+            'is_active' => true,
+            'published_at' => now(),
+        ]);
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'manual',
+            'source_record_id' => 'mail-group-not-employee-filter',
+            'entry_type' => 'mail_group',
+            'display_name' => 'no_filter_group@wdc.co.th',
+            'email' => 'no_filter_group@wdc.co.th',
+            'department' => 'Mail Group',
+            'is_active' => true,
+            'published_at' => now(),
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('directory.index', ['type' => 'employee']))
+            ->assertOk()
+            ->assertSeeInOrder(['Aaa New Employee', 'Aaa Active Employee'])
+            ->assertDontSee('no_filter_group@wdc.co.th')
+            ->assertDontSee('Flagship Showroom');
+    }
+
     public function test_it_can_create_directory_group_mail_and_showroom_entries(): void
     {
         $this->seed(DatabaseSeeder::class);
