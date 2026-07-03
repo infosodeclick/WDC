@@ -15,15 +15,7 @@
             <span class="brand-mark">WDC</span>
             <span>
                 <strong>WDC Portal</strong>
-                <small>ข่าวสาร HR IT และคู่มือในเว็บเดียว</small>
             </span>
-        </div>
-        <h1>ระบบพนักงานกลาง สำหรับบริษัท 200 คน</h1>
-        <p>รวมโปรไฟล์ ข่าวสาร คู่มือวิดีโอ Helpdesk เรื่องร้องเรียน และเอกสาร HR ไว้ในเว็บเดียวด้วยสิทธิ์ Employee, HR, IT Supervisor, IT Support, Admin, Super Admin และ Auditor Read-only</p>
-        <div class="login-metrics">
-            <span><strong>3</strong> พอร์ทัล</span>
-            <span><strong>7</strong> สิทธิ์</span>
-            <span><strong>12+</strong> ตารางข้อมูล</span>
         </div>
     </section>
 
@@ -39,11 +31,11 @@
             @csrf
             <label>
                 <span>รหัสพนักงาน</span>
-                <input class="form-control" name="employee_code" value="{{ old('employee_code', 'EMP00125') }}" autocomplete="username" required autofocus>
+                <input class="form-control" name="employee_code" value="{{ old('employee_code') }}" autocomplete="username" required autofocus>
             </label>
             <label>
                 <span>รหัสผ่าน</span>
-                <input class="form-control" name="password" type="password" value="password123" autocomplete="current-password" required>
+                <input class="form-control" name="password" type="password" autocomplete="current-password" required>
             </label>
             <label class="form-check">
                 <input class="form-check-input" type="checkbox" name="remember" value="1">
@@ -51,15 +43,6 @@
             </label>
             <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
         </form>
-
-        <div class="demo-users">
-            <div>บัญชีตัวอย่าง</div>
-            <code>EMP00125</code> พนักงาน
-            <code>EMP00200</code> หัวหน้างาน / IT
-            <code>EMP01000</code> HR
-            <code>EMP09999</code> Super Admin
-            <span>รหัสผ่านทุกบัญชี: <code>password123</code></span>
-        </div>
     </section>
 </main>
 </body>

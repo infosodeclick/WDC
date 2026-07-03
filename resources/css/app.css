@@ -3069,44 +3069,6 @@ body.directory-modal-open {
     border-right: 8px solid var(--wdc-yellow-2);
 }
 
-.login-hero h1 {
-    max-width: 760px;
-    margin: 0;
-    font-size: clamp(2.1rem, 4vw, 4rem);
-    font-weight: 800;
-}
-
-.login-hero p {
-    max-width: 720px;
-    margin: 0;
-    color: #eee8da;
-    font-size: 1.08rem;
-}
-
-.login-brand small {
-    color: #eee8da;
-}
-
-.login-metrics {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.login-metrics span {
-    display: grid;
-    min-width: 118px;
-    padding: 14px;
-    border: 1px solid rgba(251, 214, 71, .42);
-    border-radius: 8px;
-    background: rgba(34, 31, 32, .38);
-}
-
-.login-metrics strong {
-    color: var(--wdc-yellow-1);
-    font-size: 1.7rem;
-}
-
 .login-panel {
     display: grid;
     align-content: center;
@@ -3120,22 +3082,6 @@ body.directory-modal-open {
 .login-panel h2 {
     margin: 0;
     font-size: 1.8rem;
-    font-weight: 800;
-}
-
-.demo-users {
-    display: grid;
-    gap: 6px;
-    margin-top: 8px;
-    padding: 14px;
-    border-radius: 8px;
-    background: #fff8d0;
-    color: var(--muted);
-    font-size: .92rem;
-}
-
-.demo-users code {
-    color: var(--wdc-black);
     font-weight: 800;
 }
 
