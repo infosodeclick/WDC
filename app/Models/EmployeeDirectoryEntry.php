@@ -56,6 +56,7 @@ class EmployeeDirectoryEntry extends Model
             'employee' => 'พนักงาน',
             'mail_group' => 'กลุ่มอีเมล',
             'showroom' => 'สาขา/โชว์รูม',
+            'resigned' => 'พนักงานที่ลาออก',
         ][$this->entry_type] ?? $this->entry_type;
     }
 

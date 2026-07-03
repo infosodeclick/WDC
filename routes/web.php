@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
     Route::patch('/profile/contact', [PortalController::class, 'updateProfileContact'])->name('profile.contact.update');
     Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index');
+    Route::post('/directory', [DirectoryController::class, 'store'])->name('directory.store');
     Route::get('/announcements', [PortalController::class, 'announcements'])->name('announcements.index');
     Route::get('/announcements/files/{file}', [PortalController::class, 'announcementFile'])->name('announcements.files.show');
     Route::get('/announcements/{announcement}', [PortalController::class, 'showAnnouncement'])->name('announcements.show');

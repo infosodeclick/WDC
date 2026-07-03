@@ -1144,8 +1144,10 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('directory-metrics', false)
             ->assertSee('directory-filter-search', false)
             ->assertSee('directory-quick-links', false)
+            ->assertSee(route('directory.index', ['type' => 'employee']), false)
             ->assertSee(route('directory.index', ['type' => 'mail_group']), false)
             ->assertSee(route('directory.index', ['type' => 'showroom']), false)
+            ->assertSee(route('directory.index', ['type' => 'resigned']), false)
             ->assertSee('Group Mail')
             ->assertDontSee('role-badge', false)
             ->assertDontSee('ข้อมูลทั้งหมด')
@@ -1180,7 +1182,90 @@ class WdcPortalTest extends TestCase
             ->assertSee('directory-quick-link active', false)
             ->assertSee('Flagship Showroom')
             ->assertSee('02-407-9085')
+            ->assertDontSee('Concept Store')
             ->assertDontSee('accountwdc@wdc.co.th');
+    }
+
+    public function test_directory_resigned_filter_is_separate_from_active_employees(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'manual',
+            'source_record_id' => 'resigned-member',
+            'entry_type' => 'employee',
+            'employment_status' => 'resigned',
+            'display_name' => 'Former WDC Member',
+            'english_name' => 'Former WDC Member',
+            'thai_name' => 'อดีต พนักงาน',
+            'department' => 'Sales',
+            'position' => 'Sales Officer',
+            'location' => 'Lumpini',
+            'email' => 'former.member@wdc.co.th',
+            'is_active' => false,
+            'resigned_at' => now(),
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('directory.index', ['type' => 'resigned']))
+            ->assertOk()
+            ->assertSee('directory-quick-link active', false)
+            ->assertSee('Former WDC Member')
+            ->assertDontSee('Bundit Hirunyanitiwatna');
+    }
+
+    public function test_it_can_create_directory_group_mail_and_showroom_entries(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertTrue(Role::where('slug', 'it_supervisor')->firstOrFail()->permissions->contains('key', 'directory.manage'));
+        $this->assertTrue(Role::where('slug', 'it_support')->firstOrFail()->permissions->contains('key', 'directory.manage'));
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00200',
+            'password' => 'password123',
+        ]);
+
+        $this->post(route('directory.store'), [
+            'entry_type' => 'mail_group',
+            'display_name' => 'support_group@wdc.co.th',
+            'email' => 'support_group@wdc.co.th',
+            'department' => 'IT',
+            'location' => 'Lumpini',
+        ])->assertRedirect(route('directory.index', ['type' => 'mail_group']));
+
+        $this->post(route('directory.store'), [
+            'entry_type' => 'showroom',
+            'display_name' => 'Rayong Showroom',
+            'phone' => '038-000-000',
+            'location' => 'Rayong',
+        ])->assertRedirect(route('directory.index', ['type' => 'showroom']));
+
+        $this->assertDatabaseHas('employee_directory_entries', [
+            'source_system' => 'wdc_manual',
+            'entry_type' => 'mail_group',
+            'display_name' => 'support_group@wdc.co.th',
+        ]);
+
+        $this->assertDatabaseHas('employee_directory_entries', [
+            'source_system' => 'wdc_manual',
+            'entry_type' => 'showroom',
+            'display_name' => 'Rayong Showroom',
+            'department' => 'Showroom',
+        ]);
+
+        $this->get(route('directory.index', ['type' => 'mail_group']))
+            ->assertOk()
+            ->assertSee('support_group@wdc.co.th');
+
+        $this->get(route('directory.index', ['type' => 'showroom']))
+            ->assertOk()
+            ->assertSee('Rayong Showroom')
+            ->assertSee('038-000-000');
     }
 
     public function test_employee_can_switch_directory_display_modes(): void

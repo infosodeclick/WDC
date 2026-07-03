@@ -54,6 +54,10 @@
         <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> ค้นหา</button>
     </form>
     <div class="directory-quick-links" aria-label="ตัวกรองข้อมูลเพิ่มเติม">
+        <a class="directory-quick-link {{ $entryType === 'employee' ? 'active' : '' }}" href="{{ route('directory.index', ['type' => 'employee']) }}">
+            <i class="bi bi-people"></i>
+            <span>พนักงาน</span>
+        </a>
         <a class="directory-quick-link {{ $entryType === 'mail_group' ? 'active' : '' }}" href="{{ route('directory.index', ['type' => 'mail_group']) }}">
             <i class="bi bi-envelope-at"></i>
             <span>Group Mail</span>
@@ -62,7 +66,80 @@
             <i class="bi bi-geo-alt"></i>
             <span>สาขา</span>
         </a>
+        <a class="directory-quick-link {{ $entryType === 'resigned' ? 'active' : '' }}" href="{{ route('directory.index', ['type' => 'resigned']) }}">
+            <i class="bi bi-person-dash"></i>
+            <span>พนักงานที่ลาออก</span>
+        </a>
     </div>
+
+    @if(session('status'))
+        <div class="alert alert-success directory-status">{{ session('status') }}</div>
+    @endif
+
+    @if($canManageDirectory)
+        <details class="directory-manage-panel">
+            <summary><i class="bi bi-plus-circle"></i> เพิ่มข้อมูลรายชื่อ</summary>
+            <form class="directory-manage-form" method="post" action="{{ route('directory.store') }}">
+                @csrf
+                <label>
+                    <span>ประเภท</span>
+                    <select class="form-select" name="entry_type" required>
+                        <option value="employee">พนักงาน</option>
+                        <option value="mail_group">Group Mail</option>
+                        <option value="showroom">สาขา</option>
+                    </select>
+                </label>
+                <label>
+                    <span>ชื่อที่แสดง</span>
+                    <input class="form-control" name="display_name" value="{{ old('display_name') }}" required placeholder="เช่น Marketing Showroom หรือ sales_bu1@wdc.co.th">
+                </label>
+                <label>
+                    <span>อีเมล</span>
+                    <input class="form-control" type="email" name="email" value="{{ old('email') }}" placeholder="name@wdc.co.th">
+                </label>
+                <label>
+                    <span>แผนก/BU</span>
+                    <input class="form-control" name="department" value="{{ old('department') }}" placeholder="เช่น Marketing, Mail Group, Showroom">
+                </label>
+                <label>
+                    <span>ทีม</span>
+                    <input class="form-control" name="team" value="{{ old('team') }}">
+                </label>
+                <label>
+                    <span>สาขา</span>
+                    <input class="form-control" name="location" value="{{ old('location') }}" placeholder="เช่น Lumpini">
+                </label>
+                <label>
+                    <span>ตำแหน่ง/ประเภท</span>
+                    <input class="form-control" name="position" value="{{ old('position') }}" placeholder="เช่น Showroom, Mail Group">
+                </label>
+                <label>
+                    <span>โทร</span>
+                    <input class="form-control" name="phone" value="{{ old('phone') }}">
+                </label>
+                <label>
+                    <span>เบอร์โต๊ะ</span>
+                    <input class="form-control" name="extension_number" value="{{ old('extension_number') }}">
+                </label>
+                <label class="span-3">
+                    <span>URL รูป</span>
+                    <input class="form-control" name="image_url" value="{{ old('image_url') }}" placeholder="https://...">
+                </label>
+                <label class="span-3">
+                    <span>หมายเหตุ</span>
+                    <textarea class="form-control" name="notes" rows="2">{{ old('notes') }}</textarea>
+                </label>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> บันทึกข้อมูล</button>
+            </form>
+            @if($errors->any())
+                <div class="alert alert-danger directory-form-errors">
+                    @foreach($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
+        </details>
+    @endif
 </section>
 
 <div class="directory-grid">

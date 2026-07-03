@@ -1046,6 +1046,56 @@ a {
     outline: 0;
 }
 
+.directory-status {
+    margin: 12px 0 0;
+}
+
+.directory-manage-panel {
+    border: 1px solid var(--line);
+    background: #fffef8;
+    border-radius: 8px;
+    margin-top: 12px;
+    padding: 0;
+}
+
+.directory-manage-panel > summary {
+    cursor: pointer;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 14px;
+    font-weight: 850;
+    display: flex;
+}
+
+.directory-manage-panel > summary::marker {
+    content: "";
+}
+
+.directory-manage-form {
+    border-top: 1px solid var(--line);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+    padding: 14px;
+    display: grid;
+}
+
+.directory-manage-form label {
+    color: var(--muted);
+    gap: 6px;
+    font-weight: 650;
+    display: grid;
+}
+
+.directory-manage-form button {
+    min-height: 42px;
+}
+
+.directory-form-errors {
+    margin: 0 14px 14px;
+}
+
 .directory-note {
     padding-top: 10px;
     border-top: 1px solid var(--line);
@@ -3287,6 +3337,7 @@ body.directory-modal-open {
 
     .portal-nav,
     .directory-filter,
+    .directory-manage-form,
     .form-grid,
     .metric-grid,
     .asset-metric-grid,

@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmployeeDirectoryEntry;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DirectoryController extends Controller
@@ -21,8 +24,17 @@ class DirectoryController extends Controller
         $directoryView = $request->string('view')->toString();
 
         $directoryView = 'all';
+        $allowedEntryTypes = ['employee', 'mail_group', 'showroom', 'resigned'];
+        $entryType = in_array($entryType, $allowedEntryTypes, true) ? $entryType : '';
 
-        $visibleEntries = EmployeeDirectoryEntry::visibleInDirectory();
+        $visibleEntries = $entryType === 'resigned'
+            ? EmployeeDirectoryEntry::query()
+                ->where('entry_type', 'employee')
+                ->where(function ($query) {
+                    $query->where('employment_status', 'resigned')
+                        ->orWhere('is_active', false);
+                })
+            : EmployeeDirectoryEntry::visibleInDirectory();
 
         $filteredEntries = (clone $visibleEntries)
             ->when($q !== '', function ($query) use ($q) {
@@ -45,7 +57,8 @@ class DirectoryController extends Controller
             ->when($department !== '', fn ($query) => $query->where('department', $department))
             ->when($team !== '', fn ($query) => $query->where('team', $team))
             ->when($location !== '', fn ($query) => $query->where('location', $location))
-            ->when($entryType !== '', fn ($query) => $query->where('entry_type', $entryType));
+            ->when($entryType === 'showroom', fn ($query) => $query->where('entry_type', 'showroom')->where('display_name', 'like', '%Showroom%'))
+            ->when(in_array($entryType, ['employee', 'mail_group'], true), fn ($query) => $query->where('entry_type', $entryType));
 
         $sortedEntries = (clone $filteredEntries)
             ->get()
@@ -86,7 +99,76 @@ class DirectoryController extends Controller
                 'employee' => 'พนักงาน',
                 'mail_group' => 'กลุ่มอีเมล',
                 'showroom' => 'สาขา/โชว์รูม',
+                'resigned' => 'พนักงานที่ลาออก',
+            ],
+            'canManageDirectory' => $request->user()->canAccess('directory.manage'),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canAccess('directory.manage'), 403);
+
+        $validated = $request->validate([
+            'entry_type' => ['required', Rule::in(['employee', 'mail_group', 'showroom'])],
+            'display_name' => ['required', 'string', 'max:255'],
+            'english_name' => ['nullable', 'string', 'max:255'],
+            'thai_name' => ['nullable', 'string', 'max:255'],
+            'english_nickname' => ['nullable', 'string', 'max:100'],
+            'thai_nickname' => ['nullable', 'string', 'max:100'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'team' => ['nullable', 'string', 'max:255'],
+            'position' => ['nullable', 'string', 'max:255'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:100'],
+            'extension_number' => ['nullable', 'string', 'max:100'],
+            'image_url' => ['nullable', 'url', 'max:2048'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $validated = array_merge([
+            'english_name' => null,
+            'thai_name' => null,
+            'english_nickname' => null,
+            'thai_nickname' => null,
+            'department' => null,
+            'team' => null,
+            'position' => null,
+            'location' => null,
+            'email' => null,
+            'phone' => null,
+            'extension_number' => null,
+            'image_url' => null,
+            'notes' => null,
+        ], $validated);
+
+        if ($validated['entry_type'] === 'mail_group') {
+            $validated['department'] = $validated['department'] ?: 'Mail Group';
+            $validated['position'] = $validated['position'] ?: 'Mail Group';
+        }
+
+        if ($validated['entry_type'] === 'showroom') {
+            $validated['department'] = 'Showroom';
+            $validated['position'] = $validated['position'] ?: 'Showroom';
+        }
+
+        EmployeeDirectoryEntry::create([
+            ...$validated,
+            'source_system' => 'wdc_manual',
+            'source_record_id' => (string) Str::uuid(),
+            'employment_status' => 'active',
+            'imported_at' => now(),
+            'is_active' => true,
+            'published_at' => now(),
+            'raw_payload' => [
+                'created_from' => 'directory.store',
+                'created_by' => $request->user()->employee_code,
             ],
         ]);
+
+        return redirect()
+            ->route('directory.index', ['type' => $validated['entry_type']])
+            ->with('status', 'เพิ่มข้อมูลรายชื่อเรียบร้อยแล้ว');
     }
 }
