@@ -3058,15 +3058,25 @@ body.directory-modal-open {
 .login-hero {
     position: relative;
     display: grid;
-    align-content: center;
+    align-content: start;
+    justify-items: center;
     gap: 24px;
     padding: 64px;
     color: #ffffff;
     background:
-        linear-gradient(135deg, rgba(34, 31, 32, .94), rgba(34, 31, 32, .76)),
-        linear-gradient(90deg, rgba(251, 214, 71, .30), rgba(251, 214, 71, 0) 42%),
+        linear-gradient(180deg, rgba(34, 31, 32, .34), rgba(34, 31, 32, .10) 46%, rgba(34, 31, 32, .18)),
+        linear-gradient(90deg, rgba(251, 214, 71, .18), rgba(251, 214, 71, 0) 36%),
         url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80") center/cover;
     border-right: 8px solid var(--wdc-yellow-2);
+}
+
+.login-brand {
+    margin-top: 18px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(34, 31, 32, .38);
+    box-shadow: 0 10px 28px rgba(34, 31, 32, .16);
+    backdrop-filter: blur(2px);
 }
 
 .login-panel {
