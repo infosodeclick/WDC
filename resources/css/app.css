@@ -2018,6 +2018,24 @@ body.directory-modal-open {
     background: #fffdf4;
 }
 
+.hr-employee-search {
+    flex: 1 1 520px;
+    min-width: min(100%, 320px);
+}
+
+.hr-employee-search .input-group {
+    max-width: 760px;
+}
+
+.employee-edit-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 74px;
+    white-space: nowrap;
+}
+
 .employee-table-name {
     color: var(--ink);
     font-weight: 800;

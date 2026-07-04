@@ -7,7 +7,6 @@
     $hrMenu = [
         ['section' => 'dashboard', 'label' => 'แดชบอร์ด', 'icon' => 'bi-speedometer2', 'show' => true],
         ['section' => 'employees', 'label' => 'รายชื่อพนักงาน', 'icon' => 'bi-people', 'show' => $canManageEmployees],
-        ['section' => 'offboarding', 'label' => 'พนักงานลาออก', 'icon' => 'bi-person-dash', 'show' => $canManageEmployees],
         ['section' => 'announcements', 'label' => 'สร้างประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
         ['section' => 'complaints', 'label' => 'เรื่องร้องเรียนล่าสุด', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
     ];
@@ -122,7 +121,18 @@
 @if($activeSection === 'employees' && $canManageEmployees)
     <section class="panel">
         <div class="section-title">
-            <div></div>
+            <form class="hr-employee-search" method="get" action="{{ route('hr.index') }}">
+                <input type="hidden" name="section" value="employees">
+                <label class="visually-hidden" for="hrEmployeeSearch">ค้นหาพนักงาน</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="hrEmployeeSearch" class="form-control" name="employee_q" value="{{ $employeeSearch }}" placeholder="ค้นหาเลขพนักงาน ชื่อ ชื่อเล่น ชื่อจริง อีเมล เบอร์โทร">
+                    <button class="btn btn-primary" type="submit">ค้นหา</button>
+                    @if($employeeSearch !== '')
+                        <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'employees']) }}">ล้าง</a>
+                    @endif
+                </div>
+            </form>
             <div class="button-row">
                 @if($canManageOnboarding)
                     <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> เพิ่มพนักงานใหม่</a>
@@ -134,8 +144,8 @@
                         <i class="bi bi-download"></i> ส่งออกข้อมูล
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('hr.employees.export', ['format' => 'xls']) }}">Excel (.xls)</a></li>
-                        <li><a class="dropdown-item" href="{{ route('hr.employees.export', ['format' => 'csv']) }}">CSV (.csv)</a></li>
+                        <li><a class="dropdown-item" href="{{ route('hr.employees.export', ['format' => 'xls', 'employee_q' => $employeeSearch]) }}">Excel (.xls)</a></li>
+                        <li><a class="dropdown-item" href="{{ route('hr.employees.export', ['format' => 'csv', 'employee_q' => $employeeSearch]) }}">CSV (.csv)</a></li>
                     </ul>
                 </div>
             </div>
@@ -190,7 +200,7 @@
                                     <span class="status-pill {{ $employeeEntry->is_active ? 'status-done' : 'status-open' }}">{{ $employeeEntry->is_active ? 'ใช้งานอยู่' : 'ไม่แสดง/ลาออก' }}</span>
                                 </td>
                                 <td class="text-end">
-                                    <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#directoryEmployeeEdit{{ $employeeEntry->id }}">
+                                    <button class="btn btn-outline-primary btn-sm employee-edit-button" type="button" data-bs-toggle="modal" data-bs-target="#directoryEmployeeEdit{{ $employeeEntry->id }}">
                                         <i class="bi bi-pencil-square"></i> แก้ไข
                                     </button>
                                 </td>
@@ -204,7 +214,7 @@
                     $employeeCode = $employeeEntry->employeeCode();
                     $startDate = $employeeEntry->startDate();
                 @endphp
-                <div class="modal fade" id="directoryEmployeeEdit{{ $employeeEntry->id }}" tabindex="-1" aria-labelledby="directoryEmployeeEditLabel{{ $employeeEntry->id }}" aria-hidden="true">
+                <div class="modal fade hr-directory-modal" id="directoryEmployeeEdit{{ $employeeEntry->id }}" tabindex="-1" aria-labelledby="directoryEmployeeEditLabel{{ $employeeEntry->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-xl modal-dialog-scrollable">
                         <form class="modal-content" method="post" action="{{ route('hr.directory-entries.update', $employeeEntry) }}">
                             @csrf

@@ -28,8 +28,9 @@ class HrController extends Controller
 
         abort_unless($actor->canAccessAny(['hr.portal.view', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']), 403);
 
+        $employeeSearch = trim($request->string('employee_q')->toString());
         $employeeUsers = $this->employeeListQuery($actor)->get();
-        $employees = $this->employeeDirectoryQuery($actor)->get();
+        $employees = $this->employeeDirectoryQuery($actor, $employeeSearch)->get();
 
         $complaints = Complaint::with('reporter')->latest()->take(8);
 
@@ -92,6 +93,7 @@ class HrController extends Controller
             'activeSection' => $activeSection,
             'employees' => $employees,
             'employeeUsers' => $employeeUsers,
+            'employeeSearch' => $employeeSearch,
             'employeeRows' => $employeeRows,
             'departments' => Department::orderBy('name')->get(),
             'onboardingPositions' => $this->onboardingPositions(),
@@ -124,7 +126,8 @@ class HrController extends Controller
         abort_unless($actor->canAccess('hr.employees.manage'), 403);
 
         $format = $request->string('format')->lower()->toString();
-        $employees = $this->employeeDirectoryQuery($actor)->get();
+        $employeeSearch = trim($request->string('employee_q')->toString());
+        $employees = $this->employeeDirectoryQuery($actor, $employeeSearch)->get();
         $rows = $this->employeeExportRows($employees);
 
         return $format === 'csv'
@@ -355,7 +358,7 @@ class HrController extends Controller
         return $employees;
     }
 
-    private function employeeDirectoryQuery(User $actor)
+    private function employeeDirectoryQuery(User $actor, string $search = '')
     {
         $entries = EmployeeDirectoryEntry::query()
             ->where('entry_type', 'employee')
@@ -364,6 +367,24 @@ class HrController extends Controller
                     ->orWhere('published_at', '<=', now());
             })
             ->orderBy('display_name');
+
+        if ($search !== '') {
+            $like = "%{$search}%";
+
+            $entries->where(function ($query) use ($like) {
+                $query->where('source_record_id', 'like', $like)
+                    ->orWhere('display_name', 'like', $like)
+                    ->orWhere('english_name', 'like', $like)
+                    ->orWhere('english_nickname', 'like', $like)
+                    ->orWhere('thai_name', 'like', $like)
+                    ->orWhere('thai_nickname', 'like', $like)
+                    ->orWhere('nickname', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('phone', 'like', $like)
+                    ->orWhere('extension_number', 'like', $like)
+                    ->orWhere('raw_payload->employee_code', 'like', $like);
+            });
+        }
 
         if (! $actor->canSeeAllData()) {
             if ($actor->canSeeDepartmentData() && $actor->employee?->department?->name) {

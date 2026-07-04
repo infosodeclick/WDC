@@ -247,6 +247,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('ส่งออกข้อมูล')
             ->assertSee('Excel (.xls)')
             ->assertSee('CSV (.csv)')
+            ->assertSee('hrEmployeeSearch', false)
             ->assertDontSee('แสดงรายชื่อพนักงานทั้งหมด')
             ->assertDontSee('administrator ·')
             ->assertDontSee('accountwdc@wdc.co.th')
@@ -283,6 +284,19 @@ class WdcPortalTest extends TestCase
         $this->assertStringContainsString('วันที่เริ่มงาน', $excelContent);
         $this->assertStringContainsString('ชื่อเล่นไทย', $excelContent);
         $this->assertStringContainsString('<table', $excelContent);
+
+        $this->get(route('hr.index', ['section' => 'employees', 'employee_q' => 'Aiyada']))
+            ->assertOk()
+            ->assertSee('Aiyada Supso')
+            ->assertDontSee('Alisa Kerdphokha')
+            ->assertDontSee('Flagship Showroom');
+
+        $filteredCsv = $this->get(route('hr.employees.export', ['format' => 'csv', 'employee_q' => 'Aiyada']))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Aiyada Supso', $filteredCsv);
+        $this->assertStringNotContainsString('Alisa Kerdphokha', $filteredCsv);
     }
 
     public function test_hr_can_update_directory_employee_from_employee_list(): void
