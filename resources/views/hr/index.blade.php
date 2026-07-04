@@ -153,6 +153,23 @@
         @if($employees->isNotEmpty())
             <div class="table-responsive employee-registry-table-wrap">
                 <table class="table align-middle employee-registry-table">
+                    <colgroup>
+                        <col class="employee-col-code">
+                        <col class="employee-col-start">
+                        <col class="employee-col-name">
+                        <col class="employee-col-nickname">
+                        <col class="employee-col-thai">
+                        <col class="employee-col-nickname">
+                        <col class="employee-col-position">
+                        <col class="employee-col-department">
+                        <col class="employee-col-team">
+                        <col class="employee-col-location">
+                        <col class="employee-col-email">
+                        <col class="employee-col-phone">
+                        <col class="employee-col-extension">
+                        <col class="employee-col-status">
+                        <col class="employee-col-action">
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>รหัสพนักงาน</th>

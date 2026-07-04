@@ -1994,9 +1994,25 @@ body.directory-modal-open {
 }
 
 .employee-registry-table {
-    min-width: 1320px;
-    font-size: .92rem;
+    min-width: 1720px;
+    table-layout: fixed;
+    font-size: .88rem;
 }
+
+.employee-registry-table .employee-col-code { width: 96px; }
+.employee-registry-table .employee-col-start { width: 108px; }
+.employee-registry-table .employee-col-name { width: 190px; }
+.employee-registry-table .employee-col-nickname { width: 92px; }
+.employee-registry-table .employee-col-thai { width: 190px; }
+.employee-registry-table .employee-col-position { width: 150px; }
+.employee-registry-table .employee-col-department { width: 160px; }
+.employee-registry-table .employee-col-team { width: 150px; }
+.employee-registry-table .employee-col-location { width: 110px; }
+.employee-registry-table .employee-col-email { width: 190px; }
+.employee-registry-table .employee-col-phone { width: 100px; }
+.employee-registry-table .employee-col-extension { width: 90px; }
+.employee-registry-table .employee-col-status { width: 110px; }
+.employee-registry-table .employee-col-action { width: 88px; }
 
 .employee-registry-table th,
 .it-access-table th {
@@ -2011,6 +2027,20 @@ body.directory-modal-open {
 .employee-registry-table td,
 .it-access-table td {
     vertical-align: top;
+}
+
+.employee-registry-table th,
+.employee-registry-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    white-space: nowrap;
+}
+
+.employee-registry-table td {
+    vertical-align: middle;
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
 .employee-registry-table tbody tr:hover,
@@ -2039,7 +2069,10 @@ body.directory-modal-open {
 .employee-table-name {
     color: var(--ink);
     font-weight: 800;
-    line-height: 1.35;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .it-access-table {
