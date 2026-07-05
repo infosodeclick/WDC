@@ -41,6 +41,10 @@ class WdcPortalTest extends TestCase
         $response
             ->assertOk()
             ->assertDontSee('Dashboard')
+            ->assertDontSee('Approval Center')
+            ->assertDontSee('Reports')
+            ->assertDontSee(route('approvals.index'), false)
+            ->assertDontSee(route('reports.index'), false)
             ->assertDontSee('search-box', false)
             ->assertDontSee('metric-grid', false)
             ->assertDontSee('ประกาศใหม่')

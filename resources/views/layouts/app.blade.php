@@ -71,15 +71,6 @@
             @if($currentUser?->canAccessAny(['workflows.create', 'workflows.manage']))
                 <a class="nav-link {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
             @endif
-            @if($canShowApprovalNav)
-                <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}">
-                    <i class="bi bi-check2-square"></i><span>Approval Center</span>
-                    @if($approvalQueueCount > 0)<span class="nav-badge">{{ $approvalQueueCount }}</span>@endif
-                </a>
-            @endif
-            @if($canShowReportsNav)
-                <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>Reports</span></a>
-            @endif
             @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน</span></a>
             @endif
@@ -110,6 +101,19 @@
                         <i class="bi bi-people"></i><span>HR</span>
                         @if($hrQueueCount > 0)<span class="nav-badge">{{ $hrQueueCount }}</span>@endif
                     </a>
+                </div>
+            @endif
+            @if($canShowApprovalNav)
+                <div class="portal-nav-group">
+                    <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}">
+                        <i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>
+                        @if($approvalQueueCount > 0)<span class="nav-badge">{{ $approvalQueueCount }}</span>@endif
+                    </a>
+                </div>
+            @endif
+            @if($canShowReportsNav)
+                <div class="portal-nav-group">
+                    <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
                 </div>
             @endif
             @if($canShowAdminNav)
@@ -253,10 +257,10 @@
                     <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span>@if($hrQueueCount > 0)<strong>{{ $hrQueueCount }}</strong>@endif</a>
                 @endif
                 @if($canShowApprovalNav)
-                    <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>Approval Center</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
+                    <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
                 @endif
                 @if($canShowReportsNav)
-                    <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>Reports</span></a>
+                    <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
                 @endif
                 @if($canShowAdminNav)
                     <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span>@if($adminQueueCount > 0)<strong>{{ $adminQueueCount }}</strong>@endif</a>
