@@ -1879,4 +1879,32 @@ class WdcPortalTest extends TestCase
             ->assertSee('approval-panel', false)
             ->assertSee('approval-item', false);
     }
+
+    public function test_reports_page_is_visible_to_backoffice_roles_only(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+
+        $this->actingAs($employee);
+        $this->get(route('reports.index'))->assertForbidden();
+
+        $this->actingAs($hr);
+        $this->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Reports')
+            ->assertSee('รายงานภาพรวม')
+            ->assertSee('Ticket ค้าง')
+            ->assertSee('Export รายชื่อพนักงาน CSV')
+            ->assertDontSee('Export INVENTORY CSV');
+
+        $this->actingAs($itUser);
+        $this->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('INVENTORY ตามสถานะ')
+            ->assertSee('Export IT Checklist CSV')
+            ->assertSee('Export INVENTORY CSV');
+    }
 }

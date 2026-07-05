@@ -14,12 +14,13 @@
     $currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department');
     $helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0);
     $isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId;
-    $hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*') || request()->routeIs('approvals.*');
+    $hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*') || request()->routeIs('approvals.*') || request()->routeIs('reports.*');
     $canShowItNav = $currentUser?->canAccessAny(['it.portal.view', 'tickets.manage', 'it.onboarding.manage']);
     $canShowInventoryNav = $currentUser?->canAccessItAssets();
     $canShowHrNav = $currentUser?->canAccessAny(['hr.portal.view', 'hr.onboarding.manage', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']);
     $canShowAdminNav = $currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']);
     $canShowApprovalNav = $currentUser?->canAccessAny(['workflows.manage', 'hr.onboarding.manage', 'hr.employees.manage', 'complaints.review', 'it.onboarding.manage', 'tickets.manage', 'admin.users.manage', 'admin.roles.manage', 'audit.logs.view']);
+    $canShowReportsNav = $currentUser?->canAccessAny(['tickets.manage', 'hr.employees.manage', 'hr.onboarding.manage', 'complaints.review', 'assets.reports', 'audit.logs.view', 'admin.activity.view', 'admin.system.manage', 'workflows.manage']);
     $itQueueCount = $canShowItNav
         ? \App\Models\EmployeeOnboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'cancel_requested'])->count()
             + \App\Models\EmployeeOffboardingRequest::whereIn('status', ['pending_it', 'in_progress'])->count()
@@ -75,6 +76,9 @@
                     <i class="bi bi-check2-square"></i><span>Approval Center</span>
                     @if($approvalQueueCount > 0)<span class="nav-badge">{{ $approvalQueueCount }}</span>@endif
                 </a>
+            @endif
+            @if($canShowReportsNav)
+                <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>Reports</span></a>
             @endif
             @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน</span></a>
@@ -250,6 +254,9 @@
                 @endif
                 @if($canShowApprovalNav)
                     <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>Approval Center</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
+                @endif
+                @if($canShowReportsNav)
+                    <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>Reports</span></a>
                 @endif
                 @if($canShowAdminNav)
                     <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span>@if($adminQueueCount > 0)<strong>{{ $adminQueueCount }}</strong>@endif</a>

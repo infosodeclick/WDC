@@ -10,6 +10,7 @@ use App\Http\Controllers\EmployeeOnboardingController;
 use App\Http\Controllers\EmployeeOffboardingController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WorkflowController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/search', [PortalController::class, 'search'])->name('search');
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
     Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
