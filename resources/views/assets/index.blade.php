@@ -100,6 +100,99 @@
 
 @endif
 
+<section class="panel" id="software-licenses">
+    <div class="section-title">
+        <h2>Software License</h2>
+        <span class="tag">{{ number_format($softwareLicenses->count()) }} รายการล่าสุด</span>
+    </div>
+    @if($canManageAssets)
+        <form class="form-grid compact-form-grid mb-3" method="post" action="{{ route('assets.licenses.store') }}">
+            @csrf
+            <label>รหัส License
+                <input class="form-control" name="code" required placeholder="LIC-M365-001">
+            </label>
+            <label class="span-2">ชื่อ Software
+                <input class="form-control" name="name" required placeholder="Microsoft 365 Business Standard">
+            </label>
+            <label>Vendor
+                <input class="form-control" name="vendor" placeholder="Microsoft, Adobe, AutoDesk">
+            </label>
+            <label>ประเภท
+                <select class="form-select" name="license_type" required>
+                    <option value="subscription">Subscription</option>
+                    <option value="perpetual">Perpetual</option>
+                    <option value="trial">Trial</option>
+                    <option value="other">Other</option>
+                </select>
+            </label>
+            <label>จำนวนสิทธิ์
+                <input class="form-control" name="seat_count" type="number" min="1" value="1" required>
+            </label>
+            <label>ใช้งานแล้ว
+                <input class="form-control" name="assigned_seats" type="number" min="0" value="0">
+            </label>
+            <label>ค่าใช้จ่าย
+                <input class="form-control" name="cost" type="number" min="0" step="0.01">
+            </label>
+            <label>แผนก/เจ้าของระบบ
+                <input class="form-control" name="department" placeholder="IT, Marketing, Design">
+            </label>
+            <label>วันเริ่ม
+                <input class="form-control" name="starts_at" type="date">
+            </label>
+            <label>วันหมดอายุ
+                <input class="form-control" name="expires_at" type="date">
+            </label>
+            <label>สถานะ
+                <select class="form-select" name="status" required>
+                    <option value="active">ใช้งานอยู่</option>
+                    <option value="expiring">ใกล้หมดอายุ</option>
+                    <option value="expired">หมดอายุ</option>
+                    <option value="cancelled">ยกเลิก</option>
+                </select>
+            </label>
+            <label class="span-3">หมายเหตุ
+                <textarea class="form-control" name="notes" rows="2" placeholder="เลขสัญญา ผู้ดูแล หรือเงื่อนไขการต่ออายุ"></textarea>
+            </label>
+            <div class="span-3 button-row">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> บันทึก License</button>
+            </div>
+        </form>
+    @endif
+
+    <div class="table-responsive">
+        <table class="table align-middle asset-table">
+            <thead>
+                <tr>
+                    <th>รหัส</th>
+                    <th>Software</th>
+                    <th>สิทธิ์</th>
+                    <th>ค่าใช้จ่าย</th>
+                    <th>หมดอายุ</th>
+                    <th>สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($softwareLicenses as $license)
+                    <tr>
+                        <td><strong>{{ $license->code }}</strong></td>
+                        <td>
+                            <strong>{{ $license->name }}</strong>
+                            <small class="d-block muted">{{ $license->vendor ?: '-' }} · {{ $license->department ?: 'ไม่ระบุเจ้าของระบบ' }}</small>
+                        </td>
+                        <td>{{ number_format($license->assigned_seats) }} / {{ number_format($license->seat_count) }}<small class="d-block muted">คงเหลือ {{ number_format($license->availableSeats()) }}</small></td>
+                        <td>{{ number_format((float) $license->cost, 0) }}</td>
+                        <td>{{ $license->expires_at?->format('d/m/Y') ?? '-' }}</td>
+                        <td><span class="status-pill status-{{ $license->status }}">{{ $license->statusLabel() }}</span></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="6"><div class="empty-state">ยังไม่มีทะเบียน Software License</div></td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</section>
+
 @if($canManageAssetSettings)
     <div class="content-grid asset-admin-grid" id="asset-settings">
         <section class="panel" id="asset-categories">

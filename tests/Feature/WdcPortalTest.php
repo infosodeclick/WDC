@@ -13,6 +13,7 @@ use App\Models\MeetingRoomBooking;
 use App\Models\Permission;
 use App\Models\ProfileChangeRequest;
 use App\Models\Role;
+use App\Models\SoftwareLicense;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WorkflowRequest;
@@ -1906,5 +1907,49 @@ class WdcPortalTest extends TestCase
             ->assertSee('INVENTORY ตามสถานะ')
             ->assertSee('Export IT Checklist CSV')
             ->assertSee('Export INVENTORY CSV');
+    }
+
+    public function test_it_can_register_software_license_and_reports_show_license_summary(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+
+        $this->actingAs($itUser);
+        $this->post(route('assets.licenses.store'), [
+            'code' => 'LIC-M365-001',
+            'name' => 'Microsoft 365 Business Standard',
+            'vendor' => 'Microsoft',
+            'license_type' => 'subscription',
+            'seat_count' => 25,
+            'assigned_seats' => 18,
+            'cost' => 12500,
+            'department' => 'IT',
+            'starts_at' => now()->subMonth()->toDateString(),
+            'expires_at' => now()->addDays(45)->toDateString(),
+            'status' => 'expiring',
+            'notes' => 'Renew before expiry',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('software_licenses', [
+            'code' => 'LIC-M365-001',
+            'seat_count' => 25,
+            'assigned_seats' => 18,
+            'status' => 'expiring',
+        ]);
+
+        $license = SoftwareLicense::where('code', 'LIC-M365-001')->firstOrFail();
+        $this->assertSame(7, $license->availableSeats());
+
+        $this->get(route('assets.index'))
+            ->assertOk()
+            ->assertSee('Microsoft 365 Business Standard')
+            ->assertSee('LIC-M365-001');
+
+        $this->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('License ใกล้หมดอายุ')
+            ->assertSee('Software License')
+            ->assertSee('ใกล้หมดอายุ');
     }
 }

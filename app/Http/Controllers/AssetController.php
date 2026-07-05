@@ -8,6 +8,7 @@ use App\Models\AssetCategory;
 use App\Models\AssetInspectionDocument;
 use App\Models\AssetLocation;
 use App\Models\ItAsset;
+use App\Models\SoftwareLicense;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +31,7 @@ class AssetController extends Controller
             'locations' => AssetLocation::withCount('assets')->orderBy('code')->get(),
             'inspectionDocuments' => AssetInspectionDocument::with('location', 'creator')->latest('inspection_date')->take(8)->get(),
             'auditLogs' => AssetAuditLog::with('asset', 'user')->latest()->take(12)->get(),
+            'softwareLicenses' => SoftwareLicense::latest()->take(12)->get(),
             'canManageAssets' => $user->canManageItAssets(),
             'canManageAssetSettings' => $user->canManageItAssetSettings(),
             'canDeleteAssets' => $user->canDeleteItAssets(),
@@ -76,6 +78,36 @@ class AssetController extends Controller
         $this->logAsset($request, $asset, 'create_asset', "Created {$asset->code} {$asset->name}", null, $asset->toArray());
 
         return back()->with('status', 'เพิ่มรายการ INVENTORY เรียบร้อยแล้ว');
+    }
+
+    public function storeLicense(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->canManageItAssets(), 403);
+
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:80', 'unique:software_licenses,code'],
+            'name' => ['required', 'string', 'max:255'],
+            'vendor' => ['nullable', 'string', 'max:255'],
+            'license_type' => ['required', 'string', 'max:80'],
+            'seat_count' => ['required', 'integer', 'min:1', 'max:100000'],
+            'assigned_seats' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'cost' => ['nullable', 'numeric', 'min:0'],
+            'department' => ['nullable', 'string', 'max:255'],
+            'starts_at' => ['nullable', 'date'],
+            'expires_at' => ['nullable', 'date'],
+            'status' => ['required', Rule::in(SoftwareLicense::STATUSES)],
+            'notes' => ['nullable', 'string', 'max:3000'],
+        ]);
+
+        $license = SoftwareLicense::create([
+            ...$data,
+            'assigned_seats' => $data['assigned_seats'] ?? 0,
+            'cost' => $data['cost'] ?? 0,
+        ]);
+
+        $this->logGeneral($request, 'create_software_license', SoftwareLicense::class, $license->id, "Created software license {$license->code}");
+
+        return back()->with('status', 'บันทึก Software License เรียบร้อยแล้ว');
     }
 
     public function updateStatus(ItAsset $asset, Request $request): RedirectResponse

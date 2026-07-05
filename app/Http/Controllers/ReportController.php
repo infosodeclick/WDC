@@ -8,6 +8,7 @@ use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\ItAsset;
 use App\Models\ProfileChangeRequest;
+use App\Models\SoftwareLicense;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WorkflowRequest;
@@ -27,6 +28,7 @@ class ReportController extends Controller
             'ticketStatusRows' => $this->ticketStatusRows(),
             'employeeRows' => $this->employeeRows(),
             'assetRows' => $this->assetRows(),
+            'licenseRows' => $this->licenseRows(),
             'onboardingRows' => $this->onboardingRows(),
             'actionRows' => $this->actionRows(),
             'exportLinks' => $this->exportLinks($user),
@@ -59,6 +61,9 @@ class ReportController extends Controller
         $warrantyExpiring = ItAsset::whereNotNull('warranty_until')
             ->whereBetween('warranty_until', [now()->toDateString(), now()->addDays(90)->toDateString()])
             ->count();
+        $licenseExpiring = SoftwareLicense::whereNotNull('expires_at')
+            ->whereBetween('expires_at', [now()->toDateString(), now()->addDays(90)->toDateString()])
+            ->count();
         $pendingApprovals = $pendingOnboarding
             + $pendingOffboarding
             + ProfileChangeRequest::where('status', 'pending')->count()
@@ -71,6 +76,7 @@ class ReportController extends Controller
             ['label' => 'พนักงานลาออกรอดำเนินการ', 'value' => $pendingOffboarding, 'note' => 'รอปิดระบบ/รับคืนอุปกรณ์', 'icon' => 'bi-person-dash'],
             ['label' => 'ทรัพย์สินทั้งหมด', 'value' => ItAsset::count(), 'note' => 'ในทะเบียน INVENTORY', 'icon' => 'bi-box-seam'],
             ['label' => 'ใกล้หมดประกัน', 'value' => $warrantyExpiring, 'note' => 'ภายใน 90 วัน', 'icon' => 'bi-shield-exclamation'],
+            ['label' => 'License ใกล้หมดอายุ', 'value' => $licenseExpiring, 'note' => 'ภายใน 90 วัน', 'icon' => 'bi-key'],
             ['label' => 'รายการรออนุมัติ', 'value' => $pendingApprovals, 'note' => 'จาก HR, IT และเรื่องร้องเรียน', 'icon' => 'bi-check2-square'],
             ['label' => 'พนักงานใช้งานอยู่', 'value' => EmployeeDirectoryEntry::where('is_active', true)->count(), 'note' => 'แสดงในรายชื่อพนักงาน', 'icon' => 'bi-people'],
         ];
@@ -125,6 +131,21 @@ class ReportController extends Controller
         return collect($onboardingLabels)->map(fn (string $label, string $status): array => [
             'name' => $label,
             'count' => EmployeeOnboardingRequest::where('status', $status)->count(),
+        ])->values();
+    }
+
+    private function licenseRows()
+    {
+        $labels = [
+            'active' => 'ใช้งานอยู่',
+            'expiring' => 'ใกล้หมดอายุ',
+            'expired' => 'หมดอายุ',
+            'cancelled' => 'ยกเลิก',
+        ];
+
+        return collect($labels)->map(fn (string $label, string $status): array => [
+            'name' => $label,
+            'count' => SoftwareLicense::where('status', $status)->count(),
         ])->values();
     }
 

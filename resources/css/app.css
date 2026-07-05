@@ -2306,11 +2306,13 @@ body.directory-modal-open {
 }
 
 .status-repair,
+.status-expiring,
 .status-open {
     color: var(--warning);
     background: #fff7e6;
 }
 
+.status-expired,
 .status-rejected,
 .status-cancelled,
 .status-lost {

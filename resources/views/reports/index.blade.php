@@ -81,6 +81,21 @@
 
         <section class="report-panel">
             <div class="report-panel-head">
+                <h2><i class="bi bi-key"></i> Software License</h2>
+                <span>{{ number_format($licenseRows->sum('count')) }}</span>
+            </div>
+            <div class="report-row-list">
+                @foreach($licenseRows as $row)
+                    <div class="report-row">
+                        <span>{{ $row['name'] }}</span>
+                        <strong>{{ number_format($row['count']) }}</strong>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="report-panel">
+            <div class="report-panel-head">
                 <h2><i class="bi bi-person-plus"></i> Onboarding</h2>
                 <span>{{ number_format($onboardingRows->sum('count')) }}</span>
             </div>
