@@ -52,3 +52,26 @@ Important identity rules:
 - Legacy WDC ticket rows should map to `workflow_requests.external_source = wdc_ticket` so IT Helpdesk has one active queue.
 - SmartFlow workflow catalog sync is stored in `app\Services\SmartflowWorkflowCatalog`; migrations/upserts should keep the catalog backward-compatible by storing extra source detail in JSON fields rather than requiring legacy credentials at runtime.
 - Do not store external-system passwords, national ID numbers, salary data, or payroll details in WDC Portal.
+
+## Target Data Model
+
+The long-term target table set is documented in [INTERNAL_PORTAL_BLUEPRINT.md](INTERNAL_PORTAL_BLUEPRINT.md). New database work should move toward that model gradually and keep existing data compatible.
+
+Likely future table groups:
+
+- Organization master data: `branches`, `positions`, expanded `departments`, manager relationships.
+- Service desk: `ticket_categories`, `ticket_attachments`, `ticket_status_logs`, SLA settings.
+- Onboarding/offboarding: `onboarding_requests`, `onboarding_tasks`, `onboarding_access_items`, `onboarding_asset_items`, `offboarding_requests`, `offboarding_tasks`.
+- Access management: `access_requests`, `access_request_items`, `systems`, `system_roles`, `approval_logs`.
+- IT assets: `asset_assignments`, `asset_transfers`, `asset_repairs`, `asset_attachments`, `asset_warranty_logs`.
+- Licenses: `licenses`, `license_assignments`, `license_renewals`.
+- Content and booking: `announcement_reads`, `knowledge_categories`, `room_bookings`, `equipment_bookings`.
+- Operations: `settings`, richer `notifications`, richer `activity_logs` or dedicated audit log tables.
+
+Database rules:
+
+- Prefer additive migrations and backfills over destructive schema changes.
+- Use status fields, archived flags, or soft deletes for business records.
+- Keep audit history for approvals, access grants/revokes, asset movement, exports, and file actions.
+- Keep file metadata in database, but store file contents in approved storage.
+- Do not add salary, national ID, or external-system password storage without a separate security approval.

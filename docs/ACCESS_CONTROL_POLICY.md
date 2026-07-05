@@ -54,3 +54,26 @@
 - ห้ามใช้ Super Admin เป็นบัญชีทำงานประจำวัน
 - ห้ามลบข้อมูล production ถาวรผ่าน UI ทั่วไป
 - ห้ามข้าม audit log สำหรับงานสิทธิ์, พนักงาน, ticket, complaint และ asset
+
+## Target Enterprise Roles
+
+The target role model is described in [INTERNAL_PORTAL_BLUEPRINT.md](INTERNAL_PORTAL_BLUEPRINT.md). Use these as the standard role families when adding new permission presets:
+
+- `Super Admin`: emergency full-system owner, not a daily-use account.
+- `IT Admin`: IT ticket, access, asset, license, and user-operation authority.
+- `HR Admin`: employee, onboarding, offboarding, HR announcement, and HR request authority.
+- `Admin Officer`: building, meeting room, office equipment, and admin-service authority.
+- `Manager`: team-level viewer and approver.
+- `Approver`: scoped approval-only role for assigned workflows.
+- `Employee`: self-service user for profile, directory, announcements, tickets, requests, and forms.
+- `Auditor`: read-only reports, audit logs, and evidence export.
+
+Every new module must define:
+
+- menu permission key
+- view permission key
+- create/update/manage permission key if applicable
+- approve permission key if applicable
+- export permission key if applicable
+- data scope rule: self, team, branch, department, or all company
+- audit log events for sensitive actions
