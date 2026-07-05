@@ -200,6 +200,8 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('hr.index'))
             ->assertOk()
+            ->assertSee('hr-dashboard-summary', false)
+            ->assertSee('hr-dashboard-grid', false)
             ->assertSee('แดชบอร์ด')
             ->assertSee('พนักงานทั้งหมด')
             ->assertSee('คำขอแก้โปรไฟล์')

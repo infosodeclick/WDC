@@ -12,7 +12,7 @@
     ];
 @endphp
 
-<div class="button-row mb-3">
+<div class="hr-section-tabs mb-3">
     @foreach($hrMenu as $item)
         @if($item['show'])
             <a class="btn {{ $activeSection === $item['section'] ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('hr.index', ['section' => $item['section']]) }}">
@@ -23,34 +23,70 @@
 </div>
 
 @if($activeSection === 'dashboard')
-    <div class="metric-grid mb-3">
-        <div class="metric-card"><span>พนักงานทั้งหมด</span><strong>{{ number_format($employeeCount) }}</strong><small>ตามสิทธิ์ข้อมูลที่เข้าถึงได้</small></div>
-        <div class="metric-card"><span>ใช้งานอยู่</span><strong>{{ number_format($activeEmployeeCount) }}</strong><small>แสดงในระบบ</small></div>
-        <div class="metric-card"><span>พนักงานลาออก/ไม่แสดง</span><strong>{{ number_format($inactiveEmployeeCount) }}</strong><small>ถูกปิดการใช้งาน</small></div>
-        @if($canManageOnboarding)
-            <div class="metric-card"><span>พนักงานใหม่รอดำเนินการ</span><strong>{{ number_format($pendingOnboardingCount) }}</strong><small>รอ IT หรือ HR อนุมัติ</small></div>
-        @endif
-        @if($canManageEmployees)
-            <div class="metric-card"><span>คำขอแก้โปรไฟล์</span><strong>{{ number_format($pendingProfileChangeCount) }}</strong><small>รอ HR ตรวจสอบ</small></div>
-            <div class="metric-card"><span>พนักงานลาออกรอดำเนินการ</span><strong>{{ number_format($pendingOffboardingCount) }}</strong><small>รอ IT หรือ HR ปิดบัญชี</small></div>
-        @endif
-        @if($canReviewComplaints)
-            <div class="metric-card"><span>เรื่องร้องเรียน</span><strong>{{ number_format($complaintCount) }}</strong><small>รายการล่าสุดที่เกี่ยวข้อง</small></div>
-        @endif
+    <div class="hr-dashboard-shell">
+        <section class="hr-dashboard-summary">
+            <div class="hr-summary-card primary">
+                <span>พนักงานทั้งหมด</span>
+                <strong>{{ number_format($employeeCount) }}</strong>
+                <small>ตามสิทธิ์ข้อมูลที่เข้าถึงได้</small>
+            </div>
+            <div class="hr-summary-card">
+                <span>ใช้งานอยู่</span>
+                <strong>{{ number_format($activeEmployeeCount) }}</strong>
+                <small>แสดงในระบบ</small>
+            </div>
+            <div class="hr-summary-card">
+                <span>พนักงานลาออก/ไม่แสดง</span>
+                <strong>{{ number_format($inactiveEmployeeCount) }}</strong>
+                <small>ถูกปิดการใช้งาน</small>
+            </div>
+            @if($canManageOnboarding)
+                <div class="hr-summary-card attention">
+                    <span>พนักงานใหม่รอดำเนินการ</span>
+                    <strong>{{ number_format($pendingOnboardingCount) }}</strong>
+                    <small>รอ IT หรือ HR อนุมัติ</small>
+                </div>
+            @endif
+            @if($canManageEmployees)
+                <div class="hr-summary-card">
+                    <span>คำขอแก้โปรไฟล์</span>
+                    <strong>{{ number_format($pendingProfileChangeCount) }}</strong>
+                    <small>รอ HR ตรวจสอบ</small>
+                </div>
+                <div class="hr-summary-card">
+                    <span>พนักงานลาออกรอดำเนินการ</span>
+                    <strong>{{ number_format($pendingOffboardingCount) }}</strong>
+                    <small>รอ IT หรือ HR ปิดบัญชี</small>
+                </div>
+            @endif
+            @if($canReviewComplaints)
+                <div class="hr-summary-card attention">
+                    <span>เรื่องร้องเรียน</span>
+                    <strong>{{ number_format($complaintCount) }}</strong>
+                    <small>รายการล่าสุดที่เกี่ยวข้อง</small>
+                </div>
+            @endif
+        </section>
     </div>
 
-    <div class="content-grid">
+    <div class="hr-dashboard-grid">
         @if($canManageOnboarding)
-            <section class="panel">
-                <div class="section-title">
-                    <h2>คำขอพนักงานใหม่</h2>
+            <section class="panel hr-dashboard-panel hr-panel-wide">
+                <div class="section-title hr-panel-title">
+                    <div>
+                        <h2>คำขอพนักงานใหม่</h2>
+                        <small>ติดตามรายการที่ส่งให้ IT และรอ HR อนุมัติ</small>
+                    </div>
                     <a class="text-link" href="{{ route('hr.index', ['section' => 'onboarding']) }}">เปิดเมนู</a>
                 </div>
-                <div class="item-list">
+                <div class="hr-list">
                     @forelse($onboardingRequests->take(5) as $onboarding)
-                        <div class="result-row">
-                            <strong>{{ $onboarding->employee_code }} · {{ $onboarding->displayName() }}</strong>
-                            <small>{{ $onboarding->statusLabel() }} · {{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</small>
+                        <div class="hr-list-row">
+                            <div>
+                                <strong>{{ $onboarding->employee_code }} · {{ $onboarding->displayName() }}</strong>
+                                <small>{{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</small>
+                            </div>
+                            <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
                         </div>
                     @empty
                         <div class="empty-state">ยังไม่มีรายการพนักงานใหม่</div>
@@ -60,16 +96,21 @@
         @endif
 
         @if($canManageEmployees)
-            <section class="panel">
-                <div class="section-title">
-                    <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
+            <section class="panel hr-dashboard-panel">
+                <div class="section-title hr-panel-title">
+                    <div>
+                        <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
+                        <small>รอ HR ตรวจสอบข้อมูลพนักงาน</small>
+                    </div>
                     <a class="text-link" href="{{ route('hr.index', ['section' => 'profile-requests']) }}">เปิดเมนู</a>
                 </div>
-                <div class="item-list">
+                <div class="hr-list">
                     @forelse($profileChangeRequests->take(5) as $profileRequest)
-                        <div class="result-row">
-                            <strong>{{ $profileRequest->user?->employee_code }} · {{ $profileRequest->user?->name }}</strong>
-                            <small>{{ $profileRequest->field }} · {{ $profileRequest->requested_value ?: '-' }}</small>
+                        <div class="hr-list-row">
+                            <div>
+                                <strong>{{ $profileRequest->user?->employee_code }} · {{ $profileRequest->user?->name }}</strong>
+                                <small>{{ $profileRequest->field }} · {{ $profileRequest->requested_value ?: '-' }}</small>
+                            </div>
                         </div>
                     @empty
                         <div class="empty-state">ไม่มีคำขอแก้ข้อมูลที่รออนุมัติ</div>
@@ -79,16 +120,22 @@
         @endif
 
         @if($canReviewComplaints)
-            <section class="panel">
-                <div class="section-title">
-                    <h2>เรื่องร้องเรียนล่าสุด</h2>
+            <section class="panel hr-dashboard-panel hr-panel-wide">
+                <div class="section-title hr-panel-title">
+                    <div>
+                        <h2>เรื่องร้องเรียนล่าสุด</h2>
+                        <small>รายการล่าสุดที่ HR ต้องรับทราบ</small>
+                    </div>
                     <a class="text-link" href="{{ route('hr.index', ['section' => 'complaints']) }}">เปิดเมนู</a>
                 </div>
-                <div class="item-list">
+                <div class="hr-list">
                     @forelse($complaints->take(5) as $complaint)
-                        <div class="result-row">
-                            <strong>{{ $complaint->subject }}</strong>
-                            <small>{{ $complaint->status }} · {{ $complaint->created_at->format('d/m/Y H:i') }}</small>
+                        <div class="hr-list-row">
+                            <div>
+                                <strong>{{ $complaint->subject }}</strong>
+                                <small>{{ $complaint->created_at->format('d/m/Y H:i') }}</small>
+                            </div>
+                            <span class="status-pill">{{ $complaint->status }}</span>
                         </div>
                     @empty
                         <div class="empty-state">ยังไม่มีเรื่องร้องเรียนล่าสุด</div>
@@ -98,16 +145,21 @@
         @endif
 
         @if($canManageAnnouncements)
-            <section class="panel">
-                <div class="section-title">
-                    <h2>ประกาศล่าสุด</h2>
+            <section class="panel hr-dashboard-panel">
+                <div class="section-title hr-panel-title">
+                    <div>
+                        <h2>ประกาศล่าสุด</h2>
+                        <small>ประกาศที่สร้างจาก HR ล่าสุด</small>
+                    </div>
                     <a class="text-link" href="{{ route('hr.index', ['section' => 'announcements']) }}">เปิดเมนู</a>
                 </div>
-                <div class="item-list">
+                <div class="hr-list">
                     @forelse($announcements->take(5) as $announcement)
-                        <div class="result-row">
-                            <strong>{{ $announcement->announcement_no }} · {{ $announcement->title }}</strong>
-                            <small>{{ $announcement->category }} · {{ $announcement->published_at?->format('d/m/Y') ?: '-' }}</small>
+                        <div class="hr-list-row">
+                            <div>
+                                <strong>{{ $announcement->announcement_no }} · {{ $announcement->title }}</strong>
+                                <small>{{ $announcement->category }} · {{ $announcement->published_at?->format('d/m/Y') ?: '-' }}</small>
+                            </div>
                         </div>
                     @empty
                         <div class="empty-state">ยังไม่มีประกาศล่าสุด</div>
