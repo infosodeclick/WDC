@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComplaintController;
@@ -39,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/time-attendance', [PortalController::class, 'timeAttendance'])->name('time-attendance');
     Route::get('/search', [PortalController::class, 'search'])->name('search');
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
+    Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');

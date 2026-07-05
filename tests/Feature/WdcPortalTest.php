@@ -1835,4 +1835,48 @@ class WdcPortalTest extends TestCase
             'is_active' => false,
         ]);
     }
+
+    public function test_approval_center_collects_pending_work_for_authorized_roles(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $department = $hr->employee->department;
+
+        $this->actingAs($employee);
+        $this->get(route('approvals.index'))->assertForbidden();
+
+        $this->actingAs($hr);
+        $this->post(route('hr.onboarding.store'), [
+            'employee_code' => 'APP001',
+            'english_first_name' => 'Approval',
+            'english_last_name' => 'Tester',
+            'english_nickname' => 'App',
+            'thai_first_name' => 'Approval',
+            'thai_last_name' => 'Tester',
+            'thai_nickname' => 'App',
+            'department_id' => $department->id,
+            'position' => 'IT Support',
+            'team' => 'IT Support',
+            'location' => 'Lumpini',
+            'corporate_email' => 'approval.tester@wdc.co.th',
+            'personal_phone' => '0800000000',
+            'extension_number' => '1808',
+            'start_date' => now()->toDateString(),
+        ])->assertRedirect();
+
+        $onboarding = EmployeeOnboardingRequest::where('employee_code', 'APP001')->firstOrFail();
+
+        $this->actingAs($itUser);
+        $this->get(route('approvals.index'))
+            ->assertOk()
+            ->assertSee('Approval Center')
+            ->assertSee('APP001')
+            ->assertSee('Approval Tester')
+            ->assertSee(route('onboarding.show', $onboarding), false)
+            ->assertSee('approval-panel', false)
+            ->assertSee('approval-item', false);
+    }
 }
