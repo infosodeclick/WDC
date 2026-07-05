@@ -30,6 +30,8 @@
                 $claimedByMe = $onboarding->claimed_by_id === auth()->id();
                 $claimedByOther = $onboarding->claimed_by_id && ! $claimedByMe;
                 $canEditChecklist = $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true);
+                $systemTotal = $onboarding->systems->count();
+                $systemReady = $onboarding->systems->where('status', 'provisioned')->count();
             @endphp
             <article class="list-card onboarding-queue-card">
                 <div class="onboarding-queue-head">
@@ -74,6 +76,25 @@
                     </div>
                 @endif
 
+                <div class="onboarding-system-summary">
+                    @forelse($onboarding->systems->take(4) as $system)
+                        <span class="access-system-chip {{ $system->status === 'provisioned' ? 'is-ready' : ($system->status === 'skipped' ? 'is-skipped' : '') }}">
+                            {{ $system->system_name }}
+                            <small>{{ $system->statusLabel() }}</small>
+                        </span>
+                    @empty
+                        <span class="muted">ยังไม่มีรายการระบบที่ต้องเปิด</span>
+                    @endforelse
+                    @if($systemTotal > 4)
+                        <span class="status-pill status-soft">+{{ $systemTotal - 4 }} ระบบ</span>
+                    @endif
+                </div>
+
+                <details class="onboarding-inline-details">
+                    <summary>
+                        <span><i class="bi bi-list-check"></i> Checklist เปิดระบบ</span>
+                        <strong>{{ $systemReady }} / {{ $systemTotal }}</strong>
+                    </summary>
                 <form method="post" action="{{ route('it.onboarding.update', $onboarding) }}" class="mt-3">
                     @csrf
                     @method('PATCH')
@@ -164,6 +185,7 @@
                         <button class="btn btn-outline-danger" type="submit"><i class="bi bi-check2-circle"></i> ยืนยันยกเลิกและแจ้ง HR</button>
                     </form>
                 @endif
+                </details>
             </article>
         @empty
             <div class="empty-state">ยังไม่มีรายการพนักงานใหม่จาก HR</div>

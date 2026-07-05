@@ -103,19 +103,6 @@
                     </a>
                 </div>
             @endif
-            @if($canShowApprovalNav)
-                <div class="portal-nav-group">
-                    <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}">
-                        <i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>
-                        @if($approvalQueueCount > 0)<span class="nav-badge">{{ $approvalQueueCount }}</span>@endif
-                    </a>
-                </div>
-            @endif
-            @if($canShowReportsNav)
-                <div class="portal-nav-group">
-                    <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
-                </div>
-            @endif
             @if($canShowAdminNav)
                 <div class="portal-nav-group">
                     <a class="nav-link {{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.index') }}">
@@ -125,6 +112,25 @@
                 </div>
             @endif
         </nav>
+
+        @if($canShowApprovalNav || $canShowReportsNav)
+            <nav class="nav flex-column portal-nav portal-utility-nav" aria-label="เมนูสรุปและอนุมัติ">
+                <span class="portal-nav-label">สรุปและอนุมัติ</span>
+                @if($canShowApprovalNav)
+                    <div class="portal-nav-group">
+                        <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}">
+                            <i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>
+                            @if($approvalQueueCount > 0)<span class="nav-badge">{{ $approvalQueueCount }}</span>@endif
+                        </a>
+                    </div>
+                @endif
+                @if($canShowReportsNav)
+                    <div class="portal-nav-group">
+                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
+                    </div>
+                @endif
+            </nav>
+        @endif
     </aside>
 
     <main class="portal-main">
@@ -256,17 +262,25 @@
                 @if($canShowHrNav)
                     <a href="{{ route('hr.index') }}"><i class="bi bi-people"></i><span>HR</span>@if($hrQueueCount > 0)<strong>{{ $hrQueueCount }}</strong>@endif</a>
                 @endif
-                @if($canShowApprovalNav)
-                    <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
-                @endif
-                @if($canShowReportsNav)
-                    <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
-                @endif
                 @if($canShowAdminNav)
                     <a href="{{ route('admin.index') }}"><i class="bi bi-sliders"></i><span>Admin</span>@if($adminQueueCount > 0)<strong>{{ $adminQueueCount }}</strong>@endif</a>
                 @endif
             </div>
         </div>
+
+        @if($canShowApprovalNav || $canShowReportsNav)
+            <div class="mobile-more-section">
+                <h3>สรุปและอนุมัติ</h3>
+                <div class="mobile-more-grid">
+                    @if($canShowApprovalNav)
+                        <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
+                    @endif
+                    @if($canShowReportsNav)
+                        <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
+                    @endif
+                </div>
+            </div>
+        @endif
     </div>
 </div>
 

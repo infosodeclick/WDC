@@ -84,6 +84,8 @@ a {
     position: sticky;
     top: 0;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow-y: auto;
     padding: 24px 18px;
@@ -221,9 +223,24 @@ a {
 }
 
 .portal-divider {
+    flex: 0 0 auto;
     height: 1px;
     margin: 22px 0;
     background: rgba(255, 222, 70, .28);
+}
+
+.portal-nav-label {
+    display: block;
+    padding: 0 12px 4px;
+    color: #a9a294;
+    font-size: .72rem;
+    font-weight: 850;
+}
+
+.portal-utility-nav {
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 222, 70, .22);
 }
 
 .portal-main {
@@ -2096,6 +2113,68 @@ body.directory-modal-open {
 .onboarding-queue-card {
     display: grid;
     gap: 12px;
+}
+
+.onboarding-system-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid rgba(34, 31, 32, .08);
+    border-radius: 8px;
+    background: #fffdfa;
+}
+
+.onboarding-inline-details {
+    border: 1px solid rgba(34, 31, 32, .1);
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.onboarding-inline-details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 10px 12px;
+    color: var(--wdc-black);
+    background: rgba(251, 214, 71, .16);
+    font-weight: 850;
+    cursor: pointer;
+    list-style: none;
+}
+
+.onboarding-inline-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.onboarding-inline-details > summary span,
+.onboarding-inline-details > summary strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.onboarding-inline-details > summary strong {
+    flex: 0 0 auto;
+    min-width: 56px;
+    justify-content: center;
+    padding: 4px 8px;
+    border: 1px solid rgba(34, 31, 32, .12);
+    border-radius: 999px;
+    background: #ffffff;
+}
+
+.onboarding-inline-details[open] > summary {
+    border-bottom: 1px solid rgba(34, 31, 32, .08);
+}
+
+.onboarding-inline-details > form,
+.onboarding-inline-details > .mt-2 {
+    margin: 12px !important;
 }
 
 .onboarding-queue-head {
