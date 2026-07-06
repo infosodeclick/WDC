@@ -279,6 +279,38 @@ class WdcPortalTest extends TestCase
             ->assertSee($urgent->title);
     }
 
+    public function test_profile_external_links_redirect_only_when_real_urls_are_configured(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        config([
+            'services.payroll.url' => 'https://example.com/payroll',
+            'services.time_attendance.url' => null,
+        ]);
+
+        $this->get(route('payroll'))
+            ->assertOk()
+            ->assertSee('สลิปเงินเดือน');
+
+        $this->get(route('time-attendance'))
+            ->assertOk()
+            ->assertSee('ลงเวลางาน');
+
+        config([
+            'services.payroll.url' => 'https://payroll.wdc.co.th/login',
+            'services.time_attendance.url' => 'https://time.wdc.co.th/clock',
+        ]);
+
+        $this->get(route('payroll'))
+            ->assertRedirect('https://payroll.wdc.co.th/login');
+
+        $this->get(route('time-attendance'))
+            ->assertRedirect('https://time.wdc.co.th/clock');
+    }
+
     public function test_dashboard_announcement_popup_has_close_arrows_and_indicators(): void
     {
         $this->seed(DatabaseSeeder::class);

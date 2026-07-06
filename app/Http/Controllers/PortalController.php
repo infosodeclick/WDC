@@ -501,9 +501,13 @@ class PortalController extends Controller
         return back()->with('status', 'ลบแบบฟอร์มเรียบร้อยแล้ว');
     }
 
-    public function payroll(): View
+    public function payroll(): RedirectResponse|View
     {
         abort_unless(request()->user()?->canAccess('payroll.link'), 403);
+
+        if ($url = $this->configuredExternalUrl('services.payroll.url')) {
+            return redirect()->away($url);
+        }
 
         return view('profile.external-link-placeholder', [
             'title' => 'สลิปเงินเดือน',
@@ -512,9 +516,13 @@ class PortalController extends Controller
         ]);
     }
 
-    public function timeAttendance(): View
+    public function timeAttendance(): RedirectResponse|View
     {
         abort_unless(request()->user()?->canAccess('profile.view'), 403);
+
+        if ($url = $this->configuredExternalUrl('services.time_attendance.url')) {
+            return redirect()->away($url);
+        }
 
         return view('profile.external-link-placeholder', [
             'title' => 'ลงเวลางาน',
@@ -609,6 +617,17 @@ class PortalController extends Controller
     private function canCreateCompanyDocument($user): bool
     {
         return $user->canAccess('documents.manage') && ($user->canSeeAllData() || $user->canSeeDepartmentData());
+    }
+
+    private function configuredExternalUrl(string $configKey): ?string
+    {
+        $url = trim((string) config($configKey));
+
+        if ($url === '' || str_contains($url, 'example.com')) {
+            return null;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
     }
 
     private function activeAnnouncementsQuery()

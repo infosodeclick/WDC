@@ -39,6 +39,10 @@ return [
         'url' => env('PAYROLL_URL', 'https://example.com/payroll'),
     ],
 
+    'time_attendance' => [
+        'url' => env('TIME_ATTENDANCE_URL'),
+    ],
+
     'meeting_rooms' => [
         'sheet_url' => env('MEETING_ROOM_GOOGLE_SHEET_URL', 'https://calendar.google.com/calendar/u/0/embed?src=641a219d5e8a0c60b9107fff5f155eba12e1d82d03809d7df47bc8aa656ea1e6@group.calendar.google.com&ctz=Asia/Bangkok'),
         'sheet_embed_url' => env('MEETING_ROOM_GOOGLE_SHEET_EMBED_URL', 'https://calendar.google.com/calendar/u/0/embed?src=641a219d5e8a0c60b9107fff5f155eba12e1d82d03809d7df47bc8aa656ea1e6@group.calendar.google.com&ctz=Asia/Bangkok'),
