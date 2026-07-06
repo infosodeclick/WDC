@@ -10,9 +10,9 @@ use App\Models\Department;
 use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
-use App\Models\Notification;
 use App\Models\ProfileChangeRequest;
 use App\Models\User;
+use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -178,13 +178,12 @@ class HrController extends Controller
             ]);
         }
 
-        User::where('is_active', true)->get()->each(fn (User $user) => Notification::create([
-            'user_id' => $user->id,
+        app(PortalNotificationService::class)->createForUsers(User::where('is_active', true)->get(), [
             'type' => 'announcement',
             'title' => 'ประกาศใหม่',
             'body' => $announcement->title,
             'url' => route('announcements.show', $announcement),
-        ]));
+        ]);
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -224,8 +223,7 @@ class HrController extends Controller
             ]);
         }
 
-        Notification::create([
-            'user_id' => $profileChangeRequest->user_id,
+        app(PortalNotificationService::class)->createForUser($profileChangeRequest->user, [
             'type' => 'profile_change',
             'title' => $data['status'] === 'approved' ? 'HR อนุมัติการแก้เบอร์โทรแล้ว' : 'HR ไม่อนุมัติการแก้เบอร์โทร',
             'body' => $profileChangeRequest->requested_value,

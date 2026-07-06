@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Complaint;
-use App\Models\Notification;
 use App\Models\User;
+use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -66,17 +66,17 @@ class ComplaintController extends Controller
             'user_agent' => (string) $request->userAgent(),
         ]);
 
-        User::with('role.permissions', 'permissionOverrides')
+        $reviewers = User::with('role.permissions', 'permissionOverrides')
             ->where('is_active', true)
             ->get()
-            ->filter(fn (User $user) => $user->canAccess('complaints.review'))
-            ->each(fn (User $user) => Notification::create([
-                'user_id' => $user->id,
-                'type' => 'complaint',
-                'title' => 'มีเรื่องร้องเรียนใหม่',
-                'body' => $complaint->subject,
-                'url' => route('complaints.index'),
-            ]));
+            ->filter(fn (User $user) => $user->canAccess('complaints.review'));
+
+        app(PortalNotificationService::class)->createForUsers($reviewers, [
+            'type' => 'complaint',
+            'title' => 'มีเรื่องร้องเรียนใหม่',
+            'body' => $complaint->subject,
+            'url' => route('complaints.index'),
+        ]);
 
         return redirect()->route('complaints.index')->with('status', 'ส่งเรื่องเรียบร้อยแล้ว');
     }

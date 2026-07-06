@@ -331,7 +331,9 @@ class WdcPortalTest extends TestCase
 
     public function test_hr_can_create_announcement_with_uploaded_attachment(): void
     {
+        Mail::fake();
         Storage::fake('local');
+        config(['wdc.mail_notifications_enabled' => true]);
         $this->seed(DatabaseSeeder::class);
 
         $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
@@ -366,6 +368,9 @@ class WdcPortalTest extends TestCase
         $this->get(route('announcements.files.show', $file))
             ->assertOk()
             ->assertHeader('content-disposition', 'inline; filename=activity.png');
+
+        Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->notification->type === 'announcement'
+            && $mail->notification->body === 'Activity Upload Test');
     }
 
     public function test_documents_download_real_uploaded_file_when_available(): void
