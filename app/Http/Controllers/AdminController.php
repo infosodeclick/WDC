@@ -28,6 +28,7 @@ class AdminController extends Controller
         $memberSearch = trim($request->string('q')->toString());
 
         $usersQuery = User::with('role.permissions', 'employee.department', 'permissionOverrides')
+            ->whereNotIn('employee_code', ['administrator', 'EMP09999'])
             ->when($memberSearch !== '', function ($query) use ($memberSearch) {
                 $query->where(function ($query) use ($memberSearch) {
                     $query->where('employee_code', 'like', "%{$memberSearch}%")

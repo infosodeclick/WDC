@@ -388,7 +388,9 @@ class WdcPortalTest extends TestCase
             ->assertSee('data-bs-target="#employee-profile-', false)
             ->assertSee('data-bs-target="#employee-permissions-', false)
             ->assertSee('ใช้งาน')
-            ->assertSee('EMP00125');
+            ->assertSee('EMP00125')
+            ->assertDontSee('administrator ·')
+            ->assertDontSee('EMP09999 ·');
 
         $this->get(route('admin.index', ['section' => 'permissions', 'q' => 'somchai']))
             ->assertOk()

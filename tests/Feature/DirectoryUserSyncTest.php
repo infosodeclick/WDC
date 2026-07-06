@@ -95,6 +95,16 @@ class DirectoryUserSyncTest extends TestCase
 
         $this->assertSame('000008', $hrEntry->fresh()->employeeCode());
         $this->assertSame('000009', $itEntry->fresh()->employeeCode());
+
+        $this->actingAs($admin);
+
+        $this->get(route('admin.index', ['section' => 'permissions']))
+            ->assertOk()
+            ->assertSee('000007')
+            ->assertSee('000008')
+            ->assertSee('000009')
+            ->assertDontSee('Protected Admin')
+            ->assertDontSee('EMP09999 ·');
     }
 
     /**
