@@ -109,6 +109,10 @@
                 <strong>{{ $mailStatus['host'] }}{{ $mailStatus['port'] ? ':'.$mailStatus['port'] : '' }}</strong>
             </div>
             <div class="mail-readiness-card">
+                <span>Encryption</span>
+                <strong>{{ $mailStatus['scheme_configured'] ? strtoupper($mailStatus['scheme']) : 'ต้องตั้งค่า TLS/SSL' }}</strong>
+            </div>
+            <div class="mail-readiness-card">
                 <span>Account</span>
                 <strong>{{ $mailStatus['username_configured'] ? 'ตั้งค่าแล้ว' : 'ยังไม่ตั้งค่า' }}</strong>
             </div>

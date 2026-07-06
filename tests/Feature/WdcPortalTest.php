@@ -145,6 +145,7 @@ class WdcPortalTest extends TestCase
             ->assertSee(route('admin.mail-test'), false)
             ->assertSee('smtp')
             ->assertSee('smtp.zoho.com:587')
+            ->assertSee('TLS')
             ->assertSee('notify@wdc.co.th')
             ->assertSee('พร้อมส่งอีเมล')
             ->assertDontSee('super-secret-app-password');
@@ -181,6 +182,7 @@ class WdcPortalTest extends TestCase
             'mail.default' => 'smtp',
             'mail.mailers.smtp.host' => 'smtp.zoho.com',
             'mail.mailers.smtp.port' => 587,
+            'mail.mailers.smtp.scheme' => 'tls',
             'mail.mailers.smtp.username' => 'notify@wdc.co.th',
             'mail.mailers.smtp.password' => 'super-secret-app-password',
             'mail.from.address' => 'notify@wdc.co.th',

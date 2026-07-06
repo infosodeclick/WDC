@@ -186,11 +186,12 @@ class AdminController extends Controller
         $mailer = (string) config('mail.default');
         $host = (string) config('mail.mailers.smtp.host');
         $port = (string) config('mail.mailers.smtp.port');
-        $scheme = (string) config('mail.mailers.smtp.scheme');
+        $scheme = strtolower((string) config('mail.mailers.smtp.scheme'));
         $usernameConfigured = filled(config('mail.mailers.smtp.username'));
         $passwordConfigured = filled(config('mail.mailers.smtp.password'));
         $fromAddress = (string) config('mail.from.address');
         $notificationsEnabled = (bool) config('wdc.mail_notifications_enabled');
+        $schemeConfigured = in_array($scheme, ['tls', 'ssl'], true);
 
         return [
             'enabled' => $notificationsEnabled,
@@ -201,10 +202,12 @@ class AdminController extends Controller
             'from' => $fromAddress,
             'username_configured' => $usernameConfigured,
             'password_configured' => $passwordConfigured,
+            'scheme_configured' => $schemeConfigured,
             'ready' => $notificationsEnabled
                 && $mailer === 'smtp'
                 && $host !== ''
                 && $host !== '127.0.0.1'
+                && $schemeConfigured
                 && $usernameConfigured
                 && $passwordConfigured
                 && $fromAddress !== '',
