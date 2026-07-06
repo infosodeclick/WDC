@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\PortalNotificationMail;
 use App\Models\Complaint;
 use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeOffboardingRequest;
@@ -22,6 +23,7 @@ use App\Services\GoogleCalendarService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -586,6 +588,8 @@ class WdcPortalTest extends TestCase
 
     public function test_hr_it_onboarding_flow_creates_employee_directory_entry_and_links_asset(): void
     {
+        Mail::fake();
+        config(['wdc.mail_notifications_enabled' => true]);
         Storage::fake('public');
         $this->seed(DatabaseSeeder::class);
 
@@ -636,6 +640,9 @@ class WdcPortalTest extends TestCase
             'title' => 'มีรายการพนักงานใหม่จาก HR',
             'url' => route('onboarding.show', $onboarding),
         ]);
+        Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->hasTo($itUser->email)
+            && $mail->notification->title === 'มีรายการพนักงานใหม่จาก HR'
+            && $mail->notification->url === route('onboarding.show', $onboarding));
 
         $this->actingAs($administrator);
 

@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Services\GoogleCalendarService;
 use App\Services\ItHelpdeskWorkflow;
+use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -110,17 +111,17 @@ class PortalController extends Controller
             'status' => 'pending',
         ]);
 
-        User::with('role.permissions', 'permissionOverrides')
+        $hrUsers = User::with('role.permissions', 'permissionOverrides')
             ->where('is_active', true)
             ->get()
-            ->filter(fn (User $hrUser) => $hrUser->canAccessAny(['hr.employees.manage', 'hr.portal.view']))
-            ->each(fn (User $hrUser) => Notification::create([
-                'user_id' => $hrUser->id,
+            ->filter(fn (User $hrUser) => $hrUser->canAccessAny(['hr.employees.manage', 'hr.portal.view']));
+
+        app(PortalNotificationService::class)->createForUsers($hrUsers, [
                 'type' => 'profile_change',
                 'title' => 'รออนุมัติแก้เบอร์โทร',
                 'body' => "{$user->employee_code} {$user->name} ขอแก้เบอร์โทรเป็น {$requestedPhone}",
                 'url' => route('hr.index'),
-            ]));
+        ]);
 
         ActivityLog::create([
             'user_id' => $user->id,

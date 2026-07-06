@@ -17,6 +17,7 @@ MAIL_PASSWORD=<zoho-app-password>
 MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=it-notify@wdc.co.th
 MAIL_FROM_NAME="WDC Portal"
+WDC_MAIL_NOTIFICATIONS_ENABLED=true
 ```
 
 Use a Zoho app password for `MAIL_PASSWORD`. Do not use a personal mailbox password
@@ -32,16 +33,22 @@ Start with one mailbox if Zoho licenses are limited, then split by department la
 
 ## Notification Events To Wire
 
-The portal already stores in-app notifications. Email should mirror the same important
-events only:
+The portal stores in-app notifications first. When `WDC_MAIL_NOTIFICATIONS_ENABLED`
+is true, WDC also sends email for important events through the shared notification
+mail service:
 
 - New employee onboarding sent from HR to IT.
 - IT completed onboarding and returned it to HR.
 - HR cancelled onboarding.
-- Profile phone-change request sent to HR.
+- Employee profile phone-change request sent to HR.
+- IT Helpdesk workflow request created.
+- Ticket replied or status changed.
+
+Next mail events to add after SMTP is confirmed:
+
 - Password reset requested.
-- Ticket assigned, replied, resolved, or overdue.
 - Asset warranty or license expiry alerts.
+- SLA overdue alerts.
 
 ## Verification
 

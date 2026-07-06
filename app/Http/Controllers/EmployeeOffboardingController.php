@@ -7,8 +7,8 @@ use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOffboardingSystem;
 use App\Models\ItAsset;
-use App\Models\Notification;
 use App\Models\User;
+use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -329,17 +329,17 @@ class EmployeeOffboardingController extends Controller
 
     private function notifyUsers(array $permissionKeys, string $title, string $body, string $url): void
     {
-        User::with('role.permissions', 'permissionOverrides')
+        $recipients = User::with('role.permissions', 'permissionOverrides')
             ->where('is_active', true)
             ->get()
-            ->filter(fn (User $user) => $user->canAccessAny($permissionKeys))
-            ->each(fn (User $user) => Notification::create([
-                'user_id' => $user->id,
-                'type' => 'offboarding',
-                'title' => $title,
-                'body' => $body,
-                'url' => $url,
-            ]));
+            ->filter(fn (User $user) => $user->canAccessAny($permissionKeys));
+
+        app(PortalNotificationService::class)->createForUsers($recipients, [
+            'type' => 'offboarding',
+            'title' => $title,
+            'body' => $body,
+            'url' => $url,
+        ]);
     }
 
     private function canView(User $user): bool

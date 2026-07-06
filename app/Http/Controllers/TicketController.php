@@ -6,12 +6,12 @@ use App\Models\ActivityLog;
 use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\ItAsset;
-use App\Models\Notification;
 use App\Models\Ticket;
 use App\Models\TicketComment;
 use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Services\ItHelpdeskWorkflow;
+use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -87,17 +87,17 @@ class TicketController extends Controller
 
         $this->log($request, 'create_helpdesk_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Created helpdesk workflow {$workflowRequest->title}");
 
-        User::with('role.permissions', 'permissionOverrides')
+        $workflowManagers = User::with('role.permissions', 'permissionOverrides')
             ->where('is_active', true)
             ->get()
-            ->filter(fn (User $user) => $user->canAccess('workflows.manage'))
-            ->each(fn (User $user) => Notification::create([
-                'user_id' => $user->id,
-                'type' => 'workflow',
-                'title' => 'มีคำขอ IT Helpdesk ใหม่',
-                'body' => $workflowRequest->title,
-                'url' => $helpdesk->route(),
-            ]));
+            ->filter(fn (User $user) => $user->canAccess('workflows.manage'));
+
+        app(PortalNotificationService::class)->createForUsers($workflowManagers, [
+            'type' => 'workflow',
+            'title' => 'มีคำขอ IT Helpdesk ใหม่',
+            'body' => $workflowRequest->title,
+            'url' => $helpdesk->route(),
+        ]);
 
         return redirect()->to($helpdesk->route())->with('status', 'ส่งคำขอ IT Helpdesk เข้าศูนย์ Workflow แล้ว');
     }
@@ -118,8 +118,7 @@ class TicketController extends Controller
         $this->log($request, 'comment_ticket', Ticket::class, $ticket->id, "Commented on ticket {$ticket->title}");
 
         if ($ticket->reporter_id !== $request->user()->id) {
-            Notification::create([
-                'user_id' => $ticket->reporter_id,
+            app(PortalNotificationService::class)->createForUser($ticket->reporter, [
                 'type' => 'ticket',
                 'title' => 'Ticket ถูกตอบกลับ',
                 'body' => $ticket->title,
@@ -145,8 +144,7 @@ class TicketController extends Controller
 
         $this->log($request, 'update_ticket_status', Ticket::class, $ticket->id, "Changed ticket status to {$data['status']}");
 
-        Notification::create([
-            'user_id' => $ticket->reporter_id,
+        app(PortalNotificationService::class)->createForUser($ticket->reporter, [
             'type' => 'ticket',
             'title' => 'สถานะ Ticket เปลี่ยนแล้ว',
             'body' => "{$ticket->title}: {$data['status']}",

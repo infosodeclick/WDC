@@ -8,9 +8,9 @@ use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\EmployeeOnboardingSystem;
 use App\Models\ItAsset;
-use App\Models\Notification;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -662,26 +662,22 @@ class EmployeeOnboardingController extends Controller
             ->get()
             ->filter(fn (User $user) => $user->canAccessAny($permissionKeys));
 
-        $recipients->each(fn (User $user) => Notification::create([
-                'user_id' => $user->id,
-                'type' => 'onboarding',
-                'title' => $title,
-                'body' => $body,
-                'url' => $url,
-            ]));
+        $notifier = app(PortalNotificationService::class);
+        $payload = [
+            'type' => 'onboarding',
+            'title' => $title,
+            'body' => $body,
+            'url' => $url,
+        ];
+
+        $notifier->createForUsers($recipients, $payload);
 
         $administrator = User::where('employee_code', 'administrator')
             ->where('is_active', true)
             ->first();
 
         if ($administrator && ! $recipients->contains('id', $administrator->id)) {
-            Notification::create([
-                'user_id' => $administrator->id,
-                'type' => 'onboarding',
-                'title' => $title,
-                'body' => $body,
-                'url' => $url,
-            ]);
+            $notifier->createForUser($administrator, $payload);
         }
     }
 
