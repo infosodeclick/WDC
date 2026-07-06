@@ -459,6 +459,21 @@ class WdcPortalTest extends TestCase
         $this->get(route('admin.index', ['section' => 'activity-logs']))
             ->assertOk()
             ->assertSee('Activity Logs');
+
+        $this->get(route('admin.index', ['section' => 'users']))
+            ->assertOk()
+            ->assertSee('เพิ่มผู้ใช้งาน')
+            ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
+
+        $this->get(route('admin.index', ['section' => 'roles']))
+            ->assertOk()
+            ->assertSee('Role Template')
+            ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
+
+        $this->get(route('admin.index', ['section' => 'activity']))
+            ->assertOk()
+            ->assertSee('Activity Logs')
+            ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
     }
 
     public function test_admin_can_create_employee_with_language_specific_nicknames_for_directory(): void

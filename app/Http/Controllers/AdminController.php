@@ -79,7 +79,13 @@ class AdminController extends Controller
             ['key' => 'role-template', 'label' => 'Role Template', 'icon' => 'bi-sliders', 'show' => $canManageRoles],
             ['key' => 'activity-logs', 'label' => 'Activity Logs', 'icon' => 'bi-clock-history', 'show' => $canViewLogs],
         ], fn (array $section) => $section['show']));
-        $activeSection = $request->string('section')->toString();
+        $sectionAliases = [
+            'users' => 'create-user',
+            'roles' => 'role-template',
+            'activity' => 'activity-logs',
+        ];
+        $requestedSection = $request->string('section')->toString();
+        $activeSection = $sectionAliases[$requestedSection] ?? $requestedSection;
 
         if (! collect($adminSections)->pluck('key')->contains($activeSection)) {
             $activeSection = $adminSections[0]['key'];
