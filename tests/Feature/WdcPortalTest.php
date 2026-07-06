@@ -21,9 +21,12 @@ use App\Models\WorkflowRequest;
 use App\Models\WorkflowTemplate;
 use App\Services\GoogleCalendarService;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification as NotificationFake;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -65,6 +68,55 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('href="#meeting-room"', false)
             ->assertSee('สวัสดี คุณสมชาย')
             ->assertSee('โปรไฟล์พนักงาน');
+    }
+
+    public function test_employee_can_request_and_use_password_reset_by_employee_code(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        NotificationFake::fake();
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
+        $this->post(route('password.email'), [
+            'account' => 'EMP00125',
+        ])->assertSessionHas('status');
+
+        $token = null;
+        NotificationFake::assertSentTo($employee, ResetPassword::class, function (ResetPassword $notification) use (&$token): bool {
+            $token = $notification->token;
+
+            return true;
+        });
+
+        $this->assertNotEmpty($token);
+
+        $this->post(route('password.update'), [
+            'token' => $token,
+            'email' => $employee->email,
+            'password' => 'NewWdc@2026',
+            'password_confirmation' => 'NewWdc@2026',
+        ])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status');
+
+        $this->assertTrue(Hash::check('NewWdc@2026', $employee->fresh()->password));
+
+        $this->followingRedirects()->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'NewWdc@2026',
+        ])->assertOk();
+    }
+
+    public function test_password_reset_request_does_not_reveal_unknown_accounts(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        NotificationFake::fake();
+
+        $this->post(route('password.email'), [
+            'account' => 'UNKNOWN001',
+        ])->assertSessionHas('status');
+
+        NotificationFake::assertNothingSent();
     }
 
     public function test_profile_phone_change_is_approved_by_hr_before_updating_employee(): void

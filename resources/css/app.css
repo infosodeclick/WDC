@@ -3412,6 +3412,33 @@ body.directory-modal-open {
     font-weight: 800;
 }
 
+.auth-flow-screen .login-panel {
+    align-content: center;
+}
+
+.auth-help-link,
+.auth-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    color: var(--wdc-black);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-help-link {
+    justify-self: center;
+    margin-top: 2px;
+    color: #6f5b00;
+}
+
+.auth-help-link:hover,
+.auth-back-link:hover {
+    color: #000000;
+    text-decoration: underline;
+}
+
 @media (max-width: 1060px) {
     .onboarding-queue-head {
         display: grid;

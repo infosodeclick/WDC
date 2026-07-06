@@ -23,6 +23,10 @@
         <h2>เข้าสู่ระบบ</h2>
         <p class="muted">ใช้รหัสพนักงานและรหัสผ่าน</p>
 
+        @if(session('status'))
+            <div class="alert alert-success">{{ session('status') }}</div>
+        @endif
+
         @if($errors->any())
             <div class="alert alert-danger">{{ $errors->first() }}</div>
         @endif
@@ -42,6 +46,7 @@
                 <span class="form-check-label">จดจำการเข้าสู่ระบบ</span>
             </label>
             <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-box-arrow-in-right"></i> เข้าสู่ระบบ</button>
+            <a class="auth-help-link" href="{{ route('password.request') }}">ลืมรหัสผ่าน?</a>
         </form>
     </section>
 </main>
