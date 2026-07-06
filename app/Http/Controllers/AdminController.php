@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PortalNotificationMail;
 use App\Models\ActivityLog;
 use App\Models\Department;
 use App\Models\Employee;
@@ -15,8 +16,11 @@ use App\Services\DirectoryUserSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class AdminController extends Controller
 {
@@ -205,6 +209,56 @@ class AdminController extends Controller
                 && $passwordConfigured
                 && $fromAddress !== '',
         ];
+    }
+
+    public function sendMailTest(Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canOpenAdmin($actor), 403);
+
+        if (! $actor->email) {
+            return redirect()
+                ->route('admin.index', ['section' => 'notifications'])
+                ->withErrors(['mail_test' => 'บัญชีของคุณยังไม่มีอีเมล จึงยังทดสอบส่ง Zoho Mail ไม่ได้']);
+        }
+
+        $mailStatus = $this->mailStatus();
+
+        if (! $mailStatus['ready']) {
+            return redirect()
+                ->route('admin.index', ['section' => 'notifications'])
+                ->withErrors(['mail_test' => 'ระบบอีเมลยังไม่พร้อม กรุณาตั้งค่า Zoho SMTP และเปิด WDC_MAIL_NOTIFICATIONS_ENABLED ก่อนทดสอบ']);
+        }
+
+        $notification = Notification::create([
+            'user_id' => $actor->id,
+            'type' => 'mail_test',
+            'title' => 'ทดสอบอีเมลจาก WDC Portal',
+            'body' => 'ถ้าได้รับอีเมลฉบับนี้ แปลว่าระบบแจ้งเตือนผ่าน Zoho SMTP พร้อมใช้งานแล้ว',
+            'url' => route('admin.index', ['section' => 'notifications']),
+        ]);
+
+        try {
+            Mail::to($actor->email)->send(new PortalNotificationMail($notification));
+        } catch (Throwable $exception) {
+            Log::warning('WDC admin mail test failed.', [
+                'notification_id' => $notification->id,
+                'user_id' => $actor->id,
+                'email' => $actor->email,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('admin.index', ['section' => 'notifications'])
+                ->withErrors(['mail_test' => 'ทดสอบส่งอีเมลไม่สำเร็จ กรุณาตรวจ Zoho SMTP, app password และ Railway variables']);
+        }
+
+        $this->log($request, 'send_mail_test', Notification::class, $notification->id, "Sent mail test to {$actor->email}");
+
+        return redirect()
+            ->route('admin.index', ['section' => 'notifications'])
+            ->with('status', 'ส่งอีเมลทดสอบแล้ว กรุณาตรวจกล่องอีเมลของคุณ');
     }
 
     public function syncDirectoryUsers(Request $request, DirectoryUserSyncService $syncService): RedirectResponse

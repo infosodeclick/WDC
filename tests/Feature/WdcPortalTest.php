@@ -141,11 +141,66 @@ class WdcPortalTest extends TestCase
             ->get(route('admin.index', ['section' => 'notifications']))
             ->assertOk()
             ->assertSee('Zoho Mail / SMTP')
+            ->assertSee(route('admin.mail-test'), false)
             ->assertSee('smtp')
             ->assertSee('smtp.zoho.com:587')
             ->assertSee('notify@wdc.co.th')
             ->assertSee('พร้อมส่งอีเมล')
             ->assertDontSee('super-secret-app-password');
+    }
+
+    public function test_admin_mail_test_requires_ready_smtp_config(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        Mail::fake();
+
+        config([
+            'wdc.mail_notifications_enabled' => false,
+            'mail.default' => 'log',
+            'mail.mailers.smtp.host' => '127.0.0.1',
+        ]);
+
+        $admin = User::where('employee_code', 'administrator')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('admin.mail-test'))
+            ->assertRedirect(route('admin.index', ['section' => 'notifications']))
+            ->assertSessionHasErrors('mail_test');
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_admin_can_send_mail_readiness_test_when_smtp_is_ready(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        Mail::fake();
+
+        config([
+            'wdc.mail_notifications_enabled' => true,
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => 'smtp.zoho.com',
+            'mail.mailers.smtp.port' => 587,
+            'mail.mailers.smtp.username' => 'notify@wdc.co.th',
+            'mail.mailers.smtp.password' => 'super-secret-app-password',
+            'mail.from.address' => 'notify@wdc.co.th',
+        ]);
+
+        $admin = User::where('employee_code', 'administrator')->firstOrFail();
+        $admin->forceFill(['email' => 'administrator@wdc.co.th'])->save();
+
+        $this->actingAs($admin)
+            ->post(route('admin.mail-test'))
+            ->assertRedirect(route('admin.index', ['section' => 'notifications']))
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $admin->id,
+            'type' => 'mail_test',
+            'title' => 'ทดสอบอีเมลจาก WDC Portal',
+        ]);
+
+        Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->hasTo('administrator@wdc.co.th')
+            && $mail->notification->title === 'ทดสอบอีเมลจาก WDC Portal');
     }
 
     public function test_profile_phone_change_is_approved_by_hr_before_updating_employee(): void

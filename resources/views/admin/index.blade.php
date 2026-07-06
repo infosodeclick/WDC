@@ -121,6 +121,11 @@
                 <strong>{{ $mailStatus['from'] ?: '-' }}</strong>
             </div>
         </div>
+        <form class="mail-test-form" method="post" action="{{ route('admin.mail-test') }}">
+            @csrf
+            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-send"></i> ทดสอบส่งอีเมล</button>
+            <small>ส่งอีเมลทดสอบไปยังบัญชีผู้ดูแลที่กำลังใช้งานอยู่</small>
+        </form>
     </div>
     <div class="content-grid">
         <section>

@@ -110,6 +110,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.index');
     Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
     Route::post('/admin/directory-users/sync', [AdminController::class, 'syncDirectoryUsers'])->name('admin.directory-users.sync');
+    Route::post('/admin/mail-test', [AdminController::class, 'sendMailTest'])->name('admin.mail-test');
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::patch('/admin/users/{user}/access', [AdminController::class, 'updateUserAccess'])->name('admin.users.access');
     Route::patch('/admin/roles/{role}/permissions', [AdminController::class, 'updateRolePermissions'])->name('admin.roles.permissions');

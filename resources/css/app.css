@@ -3136,6 +3136,23 @@ body.directory-modal-open {
     gap: 8px;
 }
 
+.mail-test-form {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 2px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.mail-test-form small {
+    color: var(--muted);
+    font-weight: 600;
+}
+
 .mail-readiness-card {
     display: grid;
     gap: 3px;
