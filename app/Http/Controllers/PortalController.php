@@ -275,8 +275,28 @@ class PortalController extends Controller
             'sheetUrl' => config('services.meeting_rooms.sheet_url'),
             'sheetEmbedUrl' => config('services.meeting_rooms.sheet_embed_url'),
             'bookingUrl' => config('services.meeting_rooms.booking_url'),
+            'calendarStatus' => $this->meetingCalendarStatus(),
             'bookings' => $bookingQuery->take(10)->get(),
         ]);
+    }
+
+    private function meetingCalendarStatus(): array
+    {
+        $calendarId = (string) config('services.meeting_rooms.calendar_id');
+        $serviceAccountJson = config('services.meeting_rooms.service_account_json');
+        $embedUrl = (string) config('services.meeting_rooms.sheet_embed_url');
+        $sheetUrl = (string) config('services.meeting_rooms.sheet_url');
+        $hasServiceAccount = is_string($serviceAccountJson) && trim($serviceAccountJson) !== '';
+        $canDisplayCalendar = $embedUrl !== '' || $sheetUrl !== '';
+        $canSyncEvents = $calendarId !== '' && $hasServiceAccount;
+
+        return [
+            'can_display_calendar' => $canDisplayCalendar,
+            'can_sync_events' => $canSyncEvents,
+            'is_ready' => $canDisplayCalendar && $canSyncEvents,
+            'calendar_id_configured' => $calendarId !== '',
+            'service_account_configured' => $hasServiceAccount,
+        ];
     }
 
     public function storeMeetingRoomBooking(Request $request, GoogleCalendarService $calendar): RedirectResponse

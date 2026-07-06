@@ -623,6 +623,74 @@ a {
     color: var(--muted);
 }
 
+.meeting-sync-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.meeting-sync-card {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.meeting-sync-card i {
+    display: grid;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 8px;
+    background: #fff7cc;
+    color: var(--wdc-black);
+}
+
+.meeting-sync-card span,
+.meeting-sync-card strong {
+    display: block;
+}
+
+.meeting-sync-card span {
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.meeting-sync-card strong {
+    overflow-wrap: anywhere;
+}
+
+.meeting-sync-card.ready {
+    border-color: rgba(22, 163, 74, .28);
+    background: #effdf5;
+}
+
+.meeting-sync-card.warning {
+    border-color: rgba(245, 158, 11, .36);
+    background: #fffbeb;
+}
+
+.meeting-sync-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf4;
+}
+
+.meeting-sync-note p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
 .page-actions {
     display: flex;
     flex-wrap: wrap;
@@ -3664,6 +3732,7 @@ body.directory-modal-open {
     .content-grid,
     .metric-grid,
     .meeting-room-grid,
+    .meeting-sync-grid,
     .asset-metric-grid,
     .asset-location-grid,
     .role-template-grid,

@@ -100,7 +100,7 @@
         <div class="meeting-sheet-placeholder">
             <div>
                 <i class="bi bi-calendar2-week"></i>
-                <strong>ยังไม่ได้เชื่อม Google Calendar</strong>
+                <strong>ยังไม่ได้ตั้งค่าหน้าแสดงปฏิทิน</strong>
                 <p>เมื่อตั้งค่า <code>MEETING_ROOM_GOOGLE_SHEET_EMBED_URL</code> ระบบจะแสดงตารางจองห้องประชุมจาก Google Calendar ในหน้านี้ทันที</p>
             </div>
         </div>
@@ -114,12 +114,31 @@
             <a href="{{ $sheetUrl }}" target="_blank" rel="noopener">เปิด Google Calendar</a>
         @endif
     </div>
-    <div class="meeting-room-grid">
-        <div>
-            <strong>Google Calendar</strong>
-            <p>เมื่อกำหนด Google Service Account แล้ว การจองจาก WDC จะสร้างรายการใน Google Calendar ทันที และเมื่อยกเลิกจะลบรายการออกจากปฏิทินด้วย</p>
+    <div class="meeting-sync-grid">
+        <div class="meeting-sync-card {{ $calendarStatus['can_display_calendar'] ? 'ready' : 'warning' }}">
+            <i class="bi bi-calendar2-week"></i>
+            <div>
+                <span>แสดงปฏิทิน</span>
+                <strong>{{ $calendarStatus['can_display_calendar'] ? 'พร้อมแสดงผล' : 'รอตั้งค่า Embed URL' }}</strong>
+            </div>
         </div>
-        <span class="status-pill status-in_progress">เชื่อมต่อแล้ว</span>
+        <div class="meeting-sync-card {{ $calendarStatus['can_sync_events'] ? 'ready' : 'warning' }}">
+            <i class="bi bi-arrow-repeat"></i>
+            <div>
+                <span>ซิงค์การจอง</span>
+                <strong>{{ $calendarStatus['can_sync_events'] ? 'พร้อมสร้าง event' : 'รอตั้งค่า Service Account' }}</strong>
+            </div>
+        </div>
+        <div class="meeting-sync-card {{ $calendarStatus['is_ready'] ? 'ready' : 'warning' }}">
+            <i class="bi bi-check2-circle"></i>
+            <div>
+                <span>สถานะรวม</span>
+                <strong>{{ $calendarStatus['is_ready'] ? 'พร้อมใช้งานครบ' : 'ใช้งาน WDC ได้ แต่ Google sync ยังไม่ครบ' }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="meeting-sync-note">
+        <p>การจองจะบันทึกใน WDC เสมอ หากตั้งค่า <code>MEETING_ROOM_GOOGLE_CALENDAR_ID</code> และ <code>MEETING_ROOM_GOOGLE_SERVICE_ACCOUNT_JSON</code> ครบ ระบบจะสร้างหรือลบ event ใน Google Calendar ให้ทันที</p>
     </div>
 </section>
 

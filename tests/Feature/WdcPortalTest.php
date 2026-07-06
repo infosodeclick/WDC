@@ -1128,6 +1128,9 @@ class WdcPortalTest extends TestCase
             ->assertSee('end_at', false)
             ->assertSee('calendar.google.com/calendar/u/0/embed', false)
             ->assertSee('641a219d5e8a0c60b9107fff5f155eba12e1d82d03809d7df47bc8aa656ea1e6', false)
+            ->assertSee('meeting-sync-grid', false)
+            ->assertSee('MEETING_ROOM_GOOGLE_SERVICE_ACCOUNT_JSON')
+            ->assertSee('MEETING_ROOM_GOOGLE_CALENDAR_ID')
             ->assertDontSee('calendar.google.com/calendar/u/0/r/eventedit', false);
     }
 
