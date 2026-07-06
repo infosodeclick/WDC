@@ -210,6 +210,7 @@ class PortalController extends Controller
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
         $employeeId = $user->employee?->id;
+        $canManageDocuments = $this->canCreateCompanyDocument($user);
         $documents = EmployeeDocument::query();
 
         abort_unless($user->canAccess('documents.view'), 403);
@@ -251,7 +252,55 @@ class PortalController extends Controller
             'documentGroups' => $visibleDocuments->groupBy(fn (EmployeeDocument $document) => Str::before($document->category, '/')),
             'documentDepartments' => $documentDepartments,
             'activeDepartment' => $activeDepartment,
+            'canManageDocuments' => $canManageDocuments,
         ]);
+    }
+
+    public function storeDocument(Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canCreateCompanyDocument($user), 403);
+
+        $data = $request->validate([
+            'department' => ['required', 'string', 'max:80'],
+            'topic' => ['required', 'string', 'max:120'],
+            'title' => ['nullable', 'string', 'max:160'],
+            'summary' => ['nullable', 'string', 'max:500'],
+            'file' => ['required', 'file', 'max:10240'],
+        ]);
+
+        $department = trim($data['department']);
+        $topic = trim($data['topic']);
+        $title = trim($data['title'] ?? '') ?: $topic;
+        $file = $request->file('file');
+        $path = $file->store('employee-documents');
+
+        $document = EmployeeDocument::create([
+            'employee_id' => null,
+            'created_by' => $user->id,
+            'category' => $department.'/'.$topic,
+            'title' => $title,
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
+            'summary' => $data['summary'] ?? null,
+            'is_company_wide' => true,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'create_document',
+            'subject_type' => EmployeeDocument::class,
+            'subject_id' => $document->id,
+            'description' => "Created document {$document->title}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return redirect()
+            ->route('documents.index', ['department' => $department])
+            ->with('status', 'เพิ่มแบบฟอร์มเรียบร้อยแล้ว');
     }
 
     public function meetingRooms(Request $request): View
@@ -425,6 +474,33 @@ class PortalController extends Controller
         ]);
     }
 
+    public function destroyDocument(EmployeeDocument $document, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canManageDocument($user, $document->load('employee.department')), 403);
+
+        $title = $document->title;
+
+        if ($document->file_path && Storage::disk('local')->exists($document->file_path)) {
+            Storage::disk('local')->delete($document->file_path);
+        }
+
+        $document->delete();
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'delete_document',
+            'subject_type' => EmployeeDocument::class,
+            'subject_id' => null,
+            'description' => "Deleted document {$title}",
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return back()->with('status', 'ลบแบบฟอร์มเรียบร้อยแล้ว');
+    }
+
     public function payroll(): View
     {
         abort_unless(request()->user()?->canAccess('payroll.link'), 403);
@@ -528,6 +604,11 @@ class PortalController extends Controller
         }
 
         return false;
+    }
+
+    private function canCreateCompanyDocument($user): bool
+    {
+        return $user->canAccess('documents.manage') && ($user->canSeeAllData() || $user->canSeeDepartmentData());
     }
 
     private function activeAnnouncementsQuery()

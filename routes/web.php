@@ -37,7 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/announcements/{announcement}', [PortalController::class, 'showAnnouncement'])->name('announcements.show');
     Route::get('/knowledge', [PortalController::class, 'knowledge'])->name('knowledge.index');
     Route::get('/documents', [PortalController::class, 'documents'])->name('documents.index');
+    Route::post('/documents', [PortalController::class, 'storeDocument'])->name('documents.store');
     Route::get('/documents/{document}/download', [PortalController::class, 'downloadDocument'])->name('documents.download');
+    Route::delete('/documents/{document}', [PortalController::class, 'destroyDocument'])->name('documents.destroy');
     Route::get('/meeting-rooms', [PortalController::class, 'meetingRooms'])->name('meeting-rooms.index');
     Route::post('/meeting-rooms', [PortalController::class, 'storeMeetingRoomBooking'])->name('meeting-rooms.store');
     Route::patch('/meeting-rooms/{booking}/cancel', [PortalController::class, 'cancelMeetingRoomBooking'])->name('meeting-rooms.cancel');

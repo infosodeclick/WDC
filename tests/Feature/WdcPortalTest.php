@@ -1371,6 +1371,39 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('petty-cash-form.pdf');
     }
 
+    public function test_hr_can_upload_and_delete_company_form_document(): void
+    {
+        Storage::fake('local');
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $this->actingAs($hr);
+
+        $this->post(route('documents.store'), [
+            'department' => 'HR',
+            'topic' => 'Sick Leave',
+            'title' => 'Sick Leave Form',
+            'summary' => 'Form for HR leave request',
+            'file' => UploadedFile::fake()->create('sick-leave.pdf', 24, 'application/pdf'),
+        ])->assertRedirect(route('documents.index', ['department' => 'HR']));
+
+        $document = EmployeeDocument::where('file_name', 'sick-leave.pdf')->firstOrFail();
+
+        Storage::disk('local')->assertExists($document->file_path);
+        $this->assertSame('HR/Sick Leave', $document->category);
+        $this->assertTrue($document->is_company_wide);
+
+        $this->get(route('documents.index', ['department' => 'HR']))
+            ->assertOk()
+            ->assertSee('sick-leave.pdf')
+            ->assertSee(route('documents.destroy', $document), false);
+
+        $this->delete(route('documents.destroy', $document))->assertRedirect();
+
+        Storage::disk('local')->assertMissing($document->file_path);
+        $this->assertDatabaseMissing('employee_documents', ['id' => $document->id]);
+    }
+
     public function test_search_only_returns_modules_visible_to_current_user(): void
     {
         $this->seed(DatabaseSeeder::class);

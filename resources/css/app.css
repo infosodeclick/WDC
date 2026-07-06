@@ -2779,6 +2779,23 @@ body.directory-modal-open {
     min-width: 0;
 }
 
+.document-row-manage {
+    justify-content: space-between;
+}
+
+.document-download-link {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: inherit;
+}
+
+.document-row-manage form {
+    flex: 0 0 auto;
+}
+
 .document-row small,
 .result-row small {
     display: block;
@@ -2822,6 +2839,29 @@ body.directory-modal-open {
 .document-topic {
     display: block;
     color: var(--wdc-black);
+}
+
+.document-admin-panel {
+    display: grid;
+    gap: 16px;
+}
+
+.document-upload-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.document-upload-form label {
+    display: grid;
+    gap: 6px;
+    color: var(--muted);
+    font-weight: 650;
+}
+
+.document-upload-form .btn {
+    min-height: 44px;
 }
 
 .announcement-detail-panel {
@@ -3748,6 +3788,7 @@ body.directory-modal-open {
     .snapshot-grid,
     .workflow-template-grid,
     .integration-steps,
+    .document-upload-form,
     .login-screen {
         grid-template-columns: 1fr;
     }
@@ -3921,8 +3962,19 @@ body.directory-modal-open {
     .sync-stats-grid,
     .smartflow-tabs,
     .workflow-payload,
+    .document-upload-form,
     .comment-form {
         grid-template-columns: 1fr;
+    }
+
+    .document-row-manage {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .document-row-manage form,
+    .document-row-manage .btn {
+        width: 100%;
     }
 
     .pdpa-note {
