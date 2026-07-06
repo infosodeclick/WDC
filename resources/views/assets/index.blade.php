@@ -14,11 +14,17 @@
 </div>
 
 @if($canManageAssets)
-    <section class="panel" id="new-asset">
-        <div class="section-title">
-            <h2>เพิ่มรายการ Inventory</h2>
-            <span class="tag">Asset Registry</span>
-        </div>
+    <section class="panel asset-action-panel">
+        <details class="asset-action-details" id="new-asset">
+            <summary>
+                <div class="section-title">
+                    <div>
+                        <h2>เพิ่มรายการ Inventory</h2>
+                        <small>กรอกเมื่อมีทรัพย์สินใหม่หรือรับอุปกรณ์เข้าคลัง</small>
+                    </div>
+                    <span class="tag">Asset Registry</span>
+                </div>
+            </summary>
         <form class="form-grid" method="post" action="{{ route('assets.store') }}">
             @csrf
             <label>รหัสทรัพย์สิน
@@ -96,15 +102,22 @@
                 <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> บันทึกทรัพย์สิน</button>
             </div>
         </form>
+        </details>
     </section>
 
 @endif
 
-<section class="panel" id="software-licenses">
-    <div class="section-title">
-        <h2>Software License</h2>
-        <span class="tag">{{ number_format($softwareLicenses->count()) }} รายการล่าสุด</span>
-    </div>
+<section class="panel asset-action-panel" id="software-licenses">
+    <details class="asset-action-details">
+        <summary>
+            <div class="section-title">
+                <div>
+                    <h2>Software License</h2>
+                    <small>ติดตามจำนวนสิทธิ์ ผู้ดูแล ค่าใช้จ่าย และวันหมดอายุ</small>
+                </div>
+                <span class="tag">{{ number_format($softwareLicenses->count()) }} รายการล่าสุด</span>
+            </div>
+        </summary>
     @if($canManageAssets)
         <form class="form-grid compact-form-grid mb-3" method="post" action="{{ route('assets.licenses.store') }}">
             @csrf
@@ -191,15 +204,22 @@
             </tbody>
         </table>
     </div>
+    </details>
 </section>
 
 @if($canManageAssetSettings)
     <div class="content-grid asset-admin-grid" id="asset-settings">
-        <section class="panel" id="asset-categories">
-            <div class="section-title">
-                <h2>หมวดหมู่ทรัพย์สิน</h2>
-                <span class="tag">{{ number_format($categories->count()) }} หมวด</span>
-            </div>
+        <section class="panel asset-action-panel" id="asset-categories">
+            <details class="asset-action-details">
+                <summary>
+                    <div class="section-title">
+                        <div>
+                            <h2>หมวดหมู่ทรัพย์สิน</h2>
+                            <small>ใช้แยกประเภทอุปกรณ์เพื่อรายงานและตรวจนับ</small>
+                        </div>
+                        <span class="tag">{{ number_format($categories->count()) }} หมวด</span>
+                    </div>
+                </summary>
             <form class="form-grid compact-form-grid" method="post" action="{{ route('assets.categories.store') }}">
                 @csrf
                 <label>Code
@@ -220,13 +240,20 @@
                     <span><strong>{{ $category->code }}</strong> {{ $category->name }} <small>{{ $category->assets_count }} รายการ</small></span>
                 @endforeach
             </div>
+            </details>
         </section>
 
-        <section class="panel" id="asset-locations">
-            <div class="section-title">
-                <h2>สถานที่ / GPS</h2>
-                <span class="tag">{{ number_format($locations->count()) }} สถานที่</span>
-            </div>
+        <section class="panel asset-action-panel" id="asset-locations">
+            <details class="asset-action-details">
+                <summary>
+                    <div class="section-title">
+                        <div>
+                            <h2>สถานที่ / GPS</h2>
+                            <small>กำหนดคลัง สำนักงาน หรือจุดติดตั้งที่ใช้กับ Inventory</small>
+                        </div>
+                        <span class="tag">{{ number_format($locations->count()) }} สถานที่</span>
+                    </div>
+                </summary>
             <form class="form-grid compact-form-grid" method="post" action="{{ route('assets.locations.store') }}">
                 @csrf
                 <label>Code
@@ -255,6 +282,7 @@
                     <button class="btn btn-outline-primary" type="submit"><i class="bi bi-geo-alt"></i> เพิ่มสถานที่</button>
                 </div>
             </form>
+            </details>
         </section>
     </div>
 @endif

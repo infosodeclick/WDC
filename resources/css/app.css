@@ -1717,6 +1717,62 @@ body.directory-modal-open {
     margin-bottom: 18px;
 }
 
+.asset-action-panel {
+    padding: 0;
+    overflow: hidden;
+}
+
+.asset-action-details > summary {
+    display: block;
+    cursor: pointer;
+    list-style: none;
+}
+
+.asset-action-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.asset-action-details > summary .section-title {
+    margin: 0;
+    padding: 16px;
+}
+
+.asset-action-details > summary .section-title small {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.asset-action-details > summary .section-title::after {
+    content: "เปิด";
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid #b8a13f;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--wdc-black);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.asset-action-details[open] > summary .section-title::after {
+    content: "ปิด";
+    background: var(--wdc-yellow-2);
+}
+
+.asset-action-details > form,
+.asset-action-details > .table-responsive,
+.asset-action-details > .asset-chip-list {
+    margin: 0 16px 16px;
+}
+
+.asset-action-details > .table-responsive {
+    margin-top: 0;
+}
+
 .asset-sync-actions {
     display: flex;
     flex-wrap: wrap;

@@ -118,6 +118,31 @@ if (smartflowTemplateSelect && smartflowFieldsets.length > 0) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const openTargetedDetails = () => {
+        const hash = window.location.hash;
+
+        if (! hash) {
+            return;
+        }
+
+        const target = document.querySelector(hash);
+
+        if (target instanceof HTMLDetailsElement) {
+            target.open = true;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+
+        const details = target?.querySelector('details');
+
+        if (details instanceof HTMLDetailsElement) {
+            details.open = true;
+        }
+    };
+
+    window.addEventListener('hashchange', openTargetedDetails);
+    openTargetedDetails();
+
     document.querySelectorAll('.hr-directory-modal').forEach((modal) => {
         if (modal.parentElement !== document.body) {
             document.body.appendChild(modal);
