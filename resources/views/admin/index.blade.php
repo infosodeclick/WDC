@@ -85,6 +85,43 @@
         <h2>แจ้งเตือนแอดมิน</h2>
         <span class="status-pill">{{ $adminNotifications->whereNull('read_at')->count() }} ยังไม่อ่าน</span>
     </div>
+    <div class="mail-readiness-panel">
+        <div>
+            <span class="eyebrow">Zoho Mail / SMTP</span>
+            <h3>สถานะระบบส่งอีเมล</h3>
+            <p>ใช้ตรวจความพร้อมสำหรับรีเซ็ตรหัสผ่านและแจ้งเตือนพนักงานใหม่ โดยไม่แสดงรหัสผ่านหรือ secret</p>
+        </div>
+        <div class="mail-readiness-grid">
+            <div class="mail-readiness-card {{ $mailStatus['enabled'] ? 'ready' : 'muted' }}">
+                <span>Notification</span>
+                <strong>{{ $mailStatus['enabled'] ? 'เปิดใช้งาน' : 'ปิดอยู่' }}</strong>
+            </div>
+            <div class="mail-readiness-card {{ $mailStatus['ready'] ? 'ready' : 'warning' }}">
+                <span>SMTP Ready</span>
+                <strong>{{ $mailStatus['ready'] ? 'พร้อมส่งอีเมล' : 'รอตั้งค่า' }}</strong>
+            </div>
+            <div class="mail-readiness-card">
+                <span>Mailer</span>
+                <strong>{{ $mailStatus['mailer'] }}</strong>
+            </div>
+            <div class="mail-readiness-card">
+                <span>Host</span>
+                <strong>{{ $mailStatus['host'] }}{{ $mailStatus['port'] ? ':'.$mailStatus['port'] : '' }}</strong>
+            </div>
+            <div class="mail-readiness-card">
+                <span>Account</span>
+                <strong>{{ $mailStatus['username_configured'] ? 'ตั้งค่าแล้ว' : 'ยังไม่ตั้งค่า' }}</strong>
+            </div>
+            <div class="mail-readiness-card">
+                <span>Password</span>
+                <strong>{{ $mailStatus['password_configured'] ? 'ตั้งค่าแล้ว' : 'ยังไม่ตั้งค่า' }}</strong>
+            </div>
+            <div class="mail-readiness-card span-2">
+                <span>From</span>
+                <strong>{{ $mailStatus['from'] ?: '-' }}</strong>
+            </div>
+        </div>
+    </div>
     <div class="content-grid">
         <section>
             <h3>รายการแจ้งเตือนล่าสุด</h3>

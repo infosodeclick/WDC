@@ -104,6 +104,7 @@ class AdminController extends Controller
             'scopeLabels' => Permission::DATA_SCOPE_LABELS,
             'departments' => Department::orderBy('name')->get(),
             'adminNotifications' => Notification::where('user_id', $actor->id)->latest()->take(40)->get(),
+            'mailStatus' => $this->mailStatus(),
             'pendingAdminOnboardingRequests' => EmployeeOnboardingRequest::with('department', 'systems')
                 ->whereIn('status', ['pending_it', 'in_progress', 'cancel_requested'])
                 ->latest()
@@ -174,6 +175,36 @@ class AdminController extends Controller
         $this->log($request, 'create_user', User::class, $user->id, "Created {$user->employee_code}");
 
         return back()->with('status', 'เพิ่มผู้ใช้งานเรียบร้อยแล้ว');
+    }
+
+    private function mailStatus(): array
+    {
+        $mailer = (string) config('mail.default');
+        $host = (string) config('mail.mailers.smtp.host');
+        $port = (string) config('mail.mailers.smtp.port');
+        $scheme = (string) config('mail.mailers.smtp.scheme');
+        $usernameConfigured = filled(config('mail.mailers.smtp.username'));
+        $passwordConfigured = filled(config('mail.mailers.smtp.password'));
+        $fromAddress = (string) config('mail.from.address');
+        $notificationsEnabled = (bool) config('wdc.mail_notifications_enabled');
+
+        return [
+            'enabled' => $notificationsEnabled,
+            'mailer' => $mailer,
+            'host' => $host,
+            'port' => $port,
+            'scheme' => $scheme,
+            'from' => $fromAddress,
+            'username_configured' => $usernameConfigured,
+            'password_configured' => $passwordConfigured,
+            'ready' => $notificationsEnabled
+                && $mailer === 'smtp'
+                && $host !== ''
+                && $host !== '127.0.0.1'
+                && $usernameConfigured
+                && $passwordConfigured
+                && $fromAddress !== '',
+        ];
     }
 
     public function syncDirectoryUsers(Request $request, DirectoryUserSyncService $syncService): RedirectResponse

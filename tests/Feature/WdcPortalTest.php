@@ -120,6 +120,34 @@ class WdcPortalTest extends TestCase
         NotificationFake::assertNothingSent();
     }
 
+    public function test_admin_notification_page_shows_mail_readiness_without_secret_values(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        config([
+            'wdc.mail_notifications_enabled' => true,
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => 'smtp.zoho.com',
+            'mail.mailers.smtp.port' => 587,
+            'mail.mailers.smtp.scheme' => 'tls',
+            'mail.mailers.smtp.username' => 'notify@wdc.co.th',
+            'mail.mailers.smtp.password' => 'super-secret-app-password',
+            'mail.from.address' => 'notify@wdc.co.th',
+        ]);
+
+        $admin = User::where('employee_code', 'administrator')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('admin.index', ['section' => 'notifications']))
+            ->assertOk()
+            ->assertSee('Zoho Mail / SMTP')
+            ->assertSee('smtp')
+            ->assertSee('smtp.zoho.com:587')
+            ->assertSee('notify@wdc.co.th')
+            ->assertSee('พร้อมส่งอีเมล')
+            ->assertDontSee('super-secret-app-password');
+    }
+
     public function test_profile_phone_change_is_approved_by_hr_before_updating_employee(): void
     {
         $this->seed(DatabaseSeeder::class);

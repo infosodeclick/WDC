@@ -3107,6 +3107,76 @@ body.directory-modal-open {
     max-width: none;
 }
 
+.mail-readiness-panel {
+    display: grid;
+    grid-template-columns: minmax(220px, .8fr) minmax(360px, 1.2fr);
+    gap: 14px;
+    align-items: start;
+    margin-bottom: 16px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf1;
+}
+
+.mail-readiness-panel h3 {
+    margin: 4px 0 6px;
+    font-size: 1.05rem;
+}
+
+.mail-readiness-panel p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.mail-readiness-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.mail-readiness-card {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.mail-readiness-card.span-2 {
+    grid-column: span 2;
+}
+
+.mail-readiness-card span {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.mail-readiness-card strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: .95rem;
+}
+
+.mail-readiness-card.ready {
+    border-color: rgba(22, 163, 74, .28);
+    background: #effdf5;
+}
+
+.mail-readiness-card.warning {
+    border-color: rgba(245, 158, 11, .36);
+    background: #fffbeb;
+}
+
+.mail-readiness-card.muted {
+    background: #f8fafc;
+}
+
 .admin-sync-panel {
     margin-bottom: 16px;
     padding: 12px;
@@ -3733,6 +3803,15 @@ body.directory-modal-open {
 
     .admin-member-modal .modal-title {
         font-size: 1.05rem;
+    }
+
+    .mail-readiness-panel,
+    .mail-readiness-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mail-readiness-card.span-2 {
+        grid-column: auto;
     }
 
     .modal-header-actions {
