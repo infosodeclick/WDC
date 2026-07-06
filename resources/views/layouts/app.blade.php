@@ -45,7 +45,7 @@
             <span class="brand-mark">WDC</span>
             <span>
                 <strong>WDC Portal</strong>
-                <small>ข่าวสาร HR IT และคู่มือ</small>
+                <small>ระบบภายในบริษัท</small>
             </span>
         </a>
 

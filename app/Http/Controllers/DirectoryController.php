@@ -26,6 +26,7 @@ class DirectoryController extends Controller
         $directoryView = 'all';
         $allowedEntryTypes = ['employee', 'mail_group', 'showroom', 'resigned'];
         $entryType = in_array($entryType, $allowedEntryTypes, true) ? $entryType : '';
+        $entryType = $entryType ?: 'employee';
 
         $visibleEntries = $entryType === 'resigned'
             ? EmployeeDirectoryEntry::query()

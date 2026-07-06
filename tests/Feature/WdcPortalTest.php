@@ -59,6 +59,7 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('คำขอของฉัน')
             ->assertDontSee('คำขอ/อนุมัติของฉัน')
             ->assertDontSee('ระบบที่ใช้งานบ่อย')
+            ->assertDontSee('ข่าวสาร HR IT และคู่มือ')
             ->assertDontSee('เปิดศูนย์คำขอ')
             ->assertDontSee('ดูศูนย์รวมระบบ')
             ->assertDontSee('ส่งคำขออนุมัติ')
@@ -1410,8 +1411,9 @@ class WdcPortalTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $this->get(route('directory.index', ['type' => 'employee']))
+        $this->get(route('directory.index'))
             ->assertOk()
+            ->assertSee('directory-quick-link active', false)
             ->assertSeeInOrder(['Aaa New Employee', 'Aaa Active Employee'])
             ->assertDontSee('no_filter_group@wdc.co.th')
             ->assertDontSee('Flagship Showroom');

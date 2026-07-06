@@ -45,7 +45,6 @@
         <label>
             <span>ประเภท</span>
             <select class="form-select" name="type">
-                <option value="">ทั้งหมด</option>
                 @foreach($entryTypes as $key => $label)
                     <option value="{{ $key }}" @selected($entryType === $key)>{{ $label }}</option>
                 @endforeach
