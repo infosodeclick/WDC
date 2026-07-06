@@ -442,6 +442,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('data-role-baseline', false)
             ->assertSee('data-bs-target="#employee-profile-', false)
             ->assertSee('data-bs-target="#employee-permissions-', false)
+            ->assertSee(route('admin.directory-users.sync'), false)
             ->assertSee('ใช้งาน')
             ->assertSee('EMP00125')
             ->assertDontSee('administrator ·')

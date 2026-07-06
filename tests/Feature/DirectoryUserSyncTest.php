@@ -6,6 +6,7 @@ use App\Models\EmployeeDirectoryEntry;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -105,6 +106,48 @@ class DirectoryUserSyncTest extends TestCase
             ->assertSee('000009')
             ->assertDontSee('Protected Admin')
             ->assertDontSee('EMP09999 ·');
+    }
+
+    public function test_admin_can_sync_directory_users_from_permissions_page(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        EmployeeDirectoryEntry::create([
+            'source_system' => 'notion',
+            'source_record_id' => 'sync-web-employee',
+            'entry_type' => 'employee',
+            'display_name' => 'Web Sync Employee',
+            'english_name' => 'Web Sync Employee',
+            'thai_name' => 'เว็บซิงค์ พนักงาน',
+            'department' => 'Sales',
+            'position' => 'Sales Executive',
+            'email' => 'web.sync@wdc.co.th',
+            'is_active' => true,
+        ]);
+
+        $path = $this->makeWorkbook([
+            ['Start Date', 'Position', 'Department', 'Staff ID', 'ชื่อ-สกุล (Eng)', 'ชื่อ- นามสกุล(ไทย)', 'ชื่อเล่น'],
+            ['2026-07-01', 'Sales Executive', 'Sales', '11', 'Web Sync Employee', 'เว็บซิงค์ พนักงาน', 'เว็บ'],
+        ]);
+
+        $admin = User::where('employee_code', 'EMP09999')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('admin.directory-users.sync'), [
+                'employee_sync_file' => new UploadedFile($path, 'WDC.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+            ])
+            ->assertRedirect(route('admin.index', ['section' => 'permissions']))
+            ->assertSessionHas('directory_sync_stats');
+
+        $syncedUser = User::where('employee_code', '000011')->firstOrFail();
+        $this->assertTrue(Hash::check('Wdc@2026', $syncedUser->password));
+        $this->assertSame('employee', $syncedUser->role->slug);
+
+        $this->actingAs($admin)
+            ->get(route('admin.index', ['section' => 'permissions', 'q' => '000011']))
+            ->assertOk()
+            ->assertSee('000011')
+            ->assertSee('Web Sync Employee');
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Models\Notification;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\DirectoryUserSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -173,6 +174,36 @@ class AdminController extends Controller
         $this->log($request, 'create_user', User::class, $user->id, "Created {$user->employee_code}");
 
         return back()->with('status', 'เพิ่มผู้ใช้งานเรียบร้อยแล้ว');
+    }
+
+    public function syncDirectoryUsers(Request $request, DirectoryUserSyncService $syncService): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($actor->canAccessAny(['admin.users.manage', 'iam.users.manage']), 403);
+
+        $data = $request->validate([
+            'employee_sync_file' => ['required', 'file', 'max:10240'],
+        ]);
+
+        try {
+            $stats = $syncService->syncFromXlsx(
+                $data['employee_sync_file']->getRealPath(),
+                true,
+                'Wdc@2026',
+            );
+        } catch (\Throwable $exception) {
+            return back()
+                ->withInput()
+                ->withErrors(['employee_sync_file' => 'ไม่สามารถซิงค์ไฟล์นี้ได้: '.$exception->getMessage()]);
+        }
+
+        $this->log($request, 'sync_directory_users', User::class, $actor->id, "Synced {$stats['created_users']} directory users from Excel");
+
+        return redirect()
+            ->route('admin.index', ['section' => 'permissions'])
+            ->with('status', "ซิงค์บัญชีพนักงานแล้ว: สร้างใหม่ {$stats['created_users']} รายการ, อัปเดต {$stats['updated_users']} รายการ")
+            ->with('directory_sync_stats', $stats);
     }
 
     public function updateUser(User $user, Request $request): RedirectResponse

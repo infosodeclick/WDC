@@ -3107,6 +3107,61 @@ body.directory-modal-open {
     max-width: none;
 }
 
+.admin-sync-panel {
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf1;
+}
+
+.admin-sync-panel > summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.admin-sync-panel > summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-sync-panel > summary small {
+    color: var(--muted);
+    font-weight: 600;
+    text-align: right;
+}
+
+.form-field-grow {
+    flex: 1 1 360px;
+    display: grid;
+    gap: 6px;
+}
+
+.sync-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.sync-stats-grid span {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+.sync-stats-grid strong {
+    display: block;
+    color: var(--text);
+    font-size: 1.05rem;
+}
+
 .menu-permission-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3698,6 +3753,7 @@ body.directory-modal-open {
     .role-template-grid,
     .admin-access-grid,
     .permission-matrix,
+    .sync-stats-grid,
     .smartflow-tabs,
     .workflow-payload,
     .comment-form {
@@ -3719,6 +3775,15 @@ body.directory-modal-open {
 
     .asset-status-form {
         min-width: 0;
+    }
+
+    .admin-sync-panel > summary {
+        display: grid;
+        justify-content: stretch;
+    }
+
+    .admin-sync-panel > summary small {
+        text-align: left;
     }
 
     .button-row,

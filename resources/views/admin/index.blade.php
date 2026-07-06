@@ -148,6 +148,39 @@
         @endif
     </form>
 
+    @if($canManageUsers)
+        <details class="admin-sync-panel">
+            <summary>
+                <span><i class="bi bi-file-earmark-spreadsheet"></i> ซิงค์บัญชีพนักงานจาก Excel</span>
+                <small>จับคู่กับรายชื่อพนักงานปัจจุบันและสร้าง WDC Login รหัสผ่านเริ่มต้น Wdc@2026</small>
+            </summary>
+            <form method="post" action="{{ route('admin.directory-users.sync') }}" enctype="multipart/form-data" class="inline-form">
+                @csrf
+                <label class="form-field-grow">
+                    <span>ไฟล์ WDC.xlsx</span>
+                    <input class="form-control {{ $errors->has('employee_sync_file') ? 'is-invalid' : '' }}" type="file" name="employee_sync_file" accept=".xlsx" required>
+                    @if($errors->has('employee_sync_file'))
+                        <small class="text-danger">{{ $errors->first('employee_sync_file') }}</small>
+                    @else
+                        <small>ระบบจะสร้างบัญชีเฉพาะพนักงานที่มีอยู่ในรายชื่อ WDC และจะไม่แตะ administrator หรือ Super Admin</small>
+                    @endif
+                </label>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-arrow-repeat"></i> ซิงค์บัญชี</button>
+            </form>
+            @if(session('directory_sync_stats'))
+                @php
+                    $syncStats = session('directory_sync_stats');
+                @endphp
+                <div class="sync-stats-grid">
+                    <span>จับคู่ได้ <strong>{{ $syncStats['matched'] ?? 0 }}</strong></span>
+                    <span>สร้างใหม่ <strong>{{ $syncStats['created_users'] ?? 0 }}</strong></span>
+                    <span>อัปเดต <strong>{{ $syncStats['updated_users'] ?? 0 }}</strong></span>
+                    <span>ข้าม <strong>{{ ($syncStats['skipped_without_excel_code'] ?? 0) + ($syncStats['skipped_conflict'] ?? 0) + ($syncStats['skipped_admin'] ?? 0) }}</strong></span>
+                </div>
+            @endif
+        </details>
+    @endif
+
     <div class="admin-user-list">
         @forelse($users as $managedUser)
             @php
