@@ -16,6 +16,7 @@ class EmployeeDocument extends Model
         'category',
         'title',
         'file_name',
+        'file_path',
         'mime_type',
         'summary',
         'is_company_wide',

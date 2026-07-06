@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\PortalNotificationMail;
 use App\Models\Complaint;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeDocument;
 use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\Announcement;
@@ -327,6 +328,39 @@ class WdcPortalTest extends TestCase
             ->assertSee('Activity Upload Test')
             ->assertSee('activity.png')
             ->assertSee(route('announcements.files.show', $file), false);
+
+        $this->get(route('announcements.files.show', $file))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'inline; filename=activity.png');
+    }
+
+    public function test_documents_download_real_uploaded_file_when_available(): void
+    {
+        Storage::fake('local');
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        Storage::disk('local')->put('employee-documents/leave-form.txt', 'leave form source content');
+
+        $document = EmployeeDocument::create([
+            'employee_id' => null,
+            'created_by' => $hr->id,
+            'category' => 'HR/Leave',
+            'title' => 'Leave Form',
+            'file_name' => 'leave-form.txt',
+            'file_path' => 'employee-documents/leave-form.txt',
+            'mime_type' => 'text/plain',
+            'summary' => 'Real downloadable form',
+            'is_company_wide' => true,
+        ]);
+
+        $response = $this->actingAs($employee)
+            ->get(route('documents.download', $document))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'attachment; filename=leave-form.txt');
+
+        $this->assertSame('leave form source content', $response->streamedContent());
     }
 
     public function test_hr_backend_uses_dashboard_and_section_menus(): void

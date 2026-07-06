@@ -182,12 +182,7 @@ class PortalController extends Controller
             return Storage::disk('local')->response($file->file_path, $file->file_name, [], $disposition);
         }
 
-        $content = "WDC Announcement Attachment\n\nFile: {$file->file_name}\nType: {$file->file_type}\n\nThis placeholder proves the attachment link works.";
-
-        return Response::make($content, 200, [
-            'Content-Type' => 'text/plain; charset=UTF-8',
-            'Content-Disposition' => 'inline; filename="'.$file->file_name.'.txt"',
-        ]);
+        abort(404, 'ไม่พบไฟล์แนบประกาศ');
     }
 
     public function knowledge(Request $request): View
@@ -418,7 +413,11 @@ class PortalController extends Controller
             'user_agent' => (string) $request->userAgent(),
         ]);
 
-        $content = "WDC Portal Demo Document\n\nTitle: {$document->title}\nFile: {$document->file_name}\nCategory: {$document->category}\n\nThis placeholder download proves the document permission and download flow works.";
+        if ($document->file_path && Storage::disk('local')->exists($document->file_path)) {
+            return Storage::disk('local')->download($document->file_path, $document->file_name);
+        }
+
+        $content = "WDC Internal Document\n\nTitle: {$document->title}\nFile: {$document->file_name}\nCategory: {$document->category}\n\nไฟล์ต้นฉบับยังไม่ได้ถูกอัปโหลดในระบบ กรุณาติดต่อ HR หรือผู้ดูแลเอกสารเพื่อแนบไฟล์จริง";
 
         return Response::make($content, 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
