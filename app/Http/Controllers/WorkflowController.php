@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
-use App\Models\Notification;
 use App\Models\User;
 use App\Models\WorkflowRequest;
 use App\Models\WorkflowRequestEvent;
 use App\Models\WorkflowStep;
 use App\Models\WorkflowTemplate;
+use App\Services\PortalNotificationService;
 use App\Services\SmartflowCsvImporter;
 use App\Services\SmartflowWorkflowCatalog;
 use Illuminate\Http\RedirectResponse;
@@ -133,7 +133,7 @@ class WorkflowController extends Controller
             ->where('is_active', true)
             ->get()
             ->filter(fn (User $user) => $user->canAccess('workflows.manage'))
-            ->each(fn (User $user) => Notification::create([
+            ->each(fn (User $user) => $this->createWorkflowNotification([
                 'user_id' => $user->id,
                 'type' => 'workflow',
                 'title' => 'มีคำขออนุมัติใหม่',
@@ -178,7 +178,7 @@ class WorkflowController extends Controller
             'comment' => $data['comment'] ?? null,
         ]);
 
-        Notification::create([
+        $this->createWorkflowNotification([
             'user_id' => $workflowRequest->requester_id,
             'type' => 'workflow',
             'title' => 'สถานะคำขอเปลี่ยนแล้ว',
@@ -537,12 +537,28 @@ class WorkflowController extends Controller
         return $count;
     }
 
+    /**
+     * @param array{user_id:int,type:string,title:string,body:string,url:string|null} $payload
+     */
+    private function createWorkflowNotification(array $payload): void
+    {
+        $user = User::find($payload['user_id']);
+
+        if (! $user) {
+            return;
+        }
+
+        unset($payload['user_id']);
+
+        app(PortalNotificationService::class)->createForUser($user, $payload);
+    }
+
     private function notifyWorkflowParticipants(WorkflowRequest $workflowRequest, User $actor, string $title, string $body): void
     {
         collect([$workflowRequest->requester_id, $workflowRequest->assigned_to])
             ->filter(fn (?int $userId) => $userId && $userId !== $actor->id)
             ->unique()
-            ->each(fn (int $userId) => Notification::create([
+            ->each(fn (int $userId) => $this->createWorkflowNotification([
                 'user_id' => $userId,
                 'type' => 'workflow',
                 'title' => $title,

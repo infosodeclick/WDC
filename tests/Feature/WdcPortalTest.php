@@ -1756,6 +1756,8 @@ class WdcPortalTest extends TestCase
     public function test_employee_can_create_workflow_request_from_smartflow_template(): void
     {
         $this->seed(DatabaseSeeder::class);
+        Mail::fake();
+        config(['wdc.mail_notifications_enabled' => true]);
 
         $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
 
@@ -1783,6 +1785,7 @@ class WdcPortalTest extends TestCase
         $this->assertStringStartsWith('WDC-SF-', $workflowRequest->document_number);
         $this->assertSame('SAP B1', $workflowRequest->form_payload['ระบบที่เกี่ยวข้อง']);
         $this->assertNotNull($workflowRequest->current_step_id);
+        Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->notification->type === 'workflow');
     }
 
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void
@@ -1822,6 +1825,8 @@ class WdcPortalTest extends TestCase
     public function test_manager_can_update_workflow_status(): void
     {
         $this->seed(DatabaseSeeder::class);
+        Mail::fake();
+        config(['wdc.mail_notifications_enabled' => true]);
 
         $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
         $manager = User::where('employee_code', 'EMP00200')->firstOrFail();
@@ -1849,6 +1854,8 @@ class WdcPortalTest extends TestCase
         $workflowRequest->refresh();
 
         $this->assertSame('in_review', $workflowRequest->status);
+        Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->notification->type === 'workflow'
+            && $mail->hasTo($manager->email));
         $this->assertSame('รับเรื่องแล้ว', $workflowRequest->events()->latest()->first()?->comment);
     }
 
