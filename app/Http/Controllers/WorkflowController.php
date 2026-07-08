@@ -506,6 +506,34 @@ class WorkflowController extends Controller
         return back()->with('status', 'Sync SmartFlow workflow catalog เข้า WDC แล้ว');
     }
 
+    public function redirectLegacySubmit(string $legacyWorkflowId): RedirectResponse
+    {
+        $template = WorkflowTemplate::query()
+            ->where('legacy_workflow_id', $legacyWorkflowId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $template) {
+            return redirect()->route('workflows.index', ['view' => 'workflows']);
+        }
+
+        return redirect(route('workflows.index', ['template' => $template->id]).'#workflow-create-form');
+    }
+
+    public function redirectLegacyWorkflowSteps(string $legacyWorkflowId): RedirectResponse
+    {
+        $template = WorkflowTemplate::query()
+            ->where('legacy_workflow_id', $legacyWorkflowId)
+            ->where('is_active', true)
+            ->first();
+
+        $fragment = $template
+            ? '#smartflow-workflow-'.$template->legacy_workflow_id
+            : '#smartflow-diagrams';
+
+        return redirect(route('workflows.index', ['view' => 'workflows']).$fragment);
+    }
+
     public function export(Request $request)
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');

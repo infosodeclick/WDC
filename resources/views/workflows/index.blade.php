@@ -769,7 +769,7 @@
     </div>
     <div class="workflow-template-grid">
         @foreach($templates as $template)
-            <article class="workflow-template-card">
+            <article class="workflow-template-card" id="smartflow-workflow-{{ $template->legacy_workflow_id ?? $template->id }}">
                 <div class="meta-row">
                     <span class="tag">{{ $template->smartflow_menu ?? 'Workflows' }}</span>
                     <span>Workflow #{{ $template->legacy_workflow_id }}</span>

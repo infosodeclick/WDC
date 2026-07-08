@@ -2016,6 +2016,35 @@ class WdcPortalTest extends TestCase
             ->assertSee('SmartFlow navigation parity');
     }
 
+    public function test_smartflow_legacy_urls_redirect_to_wdc_work_center(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $this->get('/document/')->assertRedirect('/workflows?view=all');
+        $this->get('/document/to-approve/')->assertRedirect('/workflows?view=tasks');
+        $this->get('/document/favorite-documents/')->assertRedirect('/workflows?view=favorites');
+        $this->get('/document/statistics/')->assertRedirect('/workflows?view=statistics');
+        $this->get('/document/authorizations/')->assertRedirect('/workflows?view=authorizations');
+        $this->get('/document/workflows/')->assertRedirect('/workflows?view=workflows');
+        $this->get('/document/fields/')->assertRedirect('/workflows?view=dynamic_fields');
+        $this->get('/document/user-group-diagram/')->assertRedirect('/workflows?view=user_group_diagram');
+        $this->get('/accounts/users/')->assertRedirect('/workflows?view=user_list');
+        $this->get('/document/export/')->assertRedirect('/workflows/export');
+
+        $this->get('/document/submit/'.$template->legacy_workflow_id.'/')
+            ->assertRedirect(route('workflows.index', ['template' => $template->id]).'#workflow-create-form');
+
+        $this->get('/document/workflow/'.$template->legacy_workflow_id.'/steps/')
+            ->assertRedirect(route('workflows.index', ['view' => 'workflows']).'#smartflow-workflow-'.$template->legacy_workflow_id);
+    }
+
     public function test_user_can_create_and_revoke_smartflow_approval_authorization(): void
     {
         $this->seed(DatabaseSeeder::class);

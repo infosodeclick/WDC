@@ -54,7 +54,25 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
-    Route::redirect('/document/user-group-diagram', '/workflows?view=user_group_diagram');
+    foreach ([
+        '/document' => '/workflows?view=all',
+        '/document/to-approve' => '/workflows?view=tasks',
+        '/document/favorite-documents' => '/workflows?view=favorites',
+        '/document/statistics' => '/workflows?view=statistics',
+        '/document/authorizations' => '/workflows?view=authorizations',
+        '/document/workflows' => '/workflows?view=workflows',
+        '/document/fields' => '/workflows?view=dynamic_fields',
+        '/document/user-group-diagram' => '/workflows?view=user_group_diagram',
+        '/document/export' => '/workflows/export',
+        '/accounts/users' => '/workflows?view=user_list',
+    ] as $legacyPath => $wdcPath) {
+        Route::redirect($legacyPath, $wdcPath);
+        Route::redirect($legacyPath.'/', $wdcPath);
+    }
+    Route::get('/document/submit/{legacyWorkflowId}', [WorkflowController::class, 'redirectLegacySubmit'])->whereNumber('legacyWorkflowId');
+    Route::get('/document/submit/{legacyWorkflowId}/', [WorkflowController::class, 'redirectLegacySubmit'])->whereNumber('legacyWorkflowId');
+    Route::get('/document/workflow/{legacyWorkflowId}/steps', [WorkflowController::class, 'redirectLegacyWorkflowSteps'])->whereNumber('legacyWorkflowId');
+    Route::get('/document/workflow/{legacyWorkflowId}/steps/', [WorkflowController::class, 'redirectLegacyWorkflowSteps'])->whereNumber('legacyWorkflowId');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
     Route::get('/workflows/import-template', [WorkflowController::class, 'downloadImportTemplate'])->name('workflows.import-template');
     Route::get('/workflows/attachments/{attachment}/download', [WorkflowController::class, 'downloadAttachment'])->name('workflows.attachments.download');
