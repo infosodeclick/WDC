@@ -3010,50 +3010,109 @@ body.directory-modal-open {
     color: var(--muted);
 }
 
+.announcement-entry-dialog {
+    max-width: min(720px, calc(100vw - 32px));
+}
+
+.announcement-entry-modal {
+    overflow: hidden;
+    border: 1px solid rgba(34, 31, 32, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 22px 60px rgba(34, 31, 32, 0.24);
+}
+
+.announcement-entry-modal .modal-header {
+    align-items: flex-start;
+    gap: 18px;
+    padding: 18px 24px 16px;
+    border-bottom: 1px solid rgba(34, 31, 32, 0.1);
+}
+
+.announcement-entry-modal .modal-title {
+    line-height: 1.2;
+}
+
+.announcement-entry-modal .btn-close {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    margin: -4px -6px 0 0;
+    border: 1px solid transparent;
+    border-radius: 999px;
+}
+
+.announcement-entry-modal .btn-close:hover,
+.announcement-entry-modal .btn-close:focus-visible {
+    border-color: var(--line);
+    background-color: var(--surface);
+}
+
 .announcement-entry-modal .modal-body {
     padding: 0;
 }
 
 .announcement-popup-slide {
     display: grid;
-    gap: 14px;
-    min-height: 280px;
-    padding: 26px 64px 32px;
+    align-content: center;
+    gap: 16px;
+    min-height: 258px;
+    padding: 28px 74px 70px;
+}
+
+.announcement-popup-slide .meta-row {
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .announcement-popup-slide h3 {
+    max-width: 24ch;
     margin: 0;
-    font-size: 1.7rem;
+    font-size: clamp(1.45rem, 2vw, 1.85rem);
     font-weight: 850;
+    line-height: 1.22;
 }
 
 .announcement-popup-slide p {
+    max-width: 58ch;
     margin: 0;
     color: var(--muted);
-    line-height: 1.7;
+    line-height: 1.75;
+}
+
+.announcement-popup-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.announcement-popup-actions .btn {
+    min-width: min(420px, 100%);
+    justify-content: center;
+    padding-block: 12px;
 }
 
 .announcement-entry-modal .carousel {
-    padding-bottom: 46px;
+    position: relative;
 }
 
 .announcement-carousel-control {
     top: 50%;
     bottom: auto;
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(34, 31, 32, 0.14);
     opacity: 1;
     transform: translateY(-50%);
-    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .announcement-carousel-control:hover,
 .announcement-carousel-control:focus-visible {
     background: var(--wdc-yellow-2);
-    box-shadow: 0 14px 30px rgba(34, 31, 32, 0.16);
+    box-shadow: 0 14px 30px rgba(34, 31, 32, 0.18);
     transform: translateY(-50%) scale(1.04);
 }
 
@@ -3067,28 +3126,31 @@ body.directory-modal-open {
 
 .announcement-entry-modal .carousel-control-prev-icon,
 .announcement-entry-modal .carousel-control-next-icon {
+    width: 18px;
+    height: 18px;
     filter: invert(1);
 }
 
 .announcement-carousel-indicators {
     right: 0;
-    bottom: 14px;
+    bottom: 22px;
     left: 0;
+    align-items: center;
     gap: 8px;
     margin: 0;
 }
 
 .announcement-carousel-indicators [data-bs-target] {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border: 0;
     border-radius: 999px;
-    background: var(--muted);
+    background: rgba(34, 31, 32, 0.28);
     opacity: 1;
 }
 
 .announcement-carousel-indicators .active {
-    width: 28px;
+    width: 26px;
     background: var(--wdc-yellow-2);
 }
 
@@ -4034,9 +4096,54 @@ body.directory-modal-open {
         grid-template-columns: 1fr;
     }
 
+    .announcement-entry-dialog {
+        max-width: calc(100vw - 20px);
+        margin-right: auto;
+        margin-left: auto;
+    }
+
+    .announcement-entry-modal .modal-header {
+        padding: 16px 18px 14px;
+    }
+
     .announcement-popup-slide {
-        min-height: 260px;
-        padding: 22px 42px 28px;
+        min-height: 300px;
+        padding: 24px 22px 76px;
+    }
+
+    .announcement-popup-slide .meta-row {
+        justify-content: flex-start;
+    }
+
+    .announcement-popup-slide h3 {
+        max-width: none;
+        font-size: 1.35rem;
+    }
+
+    .announcement-popup-actions .btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .announcement-carousel-control {
+        top: auto;
+        bottom: 18px;
+        width: 38px;
+        height: 38px;
+        transform: none;
+    }
+
+    .announcement-carousel-control:hover,
+    .announcement-carousel-control:focus-visible {
+        transform: scale(1.04);
+    }
+
+    .announcement-carousel-control-prev {
+        left: 18px;
+    }
+
+    .announcement-carousel-control-next {
+        right: 18px;
     }
 
     .mobile-more-grid {

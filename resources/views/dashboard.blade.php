@@ -80,7 +80,7 @@
 
 @if($showAnnouncementPopup)
     <div class="modal fade" id="announcementEntryModal" tabindex="-1" aria-labelledby="announcementEntryModalLabel" aria-hidden="true" data-auto-open-announcement-modal>
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered announcement-entry-dialog">
             <div class="modal-content announcement-entry-modal">
                 <div class="modal-header">
                     <div>
@@ -102,7 +102,9 @@
                                         </div>
                                         <h3>{{ $announcement->title }}</h3>
                                         <p>{{ $announcement->body }}</p>
-                                        <a class="btn btn-primary" href="{{ route('announcements.show', $announcement) }}">อ่านประกาศ</a>
+                                        <div class="announcement-popup-actions">
+                                            <a class="btn btn-primary" href="{{ route('announcements.show', $announcement) }}">อ่านประกาศ</a>
+                                        </div>
                                     </article>
                                 </div>
                             @endforeach
