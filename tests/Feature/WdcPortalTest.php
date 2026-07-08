@@ -18,6 +18,7 @@ use App\Models\Role;
 use App\Models\SoftwareLicense;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Models\WorkflowAuthorization;
 use App\Models\WorkflowRequest;
 use App\Models\WorkflowTemplate;
 use App\Services\GoogleCalendarService;
@@ -1932,6 +1933,93 @@ class WdcPortalTest extends TestCase
             ->assertSee('Current Step')
             ->assertSee('WDC-SF-NAV-00001')
             ->assertSee('SmartFlow navigation parity');
+    }
+
+    public function test_user_can_create_and_revoke_smartflow_approval_authorization(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $manager = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'employee_code' => $manager->employee_code,
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', ['view' => 'authorizations']))
+            ->assertOk()
+            ->assertSee('Approval Authorizations')
+            ->assertSee("Authorizations You've Given", false)
+            ->assertSee('Authorizations Given To You')
+            ->assertSee('Create Authorization');
+
+        $this->post(route('workflows.authorizations.store'), [
+            'authorized_user_id' => $employee->id,
+            'valid_from' => now()->subHour()->format('Y-m-d\TH:i'),
+            'valid_until' => now()->addDay()->format('Y-m-d\TH:i'),
+            'reason' => 'Vacation coverage',
+        ])->assertRedirect(route('workflows.index', ['view' => 'authorizations']));
+
+        $authorization = WorkflowAuthorization::where('authorizer_id', $manager->id)
+            ->where('authorized_user_id', $employee->id)
+            ->firstOrFail();
+
+        $this->assertSame('active', $authorization->status);
+
+        $this->delete(route('workflows.authorizations.revoke', $authorization))->assertRedirect(route('workflows.index', ['view' => 'authorizations']));
+
+        $this->assertSame('revoked', $authorization->fresh()->status);
+    }
+
+    public function test_authorized_delegate_can_see_and_update_assigned_workflow_task(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        Mail::fake();
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+        $manager = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
+        WorkflowAuthorization::create([
+            'authorizer_id' => $manager->id,
+            'authorized_user_id' => $employee->id,
+            'valid_from' => now()->subHour(),
+            'valid_until' => now()->addDay(),
+            'reason' => 'Approval backup',
+            'status' => 'active',
+        ]);
+
+        $workflowRequest = WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $manager->id,
+            'assigned_to' => $manager->id,
+            'current_step_id' => $template->steps()->first()?->id,
+            'document_number' => 'WDC-SF-DELEGATE-00001',
+            'title' => 'Delegated SmartFlow approval',
+            'details' => 'Assigned to manager but visible to delegated user.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => $employee->employee_code,
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', ['view' => 'tasks']))
+            ->assertOk()
+            ->assertSee('Delegated SmartFlow approval')
+            ->assertSee('WDC-SF-DELEGATE-00001');
+
+        $this->patch(route('workflows.status', $workflowRequest), [
+            'status' => 'in_review',
+            'comment' => 'Approved by delegated user',
+        ])->assertRedirect();
+
+        $this->assertSame('in_review', $workflowRequest->fresh()->status);
+        $this->assertSame('Approved by delegated user', $workflowRequest->events()->latest()->first()?->comment);
     }
 
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void

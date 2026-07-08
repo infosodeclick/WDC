@@ -1990,6 +1990,71 @@ body.directory-modal-open {
     background: #fffdf2;
 }
 
+.smartflow-authorization-panel .section-title {
+    align-items: start;
+}
+
+.smartflow-authorization-panel .section-title p:not(.eyebrow) {
+    max-width: 680px;
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.smartflow-authorization-form {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.4fr) minmax(180px, .8fr) minmax(180px, .8fr);
+    gap: 12px;
+    align-items: end;
+}
+
+.smartflow-authorization-form label {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+
+.smartflow-authorization-form label span {
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.smartflow-authorization-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.responsive-table {
+    overflow-x: auto;
+}
+
+.responsive-table table {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+}
+
+.responsive-table th,
+.responsive-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+.responsive-table th {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.responsive-table td small {
+    display: block;
+    color: var(--muted);
+    font-size: .74rem;
+}
+
 .workflow-payload {
     display: grid;
     grid-template-columns: 180px minmax(0, 1fr);
@@ -4955,5 +5020,12 @@ body.directory-modal-open {
     .hr-list-row .status-pill {
         max-width: 100%;
         justify-self: start;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .smartflow-authorization-grid,
+    .smartflow-authorization-form {
+        grid-template-columns: 1fr;
     }
 }

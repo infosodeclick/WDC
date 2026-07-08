@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Models\WorkflowAuthorization;
 use App\Models\WorkflowRequest;
 use App\Models\WorkflowRequestAttachment;
 use App\Models\WorkflowRequestEvent;
@@ -31,11 +32,18 @@ class WorkflowController extends Controller
         $activeView = $this->activeSmartflowView($request);
         $advancedFilters = $this->workflowFilterData($request);
         $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
+        $delegatedAuthorizerIds = $this->activeDelegatedAuthorizerIds($user);
 
         $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user', 'attachments')->latest();
 
         if (! $canManage) {
-            $query->where('requester_id', $user->id);
+            $query->where(function ($query) use ($user, $delegatedAuthorizerIds) {
+                $query->where('requester_id', $user->id);
+
+                if ($delegatedAuthorizerIds->isNotEmpty()) {
+                    $query->orWhereIn('assigned_to', $delegatedAuthorizerIds->all());
+                }
+            });
         } elseif (! $user->canSeeAllData()) {
             if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
                 $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
@@ -83,6 +91,19 @@ class WorkflowController extends Controller
             'canManageSystem' => $canManageSystem,
             'canCreate' => $user->canAccess('workflows.create'),
             'manageableUsers' => $canManage ? User::with('employee.department')->where('is_active', true)->orderBy('name')->get() : collect(),
+            'authorizationUsers' => User::with('employee.department')
+                ->where('is_active', true)
+                ->whereKeyNot($user->id)
+                ->orderBy('name')
+                ->get(),
+            'authorizationsGiven' => WorkflowAuthorization::with('authorizedUser.employee.department')
+                ->where('authorizer_id', $user->id)
+                ->latest()
+                ->get(),
+            'authorizationsReceived' => WorkflowAuthorization::with('authorizer.employee.department')
+                ->where('authorized_user_id', $user->id)
+                ->latest()
+                ->get(),
             'menuTabs' => $this->smartflowMenuTabs(),
             'activeView' => $activeView,
             'activeStatus' => $status,
@@ -174,7 +195,7 @@ class WorkflowController extends Controller
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
-        abort_unless($this->canManageWorkflows($user) && $this->canViewWorkflow($user, $workflowRequest->load('requester.employee.department')), 403);
+        abort_unless($this->canActOnWorkflow($user, $workflowRequest->load('requester.employee.department')), 403);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(WorkflowRequest::statusLabels()))],
@@ -254,6 +275,59 @@ class WorkflowController extends Controller
         $this->log($request, 'comment_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Commented {$workflowRequest->document_number}");
 
         return back()->with('status', 'เพิ่มคอมเมนต์แล้ว');
+    }
+
+    public function storeAuthorization(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'authorized_user_id' => ['required', 'exists:users,id', Rule::notIn([$request->user()->id])],
+            'valid_from' => ['nullable', 'date'],
+            'valid_until' => ['nullable', 'date', 'after:valid_from'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $authorization = WorkflowAuthorization::create([
+            'authorizer_id' => $request->user()->id,
+            'authorized_user_id' => $data['authorized_user_id'],
+            'valid_from' => $data['valid_from'] ?? null,
+            'valid_until' => $data['valid_until'] ?? null,
+            'reason' => $data['reason'] ?? null,
+            'status' => 'active',
+        ]);
+
+        $authorizedUser = User::find($data['authorized_user_id']);
+
+        if ($authorizedUser) {
+            $this->createWorkflowNotification([
+                'user_id' => $authorizedUser->id,
+                'type' => 'workflow',
+                'title' => 'Approval authorization assigned',
+                'body' => "{$request->user()->name} authorized you to approve SmartFlow documents on their behalf.",
+                'url' => route('workflows.index', ['view' => 'authorizations']),
+            ]);
+        }
+
+        $this->log($request, 'create_workflow_authorization', WorkflowAuthorization::class, $authorization->id, "Authorized user {$authorization->authorized_user_id}");
+
+        return redirect()->route('workflows.index', ['view' => 'authorizations'])->with('status', 'Created approval authorization.');
+    }
+
+    public function revokeAuthorization(WorkflowAuthorization $authorization, Request $request): RedirectResponse
+    {
+        abort_unless(
+            $authorization->authorizer_id === $request->user()->id || $request->user()->canAccess('admin.system.manage'),
+            403
+        );
+
+        $authorization->update([
+            'status' => 'revoked',
+            'revoked_by' => $request->user()->id,
+            'revoked_at' => now(),
+        ]);
+
+        $this->log($request, 'revoke_workflow_authorization', WorkflowAuthorization::class, $authorization->id, "Revoked authorization {$authorization->id}");
+
+        return redirect()->route('workflows.index', ['view' => 'authorizations'])->with('status', 'Revoked approval authorization.');
     }
 
     public function downloadAttachment(WorkflowRequestAttachment $attachment, Request $request)
@@ -692,6 +766,10 @@ class WorkflowController extends Controller
             return true;
         }
 
+        if ($this->hasActiveAuthorizationForWorkflow($user, $workflowRequest)) {
+            return true;
+        }
+
         if (! $this->canManageWorkflows($user)) {
             return false;
         }
@@ -707,12 +785,40 @@ class WorkflowController extends Controller
         return false;
     }
 
+    private function canActOnWorkflow(User $user, WorkflowRequest $workflowRequest): bool
+    {
+        if ($this->canManageWorkflows($user) && $this->canViewWorkflow($user, $workflowRequest)) {
+            return true;
+        }
+
+        return $this->hasActiveAuthorizationForWorkflow($user, $workflowRequest);
+    }
+
+    private function hasActiveAuthorizationForWorkflow(User $user, WorkflowRequest $workflowRequest): bool
+    {
+        if (! $workflowRequest->assigned_to) {
+            return false;
+        }
+
+        return WorkflowAuthorization::active()
+            ->where('authorizer_id', $workflowRequest->assigned_to)
+            ->where('authorized_user_id', $user->id)
+            ->exists();
+    }
+
     private function scopedWorkflowQuery(User $user)
     {
         $query = WorkflowRequest::query();
+        $delegatedAuthorizerIds = $this->activeDelegatedAuthorizerIds($user);
 
         if (! $this->canManageWorkflows($user)) {
-            return $query->where('requester_id', $user->id);
+            return $query->where(function ($query) use ($user, $delegatedAuthorizerIds) {
+                $query->where('requester_id', $user->id);
+
+                if ($delegatedAuthorizerIds->isNotEmpty()) {
+                    $query->orWhereIn('assigned_to', $delegatedAuthorizerIds->all());
+                }
+            });
         }
 
         if ($user->canSeeAllData()) {
@@ -724,6 +830,15 @@ class WorkflowController extends Controller
         }
 
         return $query->where('requester_id', $user->id);
+    }
+
+    private function activeDelegatedAuthorizerIds(User $user)
+    {
+        return WorkflowAuthorization::active()
+            ->where('authorized_user_id', $user->id)
+            ->pluck('authorizer_id')
+            ->unique()
+            ->values();
     }
 
     /**
@@ -781,10 +896,16 @@ class WorkflowController extends Controller
     private function applySmartflowView($query, string $view, User $user, $favoriteTemplateIds): void
     {
         if ($view === 'tasks') {
+            $delegatedAuthorizerIds = $this->activeDelegatedAuthorizerIds($user);
+
             $query->whereIn('status', ['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester'])
-                ->where(function ($query) use ($user) {
+                ->where(function ($query) use ($user, $delegatedAuthorizerIds) {
                     $query->where('assigned_to', $user->id)
                         ->orWhere('requester_id', $user->id);
+
+                    if ($delegatedAuthorizerIds->isNotEmpty()) {
+                        $query->orWhereIn('assigned_to', $delegatedAuthorizerIds->all());
+                    }
 
                     if ($this->canManageWorkflows($user)) {
                         $query->orWhereNull('assigned_to');

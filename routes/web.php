@@ -60,6 +60,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/workflows/templates/sync-smartflow', [WorkflowController::class, 'syncSmartflowCatalog'])->name('workflows.templates.sync-smartflow');
     Route::post('/workflows/templates/{template}/favorite', [WorkflowController::class, 'toggleFavorite'])->name('workflows.templates.favorite');
     Route::patch('/workflows/templates/{template}', [WorkflowController::class, 'updateTemplate'])->name('workflows.templates.update');
+    Route::post('/workflows/authorizations', [WorkflowController::class, 'storeAuthorization'])->name('workflows.authorizations.store');
+    Route::delete('/workflows/authorizations/{authorization}', [WorkflowController::class, 'revokeAuthorization'])->name('workflows.authorizations.revoke');
     Route::post('/workflows/{workflowRequest}/comments', [WorkflowController::class, 'comment'])->name('workflows.comments.store');
     Route::patch('/workflows/{workflowRequest}/status', [WorkflowController::class, 'updateStatus'])->name('workflows.status');
 

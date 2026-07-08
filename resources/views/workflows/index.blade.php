@@ -3,6 +3,7 @@
 @section('title', 'SmartFlow Work Center | WDC Portal')
 
 @section('content')
+@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics'], true) ? 'all' : $activeView)
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
@@ -41,7 +42,7 @@
                     <small>สร้างเอกสารใหม่ใน WDC โดยอ้างอิงแบบ SmartFlow เดิม</small>
                 </div>
                 @foreach($templateCatalog as $template)
-                    <a href="{{ route('workflows.index', ['view' => $activeView, 'template' => $template->id]) }}#workflow-create-form">
+                    <a href="{{ route('workflows.index', ['view' => $documentCreateView, 'template' => $template->id]) }}#workflow-create-form">
                         <span>{{ $template->name }}</span>
                         <small>
                             Workflow #{{ $template->legacy_workflow_id ?? '-' }}
@@ -62,7 +63,7 @@
         <i class="bi bi-files"></i>
         <span>All Documents</span>
     </a>
-    <a class="smartflow-command-link" href="#smartflow-diagrams">
+    <a class="smartflow-command-link" href="{{ route('workflows.index', ['view' => 'workflows']) }}#smartflow-diagrams">
         <i class="bi bi-diagram-3"></i>
         <span>Diagrams</span>
     </a>
@@ -77,6 +78,132 @@
         </a>
     @endif
 </section>
+
+@if($activeView === 'authorizations')
+    <section class="panel smartflow-authorization-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Approval Authorizations</p>
+                <h2>Manage approval delegation</h2>
+                <p>Give another user temporary approval authority and see authorizations given to you, matching the SmartFlow authorization flow.</p>
+            </div>
+            <span class="status-pill">{{ $authorizationsGiven->where('status', 'active')->count() }} active</span>
+        </div>
+
+        <form method="post" action="{{ route('workflows.authorizations.store') }}" class="smartflow-authorization-form">
+            @csrf
+            <label>
+                <span>Authorized user</span>
+                <select class="form-select" name="authorized_user_id" required>
+                    <option value="">Select a user</option>
+                    @foreach($authorizationUsers as $authorizationUser)
+                        <option value="{{ $authorizationUser->id }}">
+                            {{ $authorizationUser->name }} · {{ $authorizationUser->employee_code ?? '-' }}
+                            @if($authorizationUser->employee?->department)
+                                · {{ $authorizationUser->employee->department->name }}
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+            </label>
+            <label>
+                <span>Valid from</span>
+                <input class="form-control" name="valid_from" type="datetime-local">
+            </label>
+            <label>
+                <span>Valid until</span>
+                <input class="form-control" name="valid_until" type="datetime-local">
+            </label>
+            <label class="span-3">
+                <span>Reason</span>
+                <textarea class="form-control" name="reason" rows="2" placeholder="e.g., Vacation coverage"></textarea>
+            </label>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-shield-check"></i> Create Authorization</button>
+        </form>
+    </section>
+
+    <div class="smartflow-authorization-grid">
+        <section class="panel">
+            <div class="section-title">
+                <h2>Authorizations You've Given</h2>
+            </div>
+            <div class="responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Authorized User</th>
+                            <th>Valid From</th>
+                            <th>Valid Until</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($authorizationsGiven as $authorization)
+                            <tr>
+                                <td>
+                                    <strong>{{ $authorization->authorizedUser?->name }}</strong>
+                                    <small>{{ $authorization->authorizedUser?->employee_code ?? '-' }}</small>
+                                </td>
+                                <td>{{ $authorization->valid_from?->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td>{{ $authorization->valid_until?->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td>{{ $authorization->reason ?: '-' }}</td>
+                                <td><span class="status-pill status-{{ $authorization->status }}">{{ ucfirst($authorization->status) }}</span></td>
+                                <td>
+                                    @if($authorization->status === 'active')
+                                        <form method="post" action="{{ route('workflows.authorizations.revoke', $authorization) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">Revoke</button>
+                                        </form>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6">No approval authorizations given.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="section-title">
+                <h2>Authorizations Given To You</h2>
+            </div>
+            <div class="responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Authorizer</th>
+                            <th>Valid From</th>
+                            <th>Valid Until</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($authorizationsReceived as $authorization)
+                            <tr>
+                                <td>
+                                    <strong>{{ $authorization->authorizer?->name }}</strong>
+                                    <small>{{ $authorization->authorizer?->employee_code ?? '-' }}</small>
+                                </td>
+                                <td>{{ $authorization->valid_from?->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td>{{ $authorization->valid_until?->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td>{{ $authorization->reason ?: '-' }}</td>
+                                <td><span class="status-pill status-{{ $authorization->status }}">{{ ucfirst($authorization->status) }}</span></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5">No one has authorized you to approve documents on their behalf.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+@else
 
 <div class="metric-grid">
     <div class="metric-card"><span>Submitted</span><strong>{{ $metrics['submitted'] }}</strong><small>รอรับเรื่อง</small></div>
@@ -663,4 +790,5 @@ Reference
 </div>
 
 {{ $requests->links() }}
+@endif
 @endsection

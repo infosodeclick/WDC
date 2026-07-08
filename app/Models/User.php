@@ -97,6 +97,16 @@ class User extends Authenticatable
         return $this->belongsToMany(WorkflowTemplate::class, 'workflow_template_favorites')->withTimestamps();
     }
 
+    public function workflowAuthorizationsGiven(): HasMany
+    {
+        return $this->hasMany(WorkflowAuthorization::class, 'authorizer_id');
+    }
+
+    public function workflowAuthorizationsReceived(): HasMany
+    {
+        return $this->hasMany(WorkflowAuthorization::class, 'authorized_user_id');
+    }
+
     public function hasRole(string $slug): bool
     {
         return $this->role?->slug === $slug;
