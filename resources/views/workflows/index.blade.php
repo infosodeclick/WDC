@@ -62,6 +62,10 @@
         <i class="bi bi-files"></i>
         <span>All Documents</span>
     </a>
+    <a class="smartflow-command-link" href="#smartflow-diagrams">
+        <i class="bi bi-diagram-3"></i>
+        <span>Diagrams</span>
+    </a>
     <a class="smartflow-command-link {{ $activeView === 'favorites' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'favorites']) }}">
         <i class="bi bi-star"></i>
         <span>Favorites</span>
@@ -217,7 +221,7 @@
     </section>
 @endif
 
-<section class="panel">
+<section class="panel" id="smartflow-diagrams">
     <div class="section-title">
         <h2>Workflows จาก SmartFlow</h2>
         <span class="muted">{{ $templates->count() }} workflow</span>
