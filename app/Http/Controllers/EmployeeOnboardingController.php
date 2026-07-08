@@ -106,7 +106,7 @@ class EmployeeOnboardingController extends Controller
         $data['thai_name'] = $this->joinName($data['thai_first_name'] ?? null, $data['thai_last_name'] ?? null)
             ?: ($data['thai_name'] ?? null);
 
-        if (($data['business_unit'] ?? null) === null && ! empty($data['department_id'])) {
+        if (blank($data['business_unit'] ?? null) && ! empty($data['department_id'])) {
             $data['business_unit'] = Department::whereKey($data['department_id'])->value('name');
         }
 

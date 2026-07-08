@@ -117,6 +117,185 @@ if (smartflowTemplateSelect && smartflowFieldsets.length > 0) {
     syncSmartflowFieldsets();
 }
 
+const captureSelectOptions = (select) => Array.from(select.options).map((option) => ({
+    value: option.value,
+    text: option.textContent,
+    dataset: { ...option.dataset },
+}));
+
+const uniqueBy = (items, key) => {
+    const seen = new Set();
+
+    return items.filter((item) => {
+        const value = item[key] || '';
+
+        if (seen.has(value)) {
+            return false;
+        }
+
+        seen.add(value);
+
+        return true;
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-onboarding-form]').forEach((form) => {
+        const positionSelect = form.querySelector('[data-onboarding-position]');
+        const departmentSelect = form.querySelector('[data-onboarding-department]');
+        const teamSelect = form.querySelector('[data-onboarding-team]');
+        const locationSelect = form.querySelector('[data-onboarding-location]');
+        const businessUnitInput = form.querySelector('[data-onboarding-business-unit]');
+
+        if (! positionSelect || ! departmentSelect || ! teamSelect || ! locationSelect || ! businessUnitInput) {
+            return;
+        }
+
+        let salesAssignments = [];
+
+        try {
+            salesAssignments = JSON.parse(form.dataset.salesAssignments || '[]');
+        } catch {
+            salesAssignments = [];
+        }
+
+        if (salesAssignments.length === 0) {
+            return;
+        }
+
+        const salesPositions = new Set(salesAssignments.map((assignment) => assignment.position));
+        const originalDepartments = captureSelectOptions(departmentSelect);
+        const originalTeams = captureSelectOptions(teamSelect);
+        const originalLocations = captureSelectOptions(locationSelect);
+
+        const renderOptions = (select, options, preferredValue = '', preferredBusinessUnit = '') => {
+            select.replaceChildren(...options.map((item) => {
+                const option = document.createElement('option');
+                option.value = item.value || '';
+                option.textContent = item.text || '';
+
+                Object.entries(item.dataset || {}).forEach(([key, value]) => {
+                    option.dataset[key] = value;
+                });
+
+                return option;
+            }));
+
+            const optionList = Array.from(select.options);
+            let selectedIndex = -1;
+
+            if (preferredBusinessUnit) {
+                selectedIndex = optionList.findIndex((option) => option.dataset.businessUnit === preferredBusinessUnit);
+            }
+
+            if (selectedIndex < 0 && preferredValue) {
+                selectedIndex = optionList.findIndex((option) => option.value === preferredValue);
+            }
+
+            if (selectedIndex < 0) {
+                selectedIndex = optionList.findIndex((option) => option.value !== '');
+            }
+
+            select.selectedIndex = Math.max(selectedIndex, 0);
+        };
+
+        const selectedBusinessUnit = () => {
+            const selectedOption = departmentSelect.selectedOptions[0];
+
+            if (! selectedOption?.value) {
+                return '';
+            }
+
+            return selectedOption.dataset.businessUnit
+                || businessUnitInput.value
+                || selectedOption.textContent
+                || '';
+        };
+
+        const setBusinessUnit = () => {
+            businessUnitInput.value = selectedBusinessUnit();
+        };
+
+        const salesRowsForCurrentPosition = () => salesAssignments
+            .filter((assignment) => assignment.position === positionSelect.value);
+
+        const syncLocations = () => {
+            if (! salesPositions.has(positionSelect.value)) {
+                setBusinessUnit();
+                return;
+            }
+
+            const rows = salesRowsForCurrentPosition()
+                .filter((assignment) => assignment.business_unit === selectedBusinessUnit())
+                .filter((assignment) => assignment.team === teamSelect.value);
+            const locationOptions = [
+                originalLocations[0],
+                ...uniqueBy(rows, 'location').map((assignment) => ({
+                    value: assignment.location,
+                    text: assignment.location,
+                    dataset: {},
+                })),
+            ];
+
+            renderOptions(locationSelect, locationOptions, locationSelect.value);
+            setBusinessUnit();
+        };
+
+        const syncTeams = () => {
+            if (! salesPositions.has(positionSelect.value)) {
+                setBusinessUnit();
+                return;
+            }
+
+            const rows = salesRowsForCurrentPosition()
+                .filter((assignment) => assignment.business_unit === selectedBusinessUnit());
+            const teamOptions = [
+                originalTeams[0],
+                ...uniqueBy(rows, 'team').map((assignment) => ({
+                    value: assignment.team,
+                    text: assignment.team,
+                    dataset: {},
+                })),
+            ];
+
+            renderOptions(teamSelect, teamOptions, teamSelect.value);
+            syncLocations();
+        };
+
+        const syncSalesDropdowns = () => {
+            if (! salesPositions.has(positionSelect.value)) {
+                renderOptions(departmentSelect, originalDepartments, departmentSelect.value);
+                renderOptions(teamSelect, originalTeams, teamSelect.value);
+                renderOptions(locationSelect, originalLocations, locationSelect.value);
+                setBusinessUnit();
+                return;
+            }
+
+            const businessUnitOptions = [
+                originalDepartments[0],
+                ...uniqueBy(salesRowsForCurrentPosition(), 'business_unit').map((assignment) => ({
+                    value: assignment.department_id?.toString() || '',
+                    text: assignment.business_unit,
+                    dataset: {
+                        businessUnit: assignment.business_unit,
+                    },
+                })),
+            ];
+
+            renderOptions(departmentSelect, businessUnitOptions, departmentSelect.value, businessUnitInput.value);
+            setBusinessUnit();
+            syncTeams();
+        };
+
+        positionSelect.addEventListener('change', syncSalesDropdowns);
+        departmentSelect.addEventListener('change', syncTeams);
+        teamSelect.addEventListener('change', syncLocations);
+        locationSelect.addEventListener('change', setBusinessUnit);
+
+        syncSalesDropdowns();
+    });
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const openTargetedDetails = () => {
         const hash = window.location.hash;

@@ -397,7 +397,7 @@
             </div>
             <a class="btn btn-outline-primary" href="{{ route('hr.index', ['section' => 'employees']) }}" aria-label="ปิดหน้าฟอร์มเพิ่มพนักงานใหม่"><i class="bi bi-x-lg"></i></a>
         </div>
-        <form method="post" action="{{ route('hr.onboarding.store') }}" class="form-grid">
+        <form method="post" action="{{ route('hr.onboarding.store') }}" class="form-grid" data-onboarding-form data-sales-assignments='@json($onboardingSalesAssignments)'>
             @csrf
             <label><span>รหัสพนักงาน</span><input class="form-control" name="employee_code" required placeholder="EMP00125"></label>
             <label><span>ชื่อ ภาษาอังกฤษ</span><input class="form-control" name="english_first_name" required placeholder="Somchai"></label>
@@ -407,7 +407,7 @@
             <label><span>นามสกุล ภาษาไทย</span><input class="form-control" name="thai_last_name" placeholder="ใจดี"></label>
             <label><span>ชื่อเล่น ภาษาไทย</span><input class="form-control" name="thai_nickname" placeholder="สม"></label>
             <label><span>ตำแหน่ง</span>
-                <select class="form-select" name="position">
+                <select class="form-select" name="position" data-onboarding-position>
                     <option value="">เลือกตำแหน่ง</option>
                     @foreach($onboardingPositions as $position)
                         <option value="{{ $position }}" @selected(old('position') === $position)>{{ $position }}</option>
@@ -415,15 +415,16 @@
                 </select>
             </label>
             <label><span>แผนก/BU</span>
-                <select class="form-select" name="department_id">
+                <input type="hidden" name="business_unit" value="{{ old('business_unit') }}" data-onboarding-business-unit>
+                <select class="form-select" name="department_id" data-onboarding-department>
                     <option value="">เลือกแผนก/BU</option>
                     @foreach($departments as $department)
-                        <option value="{{ $department->id }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
+                        <option value="{{ $department->id }}" data-department-name="{{ $department->name }}" @selected((string) old('department_id') === (string) $department->id)>{{ $department->name }}</option>
                     @endforeach
                 </select>
             </label>
             <label><span>ทีม</span>
-                <select class="form-select" name="team">
+                <select class="form-select" name="team" data-onboarding-team>
                     <option value="">เลือกทีม</option>
                     @foreach($onboardingTeams as $team)
                         <option value="{{ $team }}" @selected(old('team') === $team)>{{ $team }}</option>
@@ -431,7 +432,7 @@
                 </select>
             </label>
             <label><span>สาขา</span>
-                <select class="form-select" name="location">
+                <select class="form-select" name="location" data-onboarding-location>
                     <option value="">เลือกสาขา</option>
                     @foreach($onboardingLocations as $location)
                         <option value="{{ $location }}" @selected(old('location') === $location)>{{ $location }}</option>
