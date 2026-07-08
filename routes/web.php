@@ -54,7 +54,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
-    Route::redirect('/document/user-group-diagram', '/workflows?view=user_group_diagram');
+    Route::get('/document', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.document');
+    Route::get('/document/to-approve', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.to-approve');
+    Route::get('/document/favorite-documents', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.favorites');
+    Route::get('/document/statistics', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.statistics');
+    Route::get('/document/authorizations', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.authorizations');
+    Route::get('/document/workflows', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.workflows');
+    Route::get('/document/fields', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.fields');
+    Route::get('/document/user-group-diagram', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.user-group-diagram');
+    Route::get('/document/submit/{legacyWorkflowId}', [WorkflowController::class, 'redirectLegacySubmit'])->name('workflows.legacy.submit');
+    Route::get('/document/workflow/{legacyWorkflowId}/steps', [WorkflowController::class, 'redirectLegacyWorkflowSteps'])->name('workflows.legacy.steps');
+    Route::get('/accounts/users', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.users');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
     Route::get('/workflows/import-template', [WorkflowController::class, 'downloadImportTemplate'])->name('workflows.import-template');
     Route::get('/workflows/attachments/{attachment}/download', [WorkflowController::class, 'downloadAttachment'])->name('workflows.attachments.download');

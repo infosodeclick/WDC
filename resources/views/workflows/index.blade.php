@@ -769,7 +769,7 @@
     </div>
     <div class="workflow-template-grid">
         @foreach($templates as $template)
-            <article class="workflow-template-card">
+            <article class="workflow-template-card" id="smartflow-workflow-{{ $template->legacy_workflow_id ?? $template->id }}">
                 <div class="meta-row">
                     <span class="tag">{{ $template->smartflow_menu ?? 'Workflows' }}</span>
                     <span>Workflow #{{ $template->legacy_workflow_id }}</span>
@@ -921,7 +921,7 @@ Reference
         <div class="template-admin-list">
             @foreach($templateCatalog as $template)
                 @php($templateMenuKey = collect($menuTabs)->filter(fn ($tab) => $tab['label'] === $template->smartflow_menu)->keys()->first() ?? 'all')
-                <details class="template-admin-card">
+                <details class="template-admin-card" id="smartflow-workflow-admin-{{ $template->legacy_workflow_id ?? $template->id }}">
                     <summary>
                         <span>{{ $template->name }}</span>
                         <small>{{ $template->category }} · {{ $template->service_team ?? '-' }} · SLA {{ $template->sla_hours ?? '-' }} ชม.</small>

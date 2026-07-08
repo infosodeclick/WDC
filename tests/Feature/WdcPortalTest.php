@@ -2218,6 +2218,30 @@ class WdcPortalTest extends TestCase
             ->assertRedirect('/workflows?view=user_group_diagram');
     }
 
+    public function test_smartflow_legacy_urls_redirect_to_wdc_work_center(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $template = WorkflowTemplate::where('legacy_workflow_id', '7')->firstOrFail();
+
+        $this->get('/document')->assertRedirect(route('workflows.index', ['view' => 'all']));
+        $this->get('/document/to-approve')->assertRedirect(route('workflows.index', ['view' => 'tasks']));
+        $this->get('/document/favorite-documents')->assertRedirect(route('workflows.index', ['view' => 'favorites']));
+        $this->get('/document/statistics')->assertRedirect(route('workflows.index', ['view' => 'statistics']));
+        $this->get('/document/authorizations')->assertRedirect(route('workflows.index', ['view' => 'authorizations']));
+        $this->get('/document/workflows')->assertRedirect(route('workflows.index', ['view' => 'workflows']));
+        $this->get('/document/fields')->assertRedirect(route('workflows.index', ['view' => 'dynamic_fields']));
+        $this->get('/accounts/users')->assertRedirect(route('workflows.index', ['view' => 'user_list']));
+        $this->get('/document/submit/7')->assertRedirect(route('workflows.index', ['template' => $template->id]).'#workflow-create-form');
+        $this->get('/document/workflow/7/steps')->assertRedirect(route('workflows.index', ['view' => 'workflows']).'#smartflow-workflow-7');
+        $this->get('/document/submit/999999')->assertRedirect(route('workflows.index', ['view' => 'workflows']));
+    }
+
     public function test_regular_employee_does_not_see_smartflow_admin_menus(): void
     {
         $this->seed(DatabaseSeeder::class);

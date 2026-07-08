@@ -149,6 +149,57 @@ class WorkflowController extends Controller
         ]);
     }
 
+    public function redirectLegacyDocument(Request $request): RedirectResponse
+    {
+        $legacyViews = [
+            'document' => 'all',
+            'document/to-approve' => 'tasks',
+            'document/favorite-documents' => 'favorites',
+            'document/statistics' => 'statistics',
+            'document/authorizations' => 'authorizations',
+            'document/workflows' => 'workflows',
+            'document/fields' => 'dynamic_fields',
+            'document/user-group-diagram' => 'user_group_diagram',
+            'accounts/users' => 'user_list',
+        ];
+
+        $view = $legacyViews[$request->path()] ?? 'all';
+
+        return redirect()->route('workflows.index', ['view' => $view]);
+    }
+
+    public function redirectLegacySubmit(string $legacyWorkflowId): RedirectResponse
+    {
+        $template = WorkflowTemplate::query()
+            ->where('legacy_workflow_id', $legacyWorkflowId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $template) {
+            return redirect()->route('workflows.index', ['view' => 'workflows']);
+        }
+
+        return redirect()->to(route('workflows.index', [
+            'template' => $template->id,
+        ]).'#workflow-create-form');
+    }
+
+    public function redirectLegacyWorkflowSteps(string $legacyWorkflowId): RedirectResponse
+    {
+        $template = WorkflowTemplate::query()
+            ->where('legacy_workflow_id', $legacyWorkflowId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $template) {
+            return redirect()->to(route('workflows.index', ['view' => 'workflows']).'#smartflow-diagrams');
+        }
+
+        return redirect()->to(route('workflows.index', [
+            'view' => 'workflows',
+        ]).'#smartflow-workflow-'.$template->legacy_workflow_id);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         abort_unless($request->user()->canAccess('workflows.create'), 403);
