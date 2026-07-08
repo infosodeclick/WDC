@@ -3,7 +3,7 @@
 @section('title', 'SmartFlow Work Center | WDC Portal')
 
 @section('content')
-@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields'], true) ? 'all' : $activeView)
+@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map'], true) ? 'all' : $activeView)
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
@@ -21,6 +21,8 @@
                     <i class="bi {{ $tab['icon'] }}"></i><span>{{ $tab['label'] }}</span>
                 </a>
             @endif
+        @elseif(($tab['manage_only'] ?? false) && ! $canManage)
+            @continue
         @else
             <a class="smartflow-tab {{ $activeView === $key ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => $key]) }}">
                 <i class="bi {{ $tab['icon'] }}"></i><span>{{ $tab['label'] }}</span>
@@ -376,6 +378,90 @@
             @empty
                 <div class="empty-state">No dynamic fields configured.</div>
             @endforelse
+        </div>
+    </section>
+@elseif($activeView === 'user_list' && $canManage)
+    <section class="panel smartflow-user-list-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">User List</p>
+                <h2>SmartFlow users on WDC</h2>
+                <p>รายชื่อผู้ใช้ที่เข้าใช้งาน WDC แทน SmartFlow พร้อม role, ขอบเขตข้อมูล และกลุ่มสิทธิ์ที่ใช้งานจริง</p>
+            </div>
+            <span class="status-pill">{{ $smartflowUsersData->count() }} users</span>
+        </div>
+
+        <div class="smartflow-user-grid">
+            @forelse($smartflowUsersData as $smartflowUser)
+                <article class="smartflow-user-card">
+                    <div class="smartflow-user-head">
+                        <span class="smartflow-avatar">{{ $smartflowUser['initial'] }}</span>
+                        <div>
+                            <h3>{{ $smartflowUser['name'] }}</h3>
+                            <small>{{ $smartflowUser['email'] ?? '-' }}</small>
+                        </div>
+                    </div>
+                    <div class="smartflow-user-facts">
+                        <span><strong>Employee</strong>{{ $smartflowUser['employee_code'] ?? '-' }}</span>
+                        <span><strong>Role</strong>{{ $smartflowUser['role'] }}</span>
+                        <span><strong>Scope</strong>{{ $smartflowUser['data_scope'] }}</span>
+                        <span><strong>Department</strong>{{ $smartflowUser['department'] }}</span>
+                    </div>
+                    <div class="smartflow-user-groups">
+                        @forelse($smartflowUser['groups']->take(8) as $group)
+                            <span>{{ $group }}</span>
+                        @empty
+                            <span>No permission group</span>
+                        @endforelse
+                    </div>
+                    <div class="smartflow-user-footer">
+                        <span>{{ $smartflowUser['permission_count'] }} permissions</span>
+                        <span>{{ $smartflowUser['override_count'] }} overrides</span>
+                    </div>
+                </article>
+            @empty
+                <div class="empty-state">No active SmartFlow users in WDC.</div>
+            @endforelse
+        </div>
+    </section>
+@elseif($activeView === 'permission_map' && $canManage)
+    <section class="panel smartflow-permission-map-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Permission Map</p>
+                <h2>Role and permission matrix</h2>
+                <p>แผนที่สิทธิ์แบบ SmartFlow เดิม โดยใช้ role และ permission จริงของ WDC เพื่อดูว่าแต่ละกลุ่มเข้าถึงเมนูใดได้บ้าง</p>
+            </div>
+            <span class="status-pill">{{ $permissionMapData['roles']->count() }} roles</span>
+        </div>
+
+        <div class="smartflow-permission-map">
+            @foreach($permissionMapData['permissionGroups'] as $groupName => $permissions)
+                <article class="smartflow-permission-group">
+                    <div class="smartflow-permission-group-head">
+                        <h3>{{ $groupName }}</h3>
+                        <span>{{ $permissions->count() }} permissions</span>
+                    </div>
+                    <div class="smartflow-permission-rows">
+                        @foreach($permissions as $permission)
+                            <div class="smartflow-permission-row">
+                                <div>
+                                    <strong>{{ $permission->name }}</strong>
+                                    <small>{{ $permission->key }}</small>
+                                </div>
+                                <div class="smartflow-role-chip-list">
+                                    @foreach($permissionMapData['roles'] as $role)
+                                        @php($roleHasPermission = $role->isSuperAdmin() || $role->permissions->contains('key', $permission->key))
+                                        @if($roleHasPermission)
+                                            <span>{{ $role->name }}</span>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </article>
+            @endforeach
         </div>
     </section>
 @else

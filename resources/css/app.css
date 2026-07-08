@@ -2187,6 +2187,164 @@ body.directory-modal-open {
     color: var(--muted);
 }
 
+.smartflow-user-list-panel .section-title p:not(.eyebrow),
+.smartflow-permission-map-panel .section-title p:not(.eyebrow) {
+    max-width: 760px;
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.smartflow-user-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.smartflow-user-card {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(34, 31, 32, .04);
+}
+
+.smartflow-user-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+}
+
+.smartflow-user-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 850;
+    line-height: 1.25;
+}
+
+.smartflow-user-head small {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: .76rem;
+    overflow-wrap: anywhere;
+}
+
+.smartflow-user-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.smartflow-user-facts span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+    color: var(--ink);
+    font-size: .78rem;
+    overflow-wrap: anywhere;
+}
+
+.smartflow-user-facts strong {
+    color: var(--muted);
+    font-size: .68rem;
+    text-transform: uppercase;
+}
+
+.smartflow-user-groups,
+.smartflow-user-footer,
+.smartflow-role-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.smartflow-user-groups span,
+.smartflow-role-chip-list span {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: var(--ink);
+    font-size: .74rem;
+    font-weight: 800;
+}
+
+.smartflow-user-footer {
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: .75rem;
+    font-weight: 800;
+}
+
+.smartflow-permission-map {
+    display: grid;
+    gap: 14px;
+}
+
+.smartflow-permission-group {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.smartflow-permission-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #fff8d6;
+    border-bottom: 1px solid var(--line);
+}
+
+.smartflow-permission-group-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 850;
+}
+
+.smartflow-permission-group-head span {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.smartflow-permission-rows {
+    display: grid;
+}
+
+.smartflow-permission-row {
+    display: grid;
+    grid-template-columns: minmax(240px, .75fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.smartflow-permission-row:last-child {
+    border-bottom: 0;
+}
+
+.smartflow-permission-row strong,
+.smartflow-permission-row small {
+    display: block;
+}
+
+.smartflow-permission-row small {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: .75rem;
+    overflow-wrap: anywhere;
+}
+
 .workflow-payload {
     display: grid;
     grid-template-columns: 180px minmax(0, 1fr);
@@ -5159,8 +5317,14 @@ body.directory-modal-open {
     .smartflow-authorization-grid,
     .smartflow-statistics-grid,
     .dynamic-field-grid,
+    .smartflow-user-grid,
     .smartflow-authorization-form {
         grid-template-columns: 1fr;
+    }
+
+    .smartflow-permission-row {
+        grid-template-columns: 1fr;
+        align-items: start;
     }
 
     .smartflow-stat-summary {
@@ -5175,5 +5339,14 @@ body.directory-modal-open {
 
     .dynamic-field-head {
         grid-template-columns: 1fr;
+    }
+
+    .smartflow-user-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .smartflow-permission-group-head {
+        align-items: start;
+        flex-direction: column;
     }
 }

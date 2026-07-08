@@ -2100,6 +2100,47 @@ class WdcPortalTest extends TestCase
             ->assertSee('Delete');
     }
 
+    public function test_workflow_user_list_and_permission_map_match_smartflow_admin_menus(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', ['view' => 'user_list']))
+            ->assertOk()
+            ->assertSee('User List')
+            ->assertSee('SmartFlow users on WDC')
+            ->assertSee('EMP09999')
+            ->assertSee('Super Admin')
+            ->assertSee('permissions');
+
+        $this->get(route('workflows.index', ['view' => 'permission_map']))
+            ->assertOk()
+            ->assertSee('Permission Map')
+            ->assertSee('Role and permission matrix')
+            ->assertSee('Employee Portal')
+            ->assertSee('Super Admin')
+            ->assertSee('portal.dashboard.view');
+    }
+
+    public function test_regular_employee_does_not_see_smartflow_admin_menus(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index'))
+            ->assertOk()
+            ->assertDontSee('User List')
+            ->assertDontSee('Permission Map');
+    }
+
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void
     {
         $this->seed(DatabaseSeeder::class);

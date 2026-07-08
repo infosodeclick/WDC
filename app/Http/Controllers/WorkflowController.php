@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WorkflowAuthorization;
 use App\Models\WorkflowRequest;
@@ -39,6 +41,11 @@ class WorkflowController extends Controller
             'workflows' => collect(),
         ];
         $dynamicFieldsData = $activeView === 'dynamic_fields' ? $this->dynamicFieldsData() : collect();
+        $smartflowUsersData = $activeView === 'user_list' ? $this->smartflowUsersData() : collect();
+        $permissionMapData = $activeView === 'permission_map' ? $this->permissionMapData() : [
+            'roles' => collect(),
+            'permissionGroups' => collect(),
+        ];
 
         $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user', 'attachments')->latest();
 
@@ -112,6 +119,8 @@ class WorkflowController extends Controller
                 ->get(),
             'statisticsData' => $statisticsData,
             'dynamicFieldsData' => $dynamicFieldsData,
+            'smartflowUsersData' => $smartflowUsersData,
+            'permissionMapData' => $permissionMapData,
             'menuTabs' => $this->smartflowMenuTabs(),
             'activeView' => $activeView,
             'activeStatus' => $status,
@@ -897,6 +906,8 @@ class WorkflowController extends Controller
             'statistics' => ['label' => 'Statistics', 'icon' => 'bi-bar-chart'],
             'export' => ['label' => 'Export Excel', 'icon' => 'bi-file-earmark-spreadsheet'],
             'favorites' => ['label' => 'Favorites', 'icon' => 'bi-star'],
+            'user_list' => ['label' => 'User List', 'icon' => 'bi-people', 'manage_only' => true],
+            'permission_map' => ['label' => 'Permission Map', 'icon' => 'bi-diagram-2', 'manage_only' => true],
             'dynamic_fields' => ['label' => 'Dynamic Fields', 'icon' => 'bi-ui-checks-grid'],
             'workflows' => ['label' => 'Workflows', 'icon' => 'bi-diagram-3'],
         ];
@@ -1052,6 +1063,59 @@ class WorkflowController extends Controller
                 ['label', 'asc'],
             ])
             ->values();
+    }
+
+    private function smartflowUsersData()
+    {
+        $permissionGroupsByKey = Permission::query()
+            ->orderBy('sort_order')
+            ->get()
+            ->keyBy('key');
+
+        return User::with('role.permissions', 'permissionOverrides', 'employee.department')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $user) use ($permissionGroupsByKey) {
+                $effectiveKeys = $user->effectivePermissionKeys();
+                $groups = $effectiveKeys
+                    ->map(fn (string $key) => $permissionGroupsByKey->get($key)?->group)
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                return [
+                    'id' => $user->id,
+                    'initial' => mb_substr($user->name ?: $user->email ?: 'U', 0, 1),
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'employee_code' => $user->employee_code,
+                    'role' => $user->role?->name ?? '-',
+                    'department' => $user->employee?->department?->name ?? '-',
+                    'data_scope' => $user->dataScopeLabel(),
+                    'permission_count' => $effectiveKeys->count(),
+                    'override_count' => $user->permissionOverrides->count(),
+                    'groups' => $groups,
+                ];
+            });
+    }
+
+    private function permissionMapData(): array
+    {
+        $roles = Role::with('permissions')
+            ->orderByRaw("CASE slug WHEN 'employee' THEN 1 WHEN 'hr' THEN 2 WHEN 'it_support' THEN 3 WHEN 'it_supervisor' THEN 4 WHEN 'admin' THEN 5 WHEN 'super_admin' THEN 6 WHEN 'auditor' THEN 7 ELSE 99 END")
+            ->get();
+
+        $permissionGroups = Permission::query()
+            ->orderBy('group')
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('group');
+
+        return [
+            'roles' => $roles,
+            'permissionGroups' => $permissionGroups,
+        ];
     }
 
     private function averageEventResponseSeconds($events): ?int
