@@ -27,6 +27,9 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/password/change', [AuthController::class, 'showChangePassword'])->name('password.change');
+    Route::get('/accounts/password/change', [AuthController::class, 'showChangePassword'])->name('password.change.legacy');
+    Route::patch('/password/change', [AuthController::class, 'changePassword'])->name('password.change.update');
     Route::get('/dashboard', [PortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/profile', [PortalController::class, 'profile'])->name('profile');
     Route::patch('/profile/contact', [PortalController::class, 'updateProfileContact'])->name('profile.contact.update');

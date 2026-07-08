@@ -110,6 +110,42 @@ class WdcPortalTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_logged_in_user_can_change_password_from_smartflow_password_menu(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->get(route('workflows.index', ['view' => 'password']))
+            ->assertOk()
+            ->assertSee('Password')
+            ->assertSee('Change Password')
+            ->assertSee('Current Password')
+            ->assertSee('New Password (again)');
+
+        $this->patch(route('password.change.update'), [
+            'current_password' => 'password123',
+            'password' => 'NewWdc@2026',
+            'password_confirmation' => 'NewWdc@2026',
+        ])
+            ->assertRedirect(route('workflows.index', ['view' => 'password']))
+            ->assertSessionHas('status');
+
+        $this->assertTrue(Hash::check('NewWdc@2026', $employee->fresh()->password));
+
+        $this->post(route('logout'));
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'NewWdc@2026',
+        ])->assertRedirect(route('dashboard'));
+    }
+
     public function test_password_reset_request_does_not_reveal_unknown_accounts(): void
     {
         $this->seed(DatabaseSeeder::class);

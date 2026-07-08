@@ -3,7 +3,7 @@
 @section('title', 'SmartFlow Work Center | WDC Portal')
 
 @section('content')
-@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map'], true) ? 'all' : $activeView)
+@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'password'], true) ? 'all' : $activeView)
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
@@ -205,6 +205,45 @@
             </div>
         </section>
     </div>
+@elseif($activeView === 'password')
+    <section class="panel smartflow-password-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Account Security</p>
+                <h2>Change Password</h2>
+                <p>Use the same SmartFlow password flow inside WDC. Enter your current password, then set a new password for future logins.</p>
+            </div>
+            <span class="status-pill"><i class="bi bi-shield-lock"></i> Logged in</span>
+        </div>
+
+        @if(session('status'))
+            <div class="alert alert-success">{{ session('status') }}</div>
+        @endif
+
+        <form method="post" action="{{ route('password.change.update') }}" class="smartflow-password-form">
+            @csrf
+            @method('PATCH')
+            <label>
+                <span>Current Password *</span>
+                <input class="form-control @error('current_password') is-invalid @enderror" name="current_password" type="password" placeholder="Current Password" autocomplete="current-password" required>
+                @error('current_password')
+                    <small class="form-error">{{ $message }}</small>
+                @enderror
+            </label>
+            <label>
+                <span>New Password *</span>
+                <input class="form-control @error('password') is-invalid @enderror" name="password" type="password" placeholder="New Password" autocomplete="new-password" required>
+                @error('password')
+                    <small class="form-error">{{ $message }}</small>
+                @enderror
+            </label>
+            <label>
+                <span>New Password (again) *</span>
+                <input class="form-control" name="password_confirmation" type="password" placeholder="New Password (again)" autocomplete="new-password" required>
+            </label>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-key"></i> Change Password</button>
+        </form>
+    </section>
 @elseif($activeView === 'statistics')
     <section class="panel smartflow-statistics-panel">
         <div class="section-title">

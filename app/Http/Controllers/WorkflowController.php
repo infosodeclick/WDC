@@ -954,6 +954,7 @@ class WorkflowController extends Controller
             'statistics' => ['label' => 'Statistics', 'icon' => 'bi-bar-chart'],
             'export' => ['label' => 'Export Excel', 'icon' => 'bi-file-earmark-spreadsheet'],
             'favorites' => ['label' => 'Favorites', 'icon' => 'bi-star'],
+            'password' => ['label' => 'Password', 'icon' => 'bi-key'],
             'user_list' => ['label' => 'User List', 'icon' => 'bi-people', 'manage_only' => true],
             'permission_map' => ['label' => 'Permission Map', 'icon' => 'bi-diagram-2', 'manage_only' => true],
             'dynamic_fields' => ['label' => 'Dynamic Fields', 'icon' => 'bi-ui-checks-grid'],

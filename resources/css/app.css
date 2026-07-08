@@ -2096,6 +2096,39 @@ body.directory-modal-open {
     gap: 16px;
 }
 
+.smartflow-password-panel .section-title {
+    align-items: start;
+}
+
+.smartflow-password-panel .section-title p:not(.eyebrow) {
+    max-width: 680px;
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.smartflow-password-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.smartflow-password-form label {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+
+.smartflow-password-form label span {
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.smartflow-password-form .btn {
+    min-height: 42px;
+}
+
 .responsive-table {
     overflow-x: auto;
 }
@@ -5389,7 +5422,8 @@ body.directory-modal-open {
     .smartflow-statistics-grid,
     .dynamic-field-grid,
     .smartflow-user-grid,
-    .smartflow-authorization-form {
+    .smartflow-authorization-form,
+    .smartflow-password-form {
         grid-template-columns: 1fr;
     }
 

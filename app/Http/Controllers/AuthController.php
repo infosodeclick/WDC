@@ -125,6 +125,44 @@ class AuthController extends Controller
         return redirect()->route('login')->with('status', 'รีเซ็ตรหัสผ่านเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่');
     }
 
+    public function showChangePassword(): RedirectResponse
+    {
+        return redirect()->route('workflows.index', ['view' => 'password']);
+    }
+
+    public function changePassword(Request $request): RedirectResponse
+    {
+        $credentials = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user || ! Hash::check($credentials['current_password'], $user->password)) {
+            return back()
+                ->withErrors(['current_password' => 'Current password is incorrect.'])
+                ->onlyInput();
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($credentials['password']),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'password_change',
+            'description' => 'User changed password from SmartFlow password menu',
+            'ip_address' => $request->ip(),
+            'user_agent' => (string) $request->userAgent(),
+        ]);
+
+        return redirect()
+            ->route('workflows.index', ['view' => 'password'])
+            ->with('status', 'Password changed successfully.');
+    }
+
     public function logout(Request $request): RedirectResponse
     {
         ActivityLog::create([
