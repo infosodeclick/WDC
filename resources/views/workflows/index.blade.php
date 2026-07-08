@@ -76,7 +76,7 @@
             <h2>สร้างเอกสารใหม่</h2>
             <span class="status-pill">WDC จะออกเลข WDC-SF ให้อัตโนมัติ</span>
         </div>
-        <form method="post" action="{{ route('workflows.store') }}" class="form-grid">
+        <form method="post" action="{{ route('workflows.store') }}" class="form-grid" enctype="multipart/form-data">
             @csrf
             @php($selectedTemplateId = (int) old('workflow_template_id', $activeTemplateId ?: $templateCatalog->first()?->id))
             <label>
@@ -160,6 +160,11 @@
             <label class="span-3">
                 <span>ลิงก์ไฟล์แนบ</span>
                 <textarea class="form-control" name="attachment_links" rows="2" placeholder="วางลิงก์ไฟล์จาก SmartFlow, Google Drive หรือรูปภาพ แยกแต่ละลิงก์ด้วยบรรทัดใหม่">{{ old('attachment_links') }}</textarea>
+            </label>
+            <label class="span-3">
+                <span>อัปโหลดไฟล์แนบ</span>
+                <input class="form-control" name="workflow_files[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip">
+                <em>รองรับรูป, PDF, Word, Excel, CSV, TXT, ZIP สูงสุด 5 ไฟล์ / 10 MB ต่อไฟล์</em>
             </label>
             <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งเข้า Workflow</button>
         </form>
@@ -375,10 +380,41 @@ Reference
     </section>
 @endif
 
+<section class="panel workflow-filter-panel">
+    <form method="get" action="{{ route('workflows.index') }}" class="smartflow-filter-form">
+        <input type="hidden" name="view" value="{{ $activeView }}">
+        <label>
+            <span>ค้นหาเอกสาร</span>
+            <input class="form-control" name="q" value="{{ $activeSearch }}" placeholder="เลขเอกสาร หัวข้อ ผู้ขอ REF">
+        </label>
+        <label>
+            <span>Workflow</span>
+            <select class="form-select" name="template">
+                <option value="">ทุก Workflow</option>
+                @foreach($templateCatalog as $template)
+                    <option value="{{ $template->id }}" @selected($activeTemplateId === $template->id)>{{ $template->name }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>
+            <span>สถานะ</span>
+            <select class="form-select" name="status">
+                <option value="">ทุกสถานะ</option>
+                @foreach($statusLabels as $key => $label)
+                    <option value="{{ $key }}" @selected($activeStatus === $key)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </label>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> กรอง</button>
+        <a class="btn btn-outline-secondary" href="{{ route('workflows.index', ['view' => $activeView]) }}"><i class="bi bi-x-circle"></i> ล้าง</a>
+    </form>
+</section>
+
 <div class="filter-row">
-    <a class="filter-chip {{ $activeStatus === '' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => $activeView]) }}">ทั้งหมด</a>
+    @php($baseFilterParams = array_filter(['view' => $activeView, 'q' => $activeSearch, 'template' => $activeTemplateId ?: null], fn ($value) => $value !== null && $value !== ''))
+    <a class="filter-chip {{ $activeStatus === '' ? 'active' : '' }}" href="{{ route('workflows.index', $baseFilterParams) }}">ทั้งหมด</a>
     @foreach($statusLabels as $key => $label)
-        <a class="filter-chip {{ $activeStatus === $key ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => $activeView, 'status' => $key]) }}">{{ $label }}</a>
+        <a class="filter-chip {{ $activeStatus === $key ? 'active' : '' }}" href="{{ route('workflows.index', [...$baseFilterParams, 'status' => $key]) }}">{{ $label }}</a>
     @endforeach
 </div>
 
@@ -427,8 +463,11 @@ Reference
             @if($requestItem->attachments->isNotEmpty())
                 <div class="attachment-list">
                     @foreach($requestItem->attachments as $attachment)
-                        <a class="file-chip" href="{{ $attachment->file_url }}" target="_blank" rel="noopener">
+                        <a class="file-chip" href="{{ $attachment->file_path ? route('workflows.attachments.download', $attachment) : $attachment->file_url }}" @if(! $attachment->file_path) target="_blank" rel="noopener" @endif>
                             <i class="bi bi-paperclip"></i> {{ $attachment->file_name }}
+                            @if($attachment->file_size)
+                                <small>{{ number_format($attachment->file_size / 1024, 1) }} KB</small>
+                            @endif
                         </a>
                     @endforeach
                 </div>
@@ -462,10 +501,11 @@ Reference
                     <div><strong>{{ $event->user?->name ?? 'ระบบ' }}</strong> {{ $event->action }} {{ $event->to_status ? '→ '.$event->to_status : '' }} {{ $event->comment }}</div>
                 @endforeach
             </div>
-            <form class="comment-form" method="post" action="{{ route('workflows.comments.store', $requestItem) }}">
+            <form class="comment-form" method="post" action="{{ route('workflows.comments.store', $requestItem) }}" enctype="multipart/form-data">
                 @csrf
                 <input class="form-control form-control-sm" name="comment" placeholder="เพิ่มคอมเมนต์หรือคำตอบกลับ" required>
                 <input class="form-control form-control-sm" name="attachment_links" placeholder="ลิงก์ไฟล์แนบเพิ่มเติม (ถ้ามี)">
+                <input class="form-control form-control-sm" name="workflow_files[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip">
                 <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-chat-dots"></i> ส่งคอมเมนต์</button>
             </form>
         </article>

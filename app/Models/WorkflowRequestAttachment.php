@@ -15,7 +15,9 @@ class WorkflowRequestAttachment extends Model
         'source_system',
         'file_name',
         'file_url',
+        'file_path',
         'mime_type',
+        'file_size',
         'uploaded_by',
         'sort_order',
     ];

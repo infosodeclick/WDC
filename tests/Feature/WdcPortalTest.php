@@ -1788,6 +1788,87 @@ class WdcPortalTest extends TestCase
         Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->notification->type === 'workflow');
     }
 
+    public function test_workflow_request_can_store_and_download_uploaded_attachment(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        Storage::fake('local');
+        Mail::fake();
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->post(route('workflows.store'), [
+            'workflow_template_id' => $template->id,
+            'title' => 'Upload evidence from WDC',
+            'details' => 'Attach local evidence instead of only a SmartFlow URL.',
+            'priority' => 'normal',
+            'workflow_files' => [
+                UploadedFile::fake()->create('smartflow-evidence.pdf', 128, 'application/pdf'),
+            ],
+        ])->assertRedirect(route('workflows.index'));
+
+        $workflowRequest = WorkflowRequest::where('title', 'Upload evidence from WDC')->firstOrFail();
+        $attachment = $workflowRequest->attachments()->firstOrFail();
+
+        $this->assertSame('smartflow-evidence.pdf', $attachment->file_name);
+        $this->assertNotNull($attachment->file_path);
+        Storage::disk('local')->assertExists($attachment->file_path);
+
+        $this->get(route('workflows.attachments.download', $attachment))
+            ->assertOk()
+            ->assertDownload('smartflow-evidence.pdf');
+    }
+
+    public function test_workflow_index_can_search_and_filter_smartflow_documents(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+        $otherTemplate = WorkflowTemplate::where('id', '!=', $template->id)->firstOrFail();
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
+        WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $employee->id,
+            'document_number' => 'WDC-SF-SEARCH-00001',
+            'title' => 'VPN access searchable request',
+            'details' => 'Need VPN for remote work.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'legacy_reference' => 'REF: #SEARCHVPN',
+            'submitted_at' => now(),
+        ]);
+
+        WorkflowRequest::create([
+            'workflow_template_id' => $otherTemplate->id,
+            'requester_id' => $employee->id,
+            'document_number' => 'WDC-SF-HIDDEN-00002',
+            'title' => 'Hidden marketing request',
+            'details' => 'Should not appear in filtered result.',
+            'priority' => 'normal',
+            'status' => 'completed',
+            'submitted_at' => now(),
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', [
+            'q' => 'SEARCHVPN',
+            'template' => $template->id,
+            'status' => 'submitted',
+        ]))
+            ->assertOk()
+            ->assertSee('VPN access searchable request')
+            ->assertDontSee('Hidden marketing request');
+    }
+
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void
     {
         $this->seed(DatabaseSeeder::class);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Models\WorkflowRequest;
+use App\Models\WorkflowRequestAttachment;
 use App\Models\WorkflowRequestEvent;
 use App\Models\WorkflowStep;
 use App\Models\WorkflowTemplate;
@@ -13,6 +14,7 @@ use App\Services\SmartflowCsvImporter;
 use App\Services\SmartflowWorkflowCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -25,6 +27,7 @@ class WorkflowController extends Controller
         $canManageSystem = $user->canAccess('admin.system.manage');
         $status = $request->string('status')->toString();
         $templateId = $request->integer('template');
+        $search = trim($request->string('q')->toString());
         $activeView = $this->activeSmartflowView($request);
         $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
 
@@ -46,6 +49,18 @@ class WorkflowController extends Controller
 
         if ($templateId > 0) {
             $query->where('workflow_template_id', $templateId);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($query) use ($search) {
+                $query->where('document_number', 'like', "%{$search}%")
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('details', 'like', "%{$search}%")
+                    ->orWhere('legacy_reference', 'like', "%{$search}%")
+                    ->orWhere('assigned_group', 'like', "%{$search}%")
+                    ->orWhereHas('template', fn ($templateQuery) => $templateQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('requester', fn ($requesterQuery) => $requesterQuery->where('name', 'like', "%{$search}%")->orWhere('employee_code', 'like', "%{$search}%"));
+            });
         }
 
         $this->applySmartflowView($query, $activeView, $user, $favoriteTemplateIds);
@@ -70,6 +85,7 @@ class WorkflowController extends Controller
             'activeView' => $activeView,
             'activeStatus' => $status,
             'activeTemplateId' => $templateId,
+            'activeSearch' => $search,
             'favoriteTemplateIds' => $favoriteTemplateIds,
             'importHeaders' => $this->smartflowImportHeaders(),
             'metrics' => [
@@ -92,11 +108,14 @@ class WorkflowController extends Controller
             'form_payload' => ['nullable', 'array'],
             'form_payload.*' => ['nullable', 'string', 'max:5000'],
             'attachment_links' => ['nullable', 'string', 'max:5000'],
+            'workflow_files' => ['nullable', 'array', 'max:5'],
+            'workflow_files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,csv,txt,zip'],
             'priority' => ['required', 'in:low,normal,high,critical'],
             'legacy_reference' => ['nullable', 'string', 'max:120'],
         ]);
         $attachmentLinks = $data['attachment_links'] ?? '';
-        unset($data['attachment_links']);
+        $uploadedFiles = $data['workflow_files'] ?? [];
+        unset($data['attachment_links'], $data['workflow_files']);
 
         $template = WorkflowTemplate::with('steps')->findOrFail($data['workflow_template_id']);
         $firstStep = $template->steps->first();
@@ -114,6 +133,7 @@ class WorkflowController extends Controller
         ]);
 
         $this->storeAttachmentLinks($workflowRequest, $attachmentLinks, $request->user(), 'wdc');
+        $this->storeUploadedAttachments($workflowRequest, $uploadedFiles, $request->user(), 'wdc-upload');
 
         $workflowRequest->update([
             'document_number' => $this->generateDocumentNumber($workflowRequest),
@@ -211,6 +231,8 @@ class WorkflowController extends Controller
         $data = $request->validate([
             'comment' => ['required', 'string', 'max:2000'],
             'attachment_links' => ['nullable', 'string', 'max:5000'],
+            'workflow_files' => ['nullable', 'array', 'max:5'],
+            'workflow_files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,csv,txt,zip'],
         ]);
 
         WorkflowRequestEvent::create([
@@ -221,10 +243,22 @@ class WorkflowController extends Controller
         ]);
 
         $this->storeAttachmentLinks($workflowRequest, $data['attachment_links'] ?? '', $user, 'wdc');
+        $this->storeUploadedAttachments($workflowRequest, $data['workflow_files'] ?? [], $user, 'wdc-comment');
         $this->notifyWorkflowParticipants($workflowRequest, $user, 'มีคอมเมนต์ใหม่', $data['comment']);
         $this->log($request, 'comment_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Commented {$workflowRequest->document_number}");
 
         return back()->with('status', 'เพิ่มคอมเมนต์แล้ว');
+    }
+
+    public function downloadAttachment(WorkflowRequestAttachment $attachment, Request $request)
+    {
+        $workflowRequest = $attachment->request()->with('requester.employee.department')->firstOrFail();
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($this->canViewWorkflow($user, $workflowRequest), 403);
+        abort_unless($attachment->file_path && Storage::disk('local')->exists($attachment->file_path), 404);
+
+        return Storage::disk('local')->download($attachment->file_path, $attachment->file_name);
     }
 
     public function importCsv(Request $request, SmartflowCsvImporter $importer): RedirectResponse
@@ -532,6 +566,31 @@ class WorkflowController extends Controller
             );
 
             $count++;
+        }
+
+        return $count;
+    }
+
+    private function storeUploadedAttachments(WorkflowRequest $workflowRequest, array $files, User $user, string $sourceSystem): int
+    {
+        $files = collect($files)->filter();
+        $baseSort = (int) $workflowRequest->attachments()->max('sort_order');
+        $count = 0;
+
+        foreach ($files as $file) {
+            $path = $file->store("workflow-attachments/{$workflowRequest->id}", 'local');
+            $count++;
+
+            $workflowRequest->attachments()->create([
+                'source_system' => $sourceSystem,
+                'file_name' => $file->getClientOriginalName(),
+                'file_url' => "local://{$path}",
+                'file_path' => $path,
+                'mime_type' => $file->getClientMimeType(),
+                'file_size' => $file->getSize(),
+                'uploaded_by' => $user->id,
+                'sort_order' => $baseSort + $count,
+            ]);
         }
 
         return $count;

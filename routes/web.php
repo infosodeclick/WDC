@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
     Route::get('/workflows/import-template', [WorkflowController::class, 'downloadImportTemplate'])->name('workflows.import-template');
+    Route::get('/workflows/attachments/{attachment}/download', [WorkflowController::class, 'downloadAttachment'])->name('workflows.attachments.download');
     Route::post('/workflows', [WorkflowController::class, 'store'])->name('workflows.store');
     Route::post('/workflows/import', [WorkflowController::class, 'importCsv'])->name('workflows.import');
     Route::post('/workflows/templates', [WorkflowController::class, 'storeTemplate'])->name('workflows.templates.store');

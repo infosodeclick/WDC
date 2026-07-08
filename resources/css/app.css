@@ -826,6 +826,36 @@ a {
     background: var(--wdc-yellow-2);
 }
 
+.workflow-filter-panel {
+    margin-bottom: 16px;
+}
+
+.smartflow-filter-form {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.6fr) minmax(180px, 1fr) minmax(160px, .8fr) auto auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.smartflow-filter-form label {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+
+.smartflow-filter-form label span {
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.file-chip small {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 700;
+}
+
 .system-card {
     display: grid;
     gap: 14px;
@@ -3843,6 +3873,7 @@ body.directory-modal-open {
     .admin-member-row,
     .menu-permission-grid,
     .permission-matrix,
+    .smartflow-filter-form,
     .smartflow-tabs,
     .system-mini-grid,
     .system-grid,
@@ -4022,6 +4053,7 @@ body.directory-modal-open {
     .admin-access-grid,
     .permission-matrix,
     .sync-stats-grid,
+    .smartflow-filter-form,
     .smartflow-tabs,
     .workflow-payload,
     .document-upload-form,
