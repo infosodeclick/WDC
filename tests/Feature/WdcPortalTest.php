@@ -2022,6 +2022,84 @@ class WdcPortalTest extends TestCase
         $this->assertSame('Approved by delegated user', $workflowRequest->events()->latest()->first()?->comment);
     }
 
+    public function test_workflow_statistics_view_matches_smartflow_statistics_sections(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+        $manager = User::where('employee_code', 'EMP00200')->firstOrFail();
+
+        $completedRequest = WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $manager->id,
+            'assigned_to' => $manager->id,
+            'document_number' => 'WDC-SF-STATS-00001',
+            'title' => 'Completed statistics request',
+            'details' => 'Completed request for statistics.',
+            'priority' => 'normal',
+            'status' => 'completed',
+            'submitted_at' => now()->subHours(3),
+            'completed_at' => now()->subHour(),
+        ]);
+
+        $completedRequest->events()->create([
+            'user_id' => $manager->id,
+            'action' => 'status_change',
+            'from_status' => 'in_progress',
+            'to_status' => 'completed',
+            'comment' => 'Closed for statistics.',
+        ]);
+
+        WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $manager->id,
+            'assigned_to' => $manager->id,
+            'document_number' => 'WDC-SF-STATS-00002',
+            'title' => 'Pending statistics request',
+            'details' => 'Pending request for statistics.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => $manager->employee_code,
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', ['view' => 'statistics']))
+            ->assertOk()
+            ->assertSee('User Statistics')
+            ->assertSee('Workflow Statistics')
+            ->assertSee('Total Decisions')
+            ->assertSee('Pending Approvals')
+            ->assertSee('Avg. Response')
+            ->assertSee('Avg. Completion Time')
+            ->assertSee($manager->name)
+            ->assertSee('IT Helpdesk');
+    }
+
+    public function test_workflow_dynamic_fields_view_lists_smartflow_field_catalog(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', ['view' => 'dynamic_fields']))
+            ->assertOk()
+            ->assertSee('Dynamic Fields')
+            ->assertSee('Configure workflow custom fields')
+            ->assertSee('Create New Field')
+            ->assertSee('IT Helpdesk')
+            ->assertSee('Checkbox')
+            ->assertSee('Preview')
+            ->assertSee('Edit')
+            ->assertSee('Delete');
+    }
+
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void
     {
         $this->seed(DatabaseSeeder::class);

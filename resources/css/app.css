@@ -2055,6 +2055,138 @@ body.directory-modal-open {
     font-size: .74rem;
 }
 
+.smartflow-statistics-panel .section-title {
+    align-items: start;
+}
+
+.smartflow-statistics-panel .section-title p:not(.eyebrow) {
+    max-width: 680px;
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.smartflow-stat-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.smartflow-stat-summary > div {
+    display: grid;
+    gap: 5px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+}
+
+.smartflow-stat-summary span {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.smartflow-stat-summary strong {
+    color: var(--ink);
+    font-size: 1.65rem;
+    line-height: 1;
+}
+
+.smartflow-statistics-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 16px;
+}
+
+.smartflow-stat-table td {
+    white-space: nowrap;
+}
+
+.smartflow-stat-table td:first-child {
+    white-space: normal;
+}
+
+.smartflow-stat-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 220px;
+}
+
+.smartflow-dynamic-fields-panel .section-title {
+    align-items: start;
+}
+
+.smartflow-dynamic-fields-panel .section-title p:not(.eyebrow) {
+    max-width: 760px;
+    margin: 4px 0 0;
+    color: var(--muted);
+}
+
+.dynamic-field-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.dynamic-field-card {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(34, 31, 32, .04);
+}
+
+.dynamic-field-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+}
+
+.dynamic-field-head h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: .98rem;
+    font-weight: 850;
+    line-height: 1.25;
+}
+
+.dynamic-field-head small {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: .76rem;
+}
+
+.dynamic-field-meta,
+.dynamic-field-options,
+.dynamic-field-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dynamic-field-meta span,
+.dynamic-field-options span {
+    max-width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+    color: #5f4a00;
+    font-size: .75rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.dynamic-field-options span {
+    background: #f8fafc;
+    color: var(--muted);
+}
+
 .workflow-payload {
     display: grid;
     grid-template-columns: 180px minmax(0, 1fr);
@@ -5025,7 +5157,23 @@ body.directory-modal-open {
 
 @media (max-width: 991.98px) {
     .smartflow-authorization-grid,
+    .smartflow-statistics-grid,
+    .dynamic-field-grid,
     .smartflow-authorization-form {
+        grid-template-columns: 1fr;
+    }
+
+    .smartflow-stat-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .smartflow-stat-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .dynamic-field-head {
         grid-template-columns: 1fr;
     }
 }

@@ -33,6 +33,12 @@ class WorkflowController extends Controller
         $advancedFilters = $this->workflowFilterData($request);
         $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
         $delegatedAuthorizerIds = $this->activeDelegatedAuthorizerIds($user);
+        $statisticsData = $activeView === 'statistics' ? $this->workflowStatisticsData($user) : [
+            'summary' => [],
+            'users' => collect(),
+            'workflows' => collect(),
+        ];
+        $dynamicFieldsData = $activeView === 'dynamic_fields' ? $this->dynamicFieldsData() : collect();
 
         $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user', 'attachments')->latest();
 
@@ -104,6 +110,8 @@ class WorkflowController extends Controller
                 ->where('authorized_user_id', $user->id)
                 ->latest()
                 ->get(),
+            'statisticsData' => $statisticsData,
+            'dynamicFieldsData' => $dynamicFieldsData,
             'menuTabs' => $this->smartflowMenuTabs(),
             'activeView' => $activeView,
             'activeStatus' => $status,
@@ -889,6 +897,7 @@ class WorkflowController extends Controller
             'statistics' => ['label' => 'Statistics', 'icon' => 'bi-bar-chart'],
             'export' => ['label' => 'Export Excel', 'icon' => 'bi-file-earmark-spreadsheet'],
             'favorites' => ['label' => 'Favorites', 'icon' => 'bi-star'],
+            'dynamic_fields' => ['label' => 'Dynamic Fields', 'icon' => 'bi-ui-checks-grid'],
             'workflows' => ['label' => 'Workflows', 'icon' => 'bi-diagram-3'],
         ];
     }
@@ -921,6 +930,171 @@ class WorkflowController extends Controller
         if ($view === 'favorites') {
             $query->whereIn('workflow_template_id', $favoriteTemplateIds->all() ?: [0]);
         }
+    }
+
+    private function workflowStatisticsData(User $user): array
+    {
+        $requests = $this->scopedWorkflowQuery($user)
+            ->with('template', 'assignee.employee.department', 'events.user.employee.department')
+            ->latest()
+            ->limit(2000)
+            ->get();
+
+        $pendingStatuses = ['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester'];
+        $terminalStatuses = ['approved', 'rejected', 'completed', 'cancelled'];
+        $decisionEvents = $requests->flatMap(function (WorkflowRequest $request) {
+            return $request->events
+                ->filter(fn (WorkflowRequestEvent $event) => $event->user_id && in_array($event->action, ['status_change', 'smartflow_import', 'smartflow_import_update'], true))
+                ->map(fn (WorkflowRequestEvent $event) => [
+                    'event' => $event,
+                    'request' => $request,
+                ]);
+        });
+
+        $userIds = $decisionEvents
+            ->pluck('event.user_id')
+            ->merge($requests->pluck('assigned_to'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $users = User::with('employee.department')
+            ->whereIn('id', $userIds->all())
+            ->get()
+            ->keyBy('id');
+
+        $userStats = $userIds
+            ->map(function (int $userId) use ($users, $requests, $decisionEvents, $pendingStatuses, $terminalStatuses) {
+                $statUser = $users->get($userId);
+                $userEvents = $decisionEvents->filter(fn (array $entry) => $entry['event']->user_id === $userId);
+                $processedEvents = $userEvents->filter(fn (array $entry) => in_array((string) $entry['event']->to_status, $terminalStatuses, true));
+                $averageSeconds = $this->averageEventResponseSeconds($userEvents);
+
+                return [
+                    'user' => $statUser,
+                    'name' => $statUser?->name ?? 'Unknown user',
+                    'email' => $statUser?->email,
+                    'initial' => mb_substr($statUser?->name ?? 'U', 0, 1),
+                    'total_decisions' => $userEvents->count(),
+                    'pending_approvals' => $requests
+                        ->where('assigned_to', $userId)
+                        ->whereIn('status', $pendingStatuses)
+                        ->count(),
+                    'processed' => $processedEvents->count(),
+                    'avg_response' => $this->formatDuration($averageSeconds),
+                    'avg_response_seconds' => $averageSeconds,
+                ];
+            })
+            ->sortByDesc('total_decisions')
+            ->values();
+
+        $workflowStats = $requests
+            ->groupBy('workflow_template_id')
+            ->map(function ($items) {
+                $completedDurations = $items
+                    ->filter(fn (WorkflowRequest $request) => $request->completed_at)
+                    ->map(function (WorkflowRequest $request) {
+                        $start = $request->submitted_at ?: $request->created_at;
+
+                        return $start ? $start->diffInSeconds($request->completed_at) : null;
+                    })
+                    ->filter(fn ($seconds) => $seconds !== null);
+
+                return [
+                    'workflow' => $items->first()?->template?->name ?? 'Unknown workflow',
+                    'service_team' => $items->first()?->template?->service_team,
+                    'documents' => $items->count(),
+                    'pending' => $items->whereIn('status', ['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester'])->count(),
+                    'completed' => $items->whereIn('status', ['approved', 'completed'])->count(),
+                    'avg_completion' => $this->formatDuration($completedDurations->isNotEmpty() ? (int) round($completedDurations->avg()) : null),
+                ];
+            })
+            ->sortByDesc('documents')
+            ->values();
+
+        return [
+            'summary' => [
+                'documents' => $requests->count(),
+                'pending' => $requests->whereIn('status', $pendingStatuses)->count(),
+                'processed' => $requests->whereIn('status', $terminalStatuses)->count(),
+                'active_users' => $userStats->count(),
+            ],
+            'users' => $userStats,
+            'workflows' => $workflowStats,
+        ];
+    }
+
+    private function dynamicFieldsData()
+    {
+        return WorkflowTemplate::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->flatMap(function (WorkflowTemplate $template) {
+                return collect($template->schemaFieldDefinitions())->map(function (array $field) use ($template) {
+                    $options = collect($field['options'] ?? [])->filter()->values();
+
+                    return [
+                        'key' => $field['key'] ?? '',
+                        'label' => $field['label'] ?? '',
+                        'type' => $field['type'] ?? 'text',
+                        'required' => (bool) ($field['required'] ?? false),
+                        'help' => $field['help'] ?? null,
+                        'options' => $options,
+                        'workflow' => $template->name,
+                        'workflow_id' => $template->legacy_workflow_id,
+                        'category' => $template->category,
+                    ];
+                });
+            })
+            ->filter(fn (array $field) => $field['label'] !== '')
+            ->sortBy([
+                ['workflow', 'asc'],
+                ['label', 'asc'],
+            ])
+            ->values();
+    }
+
+    private function averageEventResponseSeconds($events): ?int
+    {
+        $durations = $events
+            ->map(function (array $entry) {
+                $request = $entry['request'];
+                $event = $entry['event'];
+                $start = $request->submitted_at ?: $request->created_at;
+
+                return $start && $event->created_at ? $start->diffInSeconds($event->created_at) : null;
+            })
+            ->filter(fn ($seconds) => $seconds !== null);
+
+        return $durations->isNotEmpty() ? (int) round($durations->avg()) : null;
+    }
+
+    private function formatDuration(?int $seconds): string
+    {
+        if ($seconds === null) {
+            return 'N/A';
+        }
+
+        $days = intdiv($seconds, 86400);
+        $seconds %= 86400;
+        $hours = intdiv($seconds, 3600);
+        $seconds %= 3600;
+        $minutes = intdiv($seconds, 60);
+        $seconds %= 60;
+
+        if ($days > 0) {
+            return "{$days}d {$hours}h {$minutes}m";
+        }
+
+        if ($hours > 0) {
+            return "{$hours}h {$minutes}m {$seconds}s";
+        }
+
+        if ($minutes > 0) {
+            return "{$minutes}m {$seconds}s";
+        }
+
+        return "{$seconds}s";
     }
 
     private function cleanPayload(array $payload): array

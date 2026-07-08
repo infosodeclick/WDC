@@ -3,7 +3,7 @@
 @section('title', 'SmartFlow Work Center | WDC Portal')
 
 @section('content')
-@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics'], true) ? 'all' : $activeView)
+@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields'], true) ? 'all' : $activeView)
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
@@ -203,6 +203,181 @@
             </div>
         </section>
     </div>
+@elseif($activeView === 'statistics')
+    <section class="panel smartflow-statistics-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Approval Statistics</p>
+                <h2>Track workflow efficiency</h2>
+                <p>สรุปประสิทธิภาพการอนุมัติและงานเอกสารใน WDC ตามรูปแบบ SmartFlow เดิม</p>
+            </div>
+            <div class="button-row">
+                <a class="btn btn-sm btn-primary" href="#smartflow-user-statistics"><i class="bi bi-person-lines-fill"></i> User Statistics</a>
+                <a class="btn btn-sm btn-outline-primary" href="#smartflow-workflow-statistics"><i class="bi bi-diagram-3"></i> Workflow Statistics</a>
+            </div>
+        </div>
+
+        <div class="smartflow-stat-summary">
+            <div>
+                <span>Total Documents</span>
+                <strong>{{ number_format($statisticsData['summary']['documents'] ?? 0) }}</strong>
+            </div>
+            <div>
+                <span>Pending Approvals</span>
+                <strong>{{ number_format($statisticsData['summary']['pending'] ?? 0) }}</strong>
+            </div>
+            <div>
+                <span>Processed</span>
+                <strong>{{ number_format($statisticsData['summary']['processed'] ?? 0) }}</strong>
+            </div>
+            <div>
+                <span>Active Users</span>
+                <strong>{{ number_format($statisticsData['summary']['active_users'] ?? 0) }}</strong>
+            </div>
+        </div>
+    </section>
+
+    <div class="smartflow-statistics-grid">
+        <section class="panel" id="smartflow-user-statistics">
+            <div class="section-title">
+                <h2>User Statistics</h2>
+                <span class="status-pill">{{ $statisticsData['users']->count() }} users</span>
+            </div>
+            <div class="responsive-table">
+                <table class="smartflow-stat-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Total Decisions</th>
+                            <th>Pending Approvals</th>
+                            <th>Processed</th>
+                            <th>Avg. Response</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($statisticsData['users'] as $userStat)
+                            <tr>
+                                <td>
+                                    <span class="smartflow-stat-user">
+                                        <span class="smartflow-avatar">{{ $userStat['initial'] }}</span>
+                                        <span>
+                                            <strong>{{ $userStat['name'] }}</strong>
+                                            <small>{{ $userStat['email'] ?? '-' }}</small>
+                                        </span>
+                                    </span>
+                                </td>
+                                <td>{{ number_format($userStat['total_decisions']) }}</td>
+                                <td>{{ $userStat['pending_approvals'] ? number_format($userStat['pending_approvals']) : '-' }}</td>
+                                <td>{{ number_format($userStat['processed']) }}</td>
+                                <td>{{ $userStat['avg_response'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5">No decision statistics yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel" id="smartflow-workflow-statistics">
+            <div class="section-title">
+                <h2>Workflow Statistics</h2>
+                <span class="status-pill">{{ $statisticsData['workflows']->count() }} workflows</span>
+            </div>
+            <div class="responsive-table">
+                <table class="smartflow-stat-table">
+                    <thead>
+                        <tr>
+                            <th>Workflow</th>
+                            <th>Documents</th>
+                            <th>Pending</th>
+                            <th>Completed</th>
+                            <th>Avg. Completion Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($statisticsData['workflows'] as $workflowStat)
+                            <tr>
+                                <td>
+                                    <strong>{{ $workflowStat['workflow'] }}</strong>
+                                    <small>{{ $workflowStat['service_team'] ?? '-' }}</small>
+                                </td>
+                                <td>{{ number_format($workflowStat['documents']) }}</td>
+                                <td>{{ $workflowStat['pending'] ? number_format($workflowStat['pending']) : '-' }}</td>
+                                <td>{{ number_format($workflowStat['completed']) }}</td>
+                                <td>{{ $workflowStat['avg_completion'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5">No workflow statistics yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+@elseif($activeView === 'dynamic_fields')
+    <section class="panel smartflow-dynamic-fields-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">Dynamic Fields</p>
+                <h2>Configure workflow custom fields</h2>
+                <p>รวมฟิลด์ที่ใช้ในแบบฟอร์ม SmartFlow เดิม เช่น Yes/No, Number, Multiple Choice, File Attachment และ Table List เพื่อให้ทีมหลังบ้านตรวจสอบก่อนแก้ workflow ได้ง่าย</p>
+            </div>
+            <div class="button-row">
+                @if($canManageSystem)
+                    <a class="btn btn-sm btn-primary" href="{{ route('workflows.index', ['view' => 'workflows']) }}#workflow-backend">
+                        <i class="bi bi-plus-circle"></i> Create New Field
+                    </a>
+                @endif
+                <span class="status-pill">{{ $dynamicFieldsData->count() }} fields</span>
+            </div>
+        </div>
+
+        <div class="dynamic-field-grid">
+            @forelse($dynamicFieldsData as $field)
+                <article class="dynamic-field-card">
+                    <div class="dynamic-field-head">
+                        <div>
+                            <h3>{{ $field['label'] }}</h3>
+                            <small>{{ $field['workflow'] }} @if($field['workflow_id']) · Workflow #{{ $field['workflow_id'] }} @endif</small>
+                        </div>
+                        <span class="status-pill">{{ ucwords(str_replace('_', ' ', $field['type'])) }}</span>
+                    </div>
+                    <div class="dynamic-field-meta">
+                        @if($field['required'])
+                            <span>Required</span>
+                        @endif
+                        @if($field['options']->isNotEmpty())
+                            <span>Options Configured</span>
+                        @endif
+                        @if($field['help'])
+                            <span>{{ $field['help'] }}</span>
+                        @endif
+                        <span>{{ $field['category'] }}</span>
+                    </div>
+                    @if($field['options']->isNotEmpty())
+                        <div class="dynamic-field-options">
+                            @foreach($field['options']->take(5) as $option)
+                                <span>{{ $option }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                    <div class="dynamic-field-actions">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Preview</button>
+                        @if($canManageSystem)
+                            <a class="btn btn-sm btn-outline-primary" href="{{ route('workflows.index', ['view' => 'workflows']) }}#workflow-backend">Edit</a>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Delete</button>
+                        @else
+                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Edit</button>
+                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Delete</button>
+                        @endif
+                    </div>
+                </article>
+            @empty
+                <div class="empty-state">No dynamic fields configured.</div>
+            @endforelse
+        </div>
+    </section>
 @else
 
 <div class="metric-grid">
@@ -422,7 +597,7 @@
 </section>
 
 @if($canManageSystem)
-    <section class="panel">
+    <section class="panel" id="workflow-backend">
         <div class="section-title">
             <h2>Workflow Backend</h2>
             <div class="button-row">
