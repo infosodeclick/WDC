@@ -29,6 +29,7 @@ class WorkflowController extends Controller
         $templateId = $request->integer('template');
         $search = trim($request->string('q')->toString());
         $activeView = $this->activeSmartflowView($request);
+        $advancedFilters = $this->workflowFilterData($request);
         $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
 
         $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user', 'attachments')->latest();
@@ -63,6 +64,7 @@ class WorkflowController extends Controller
             });
         }
 
+        $this->applyWorkflowFilters($query, $advancedFilters, $canManage);
         $this->applySmartflowView($query, $activeView, $user, $favoriteTemplateIds);
 
         $templates = WorkflowTemplate::with('steps')
@@ -86,6 +88,10 @@ class WorkflowController extends Controller
             'activeStatus' => $status,
             'activeTemplateId' => $templateId,
             'activeSearch' => $search,
+            'activeDateFrom' => $advancedFilters['date_from'] ?? '',
+            'activeDateTo' => $advancedFilters['date_to'] ?? '',
+            'activeRequesterId' => (int) ($advancedFilters['requester'] ?? 0),
+            'activeAssigneeId' => (int) ($advancedFilters['assignee'] ?? 0),
             'favoriteTemplateIds' => $favoriteTemplateIds,
             'importHeaders' => $this->smartflowImportHeaders(),
             'metrics' => [
@@ -374,9 +380,41 @@ class WorkflowController extends Controller
 
         abort_unless($this->canManageWorkflows($user), 403);
 
+        $status = $request->string('status')->toString();
+        $templateId = $request->integer('template');
+        $search = trim($request->string('q')->toString());
+        $activeView = $this->activeSmartflowView($request);
+        $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
+        $advancedFilters = $this->workflowFilterData($request);
+
         $rows = $this->scopedWorkflowQuery($user)
             ->with('template', 'requester.employee.department', 'currentStep', 'assignee')
-            ->latest()
+            ->latest();
+
+        if ($status !== '') {
+            $rows->where('status', $status);
+        }
+
+        if ($templateId > 0) {
+            $rows->where('workflow_template_id', $templateId);
+        }
+
+        if ($search !== '') {
+            $rows->where(function ($query) use ($search) {
+                $query->where('document_number', 'like', "%{$search}%")
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('details', 'like', "%{$search}%")
+                    ->orWhere('legacy_reference', 'like', "%{$search}%")
+                    ->orWhere('assigned_group', 'like', "%{$search}%")
+                    ->orWhereHas('template', fn ($templateQuery) => $templateQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('requester', fn ($requesterQuery) => $requesterQuery->where('name', 'like', "%{$search}%")->orWhere('employee_code', 'like', "%{$search}%"));
+            });
+        }
+
+        $this->applyWorkflowFilters($rows, $advancedFilters, true);
+        $this->applySmartflowView($rows, $activeView, $user, $favoriteTemplateIds);
+
+        $rows = $rows
             ->limit(2000)
             ->get();
 
@@ -686,6 +724,38 @@ class WorkflowController extends Controller
         }
 
         return $query->where('requester_id', $user->id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function workflowFilterData(Request $request): array
+    {
+        return $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'requester' => ['nullable', 'integer', 'exists:users,id'],
+            'assignee' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+    }
+
+    private function applyWorkflowFilters($query, array $filters, bool $canManage): void
+    {
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        if ($canManage && ! empty($filters['requester'])) {
+            $query->where('requester_id', $filters['requester']);
+        }
+
+        if ($canManage && ! empty($filters['assignee'])) {
+            $query->where('assigned_to', $filters['assignee']);
+        }
     }
 
     private function activeSmartflowView(Request $request): string

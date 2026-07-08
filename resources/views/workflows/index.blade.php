@@ -67,7 +67,7 @@
         <span>Favorites</span>
     </a>
     @if($canManage)
-        <a class="smartflow-command-link" href="{{ route('workflows.export') }}">
+        <a class="smartflow-command-link" href="{{ route('workflows.export', request()->except('page')) }}">
             <i class="bi bi-file-earmark-spreadsheet"></i>
             <span>Export Excel/CSV</span>
         </a>
@@ -454,10 +454,64 @@ Reference
         <button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> กรอง</button>
         <a class="btn btn-outline-secondary" href="{{ route('workflows.index', ['view' => $activeView]) }}"><i class="bi bi-x-circle"></i> ล้าง</a>
     </form>
+    @php($advancedOpen = $activeDateFrom || $activeDateTo || $activeRequesterId || $activeAssigneeId)
+    <details class="smartflow-advanced-filters" @if($advancedOpen) open @endif>
+        <summary>
+            <span>Show Advanced Filters</span>
+            <i class="bi bi-chevron-down"></i>
+        </summary>
+        <form method="get" action="{{ route('workflows.index') }}" class="smartflow-advanced-filter-form">
+            <input type="hidden" name="view" value="{{ $activeView }}">
+            <input type="hidden" name="q" value="{{ $activeSearch }}">
+            <input type="hidden" name="template" value="{{ $activeTemplateId ?: '' }}">
+            <input type="hidden" name="status" value="{{ $activeStatus }}">
+            <label>
+                <span>วันที่เริ่ม</span>
+                <input class="form-control" name="date_from" type="date" value="{{ $activeDateFrom }}">
+            </label>
+            <label>
+                <span>วันที่สิ้นสุด</span>
+                <input class="form-control" name="date_to" type="date" value="{{ $activeDateTo }}">
+            </label>
+            @if($canManage)
+                <label>
+                    <span>ผู้ขอ</span>
+                    <select class="form-select" name="requester">
+                        <option value="">ทุกคน</option>
+                        @foreach($manageableUsers as $manageableUser)
+                            <option value="{{ $manageableUser->id }}" @selected($activeRequesterId === $manageableUser->id)>
+                                {{ $manageableUser->name }} · {{ $manageableUser->employee_code }}
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    <span>ผู้รับผิดชอบ</span>
+                    <select class="form-select" name="assignee">
+                        <option value="">ทุกคน</option>
+                        @foreach($manageableUsers as $manageableUser)
+                            <option value="{{ $manageableUser->id }}" @selected($activeAssigneeId === $manageableUser->id)>
+                                {{ $manageableUser->name }} · {{ $manageableUser->employee_code }}
+                            </option>
+                        @endforeach
+                    </select>
+                </label>
+            @endif
+            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-sliders"></i> ใช้ตัวกรองขั้นสูง</button>
+        </form>
+    </details>
 </section>
 
 <div class="filter-row">
-    @php($baseFilterParams = array_filter(['view' => $activeView, 'q' => $activeSearch, 'template' => $activeTemplateId ?: null], fn ($value) => $value !== null && $value !== ''))
+    @php($baseFilterParams = array_filter([
+        'view' => $activeView,
+        'q' => $activeSearch,
+        'template' => $activeTemplateId ?: null,
+        'date_from' => $activeDateFrom,
+        'date_to' => $activeDateTo,
+        'requester' => $activeRequesterId ?: null,
+        'assignee' => $activeAssigneeId ?: null,
+    ], fn ($value) => $value !== null && $value !== ''))
     <a class="filter-chip {{ $activeStatus === '' ? 'active' : '' }}" href="{{ route('workflows.index', $baseFilterParams) }}">ทั้งหมด</a>
     @foreach($statusLabels as $key => $label)
         <a class="filter-chip {{ $activeStatus === $key ? 'active' : '' }}" href="{{ route('workflows.index', [...$baseFilterParams, 'status' => $key]) }}">{{ $label }}</a>
@@ -466,7 +520,24 @@ Reference
 
 <div class="item-list">
     @forelse($requests as $requestItem)
-        <article class="list-card">
+        <details class="list-card smartflow-document-card">
+            <summary class="smartflow-document-summary">
+                <div class="smartflow-document-title">
+                    <h3>{{ $requestItem->title }}</h3>
+                    <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
+                </div>
+                <div class="smartflow-document-facts">
+                    <span><strong>REF:</strong> {{ $requestItem->document_number ?? $requestItem->legacy_reference ?? '-' }}</span>
+                    <span><strong>Flow:</strong> {{ $requestItem->template->name }}</span>
+                    <span><strong>Step:</strong> {{ $requestItem->currentStep?->name ?? $requestItem->statusLabel() }}</span>
+                </div>
+                <div class="smartflow-document-foot">
+                    <span class="smartflow-avatar">{{ mb_substr($requestItem->requester->name, 0, 1) }}</span>
+                    <span>By {{ $requestItem->requester->name }}</span>
+                    <span>{{ $requestItem->created_at->format('d M · H:i') }}</span>
+                </div>
+            </summary>
+            <div class="smartflow-document-body">
             <div class="meta-row">
                 <span class="tag">{{ $requestItem->document_number ?? 'รอเลขเอกสาร' }}</span>
                 <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
@@ -580,7 +651,8 @@ Reference
                 <input class="form-control form-control-sm" name="workflow_files[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip">
                 <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-chat-dots"></i> ส่งคอมเมนต์</button>
             </form>
-        </article>
+            </div>
+        </details>
     @empty
         <div class="empty-state">ยังไม่มีเอกสารในมุมมองนี้</div>
     @endforelse

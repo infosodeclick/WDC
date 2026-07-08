@@ -951,6 +951,59 @@ a {
     font-weight: 750;
 }
 
+.smartflow-advanced-filters {
+    margin-top: 12px;
+}
+
+.smartflow-advanced-filters > summary {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--muted);
+    background: #ffffff;
+    font-size: .86rem;
+    font-weight: 800;
+    list-style: none;
+}
+
+.smartflow-advanced-filters > summary::-webkit-details-marker {
+    display: none;
+}
+
+.smartflow-advanced-filters[open] > summary {
+    color: var(--wdc-black);
+    border-color: var(--wdc-yellow-3);
+    background: #fff8d0;
+}
+
+.smartflow-advanced-filter-form {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+}
+
+.smartflow-advanced-filter-form label {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+
+.smartflow-advanced-filter-form label span {
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 750;
+}
+
 .file-chip small {
     margin-left: 4px;
     color: var(--muted);
@@ -1836,6 +1889,105 @@ body.directory-modal-open {
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.smartflow-document-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.smartflow-document-card > summary {
+    list-style: none;
+}
+
+.smartflow-document-card > summary::-webkit-details-marker {
+    display: none;
+}
+
+.smartflow-document-summary {
+    display: grid;
+    gap: 12px;
+    cursor: pointer;
+    padding: 16px;
+}
+
+.smartflow-document-summary:hover {
+    background: #fffdf2;
+}
+
+.smartflow-document-title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+}
+
+.smartflow-document-title h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0;
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 850;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.smartflow-document-facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.smartflow-document-facts span {
+    overflow: hidden;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+    color: var(--muted);
+    font-size: .82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smartflow-document-facts strong {
+    color: var(--ink);
+}
+
+.smartflow-document-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    color: var(--muted);
+    font-size: .84rem;
+    font-weight: 700;
+}
+
+.smartflow-avatar {
+    display: inline-grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--wdc-black);
+    background: var(--wdc-yellow-2);
+    font-weight: 900;
+}
+
+.smartflow-document-body {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--line);
+}
+
+.smartflow-document-card:not([open]) {
+    box-shadow: 0 8px 22px rgba(34, 31, 32, .04);
+}
+
+.smartflow-document-card[open] .smartflow-document-summary {
+    background: #fffdf2;
 }
 
 .workflow-payload {
@@ -4008,6 +4160,7 @@ body.directory-modal-open {
     .admin-member-row,
     .menu-permission-grid,
     .permission-matrix,
+    .smartflow-advanced-filter-form,
     .smartflow-filter-form,
     .smartflow-tabs,
     .smartflow-document-grid,
@@ -4199,6 +4352,7 @@ body.directory-modal-open {
     .admin-access-grid,
     .permission-matrix,
     .sync-stats-grid,
+    .smartflow-advanced-filter-form,
     .smartflow-filter-form,
     .smartflow-tabs,
     .smartflow-document-grid,
@@ -4250,6 +4404,15 @@ body.directory-modal-open {
     .smartflow-new-document-menu {
         left: 12px;
         width: calc(100vw - 24px);
+    }
+
+    .smartflow-document-title,
+    .smartflow-document-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .smartflow-document-title .status-pill {
+        justify-self: start;
     }
 
     .admin-sync-panel > summary {

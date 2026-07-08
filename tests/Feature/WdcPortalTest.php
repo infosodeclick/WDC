@@ -1854,6 +1854,18 @@ class WdcPortalTest extends TestCase
             'submitted_at' => now(),
         ]);
 
+        $oldWorkflowRequest = WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $employee->id,
+            'document_number' => 'WDC-SF-OLD-00003',
+            'title' => 'Old VPN archive request',
+            'details' => 'Should not appear when filtering from today.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'submitted_at' => now()->subDays(10),
+        ]);
+        $oldWorkflowRequest->forceFill(['created_at' => now()->subDays(10)])->save();
+
         $this->post(route('login.store'), [
             'employee_code' => 'EMP00125',
             'password' => 'password123',
@@ -1867,6 +1879,13 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertSee('VPN access searchable request')
             ->assertDontSee('Hidden marketing request');
+
+        $this->get(route('workflows.index', [
+            'date_from' => now()->toDateString(),
+        ]))
+            ->assertOk()
+            ->assertSee('VPN access searchable request')
+            ->assertDontSee('Old VPN archive request');
     }
 
     public function test_workflow_work_center_shows_smartflow_navigation_and_document_summary(): void
@@ -1900,8 +1919,14 @@ class WdcPortalTest extends TestCase
             ->assertSee('Your Tasks')
             ->assertSee('All Documents')
             ->assertSee('Favorites')
+            ->assertSee('Show Advanced Filters')
             ->assertSee('workflow-create-form', false)
+            ->assertSee('smartflow-document-card', false)
+            ->assertSee('smartflow-document-summary', false)
             ->assertSee('Document No.')
+            ->assertSee('REF:')
+            ->assertSee('Flow:')
+            ->assertSee('Step:')
             ->assertSee('Current Step')
             ->assertSee('WDC-SF-NAV-00001')
             ->assertSee('SmartFlow navigation parity');
