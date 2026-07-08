@@ -2292,10 +2292,181 @@ body.directory-modal-open {
 }
 
 .smartflow-user-list-panel .section-title p:not(.eyebrow),
-.smartflow-permission-map-panel .section-title p:not(.eyebrow) {
+.smartflow-permission-map-panel .section-title p:not(.eyebrow),
+.smartflow-group-diagram-panel .section-title p:not(.eyebrow) {
     max-width: 760px;
     margin: 4px 0 0;
     color: var(--muted);
+}
+
+.smartflow-group-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.smartflow-group-summary > div {
+    display: grid;
+    gap: 4px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+}
+
+.smartflow-group-summary span {
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 800;
+}
+
+.smartflow-group-summary strong {
+    color: var(--ink);
+    font-size: 1.55rem;
+    line-height: 1;
+}
+
+.smartflow-group-concepts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.smartflow-group-concept {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(34, 31, 32, .04);
+}
+
+.smartflow-group-dot {
+    width: 12px;
+    height: 12px;
+    margin-top: 5px;
+    border-radius: 999px;
+    background: var(--yellow-2);
+    box-shadow: 0 0 0 5px rgba(251, 214, 71, .22);
+}
+
+.smartflow-group-concept h3 {
+    margin: 0 0 5px;
+    color: var(--ink);
+    font-size: .96rem;
+    font-weight: 850;
+}
+
+.smartflow-group-concept p {
+    margin: 0;
+    color: var(--muted);
+    font-size: .82rem;
+    line-height: 1.45;
+}
+
+.smartflow-group-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr);
+    gap: 16px;
+}
+
+.smartflow-group-node-list,
+.smartflow-approver-list,
+.smartflow-workflow-group-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.smartflow-group-node,
+.smartflow-workflow-group-card {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.smartflow-group-node-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.smartflow-group-node-head h3,
+.smartflow-workflow-group-card h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: .98rem;
+    font-weight: 850;
+}
+
+.smartflow-group-node-head small,
+.smartflow-workflow-group-card small {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: .74rem;
+}
+
+.smartflow-group-node-head > span {
+    flex: 0 0 auto;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: .72rem;
+    font-weight: 850;
+}
+
+.smartflow-group-permissions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.smartflow-group-permissions span {
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+    color: #5f4a00;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.smartflow-approver-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.smartflow-approver-row strong {
+    display: block;
+    color: var(--ink);
+    font-size: .9rem;
+    font-weight: 850;
+}
+
+.smartflow-approver-row small {
+    display: block;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: .72rem;
+    overflow-wrap: anywhere;
+}
+
+.smartflow-workflow-group-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .smartflow-user-grid {
@@ -5422,6 +5593,9 @@ body.directory-modal-open {
     .smartflow-statistics-grid,
     .dynamic-field-grid,
     .smartflow-user-grid,
+    .smartflow-group-concepts,
+    .smartflow-group-layout,
+    .smartflow-workflow-group-grid,
     .smartflow-authorization-form,
     .smartflow-password-form {
         grid-template-columns: 1fr;
@@ -5435,10 +5609,24 @@ body.directory-modal-open {
     .smartflow-stat-summary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .smartflow-group-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .smartflow-approver-row {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .smartflow-approver-row .status-pill {
+        grid-column: 2;
+        width: fit-content;
+    }
 }
 
 @media (max-width: 575.98px) {
-    .smartflow-stat-summary {
+    .smartflow-stat-summary,
+    .smartflow-group-summary {
         grid-template-columns: 1fr;
     }
 

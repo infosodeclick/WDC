@@ -2205,6 +2205,17 @@ class WdcPortalTest extends TestCase
             ->assertSee('Employee Portal')
             ->assertSee('Super Admin')
             ->assertSee('portal.dashboard.view');
+
+        $this->get(route('workflows.index', ['view' => 'user_group_diagram']))
+            ->assertOk()
+            ->assertSee('User Group Diagram')
+            ->assertSee('How SmartFlow groups work in WDC')
+            ->assertSee('Business Unit Groups')
+            ->assertSee('Possible approvers')
+            ->assertSee('Workflow approver groups');
+
+        $this->get('/document/user-group-diagram')
+            ->assertRedirect('/workflows?view=user_group_diagram');
     }
 
     public function test_regular_employee_does_not_see_smartflow_admin_menus(): void
@@ -2219,7 +2230,8 @@ class WdcPortalTest extends TestCase
         $this->get(route('workflows.index'))
             ->assertOk()
             ->assertDontSee('User List')
-            ->assertDontSee('Permission Map');
+            ->assertDontSee('Permission Map')
+            ->assertDontSee('User Group Diagram');
     }
 
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void

@@ -46,6 +46,13 @@ class WorkflowController extends Controller
             'roles' => collect(),
             'permissionGroups' => collect(),
         ];
+        $userGroupDiagramData = $activeView === 'user_group_diagram' ? $this->userGroupDiagramData() : [
+            'summary' => [],
+            'concepts' => collect(),
+            'permissionGroups' => collect(),
+            'approverUsers' => collect(),
+            'workflowGroups' => collect(),
+        ];
 
         $query = WorkflowRequest::with('template', 'requester.employee.department', 'assignee', 'currentStep', 'events.user', 'attachments')->latest();
 
@@ -121,6 +128,7 @@ class WorkflowController extends Controller
             'dynamicFieldsData' => $dynamicFieldsData,
             'smartflowUsersData' => $smartflowUsersData,
             'permissionMapData' => $permissionMapData,
+            'userGroupDiagramData' => $userGroupDiagramData,
             'menuTabs' => $this->smartflowMenuTabs(),
             'activeView' => $activeView,
             'activeStatus' => $status,
@@ -957,6 +965,7 @@ class WorkflowController extends Controller
             'password' => ['label' => 'Password', 'icon' => 'bi-key'],
             'user_list' => ['label' => 'User List', 'icon' => 'bi-people', 'manage_only' => true],
             'permission_map' => ['label' => 'Permission Map', 'icon' => 'bi-diagram-2', 'manage_only' => true],
+            'user_group_diagram' => ['label' => 'User Group Diagram', 'icon' => 'bi-diagram-3', 'manage_only' => true],
             'dynamic_fields' => ['label' => 'Dynamic Fields', 'icon' => 'bi-ui-checks-grid'],
             'workflows' => ['label' => 'Workflows', 'icon' => 'bi-diagram-3'],
         ];
@@ -1164,6 +1173,120 @@ class WorkflowController extends Controller
         return [
             'roles' => $roles,
             'permissionGroups' => $permissionGroups,
+        ];
+    }
+
+    private function userGroupDiagramData(): array
+    {
+        $permissions = Permission::query()
+            ->orderBy('group')
+            ->orderBy('sort_order')
+            ->get();
+
+        $roles = Role::with('permissions')
+            ->orderByRaw("CASE slug WHEN 'employee' THEN 1 WHEN 'hr' THEN 2 WHEN 'it_support' THEN 3 WHEN 'it_supervisor' THEN 4 WHEN 'admin' THEN 5 WHEN 'super_admin' THEN 6 WHEN 'auditor' THEN 7 ELSE 99 END")
+            ->get();
+
+        $users = User::with('role.permissions', 'permissionOverrides', 'employee.department')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $permissionGroups = $permissions
+            ->groupBy('group')
+            ->map(function ($groupPermissions, string $groupName) use ($roles, $users) {
+                $keys = $groupPermissions->pluck('key');
+                $roleNames = $roles
+                    ->filter(fn (Role $role) => $role->isSuperAdmin() || $role->permissions->pluck('key')->intersect($keys)->isNotEmpty())
+                    ->pluck('name')
+                    ->values();
+                $groupUsers = $users
+                    ->filter(fn (User $user) => $user->effectivePermissionKeys()->intersect($keys)->isNotEmpty())
+                    ->values();
+
+                return [
+                    'name' => $groupName,
+                    'permission_count' => $groupPermissions->count(),
+                    'permissions' => $groupPermissions->pluck('name')->values(),
+                    'roles' => $roleNames,
+                    'user_count' => $groupUsers->count(),
+                    'sample_users' => $groupUsers
+                        ->take(6)
+                        ->map(fn (User $user) => [
+                            'name' => $user->name,
+                            'employee_code' => $user->employee_code,
+                            'role' => $user->role?->name ?? '-',
+                        ])
+                        ->values(),
+                ];
+            })
+            ->values();
+
+        $approverKeys = collect([
+            'workflows.manage',
+            'tickets.manage',
+            'hr.onboarding.manage',
+            'it.onboarding.manage',
+            'complaints.review',
+            'admin.roles.manage',
+            'iam.roles.manage',
+        ]);
+
+        $approverUsers = $users
+            ->filter(fn (User $user) => $user->effectivePermissionKeys()->intersect($approverKeys)->isNotEmpty())
+            ->take(12)
+            ->map(fn (User $user) => [
+                'name' => $user->name,
+                'employee_code' => $user->employee_code,
+                'department' => $user->employee?->department?->name ?? '-',
+                'role' => $user->role?->name ?? '-',
+                'scope' => $user->dataScopeLabel(),
+            ])
+            ->values();
+
+        $workflowGroups = WorkflowTemplate::with('steps')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (WorkflowTemplate $template) => [
+                'workflow' => $template->name,
+                'legacy_workflow_id' => $template->legacy_workflow_id,
+                'step_count' => $template->steps->count(),
+                'approver_groups' => $template->steps
+                    ->flatMap(fn (WorkflowStep $step) => $step->smartflowApprovers() ?: collect([$step->approver_group])->filter())
+                    ->filter()
+                    ->unique()
+                    ->values(),
+            ]);
+
+        return [
+            'summary' => [
+                'roles' => $roles->count(),
+                'groups' => $permissionGroups->count(),
+                'users' => $users->count(),
+                'approvers' => $approverUsers->count(),
+            ],
+            'concepts' => collect([
+                [
+                    'title' => 'Business Unit Groups',
+                    'body' => 'Group users by branch, BU, department, or operation area so documents route to the right business owner.',
+                ],
+                [
+                    'title' => 'Manager Groups',
+                    'body' => 'Manager and supervisor roles define who can see team work, approve requests, and follow up documents.',
+                ],
+                [
+                    'title' => 'Approver Groups',
+                    'body' => 'Workflow steps select approvers from permission groups or named approver lists, then record every decision.',
+                ],
+                [
+                    'title' => 'Delegation',
+                    'body' => 'Authorization lets another user approve on behalf of an approver for a defined period, matching SmartFlow delegation.',
+                ],
+            ]),
+            'permissionGroups' => $permissionGroups,
+            'approverUsers' => $approverUsers,
+            'workflowGroups' => $workflowGroups,
         ];
     }
 

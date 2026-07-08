@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
+    Route::redirect('/document/user-group-diagram', '/workflows?view=user_group_diagram');
     Route::get('/workflows/export', [WorkflowController::class, 'export'])->name('workflows.export');
     Route::get('/workflows/import-template', [WorkflowController::class, 'downloadImportTemplate'])->name('workflows.import-template');
     Route::get('/workflows/attachments/{attachment}/download', [WorkflowController::class, 'downloadAttachment'])->name('workflows.attachments.download');

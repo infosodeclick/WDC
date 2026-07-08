@@ -3,7 +3,7 @@
 @section('title', 'SmartFlow Work Center | WDC Portal')
 
 @section('content')
-@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'password'], true) ? 'all' : $activeView)
+@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'user_group_diagram', 'password'], true) ? 'all' : $activeView)
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
@@ -498,6 +498,113 @@
                                 </div>
                             </div>
                         @endforeach
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    </section>
+@elseif($activeView === 'user_group_diagram' && $canManage)
+    <section class="panel smartflow-group-diagram-panel">
+        <div class="section-title">
+            <div>
+                <p class="eyebrow">User Group Diagram</p>
+                <h2>How SmartFlow groups work in WDC</h2>
+                <p>Reference view for business unit groups, manager groups, approver groups, and delegation logic using the live WDC role and permission data.</p>
+            </div>
+            <span class="status-pill">{{ $userGroupDiagramData['summary']['groups'] ?? 0 }} groups</span>
+        </div>
+
+        <div class="smartflow-group-summary">
+            <div><span>Roles</span><strong>{{ number_format($userGroupDiagramData['summary']['roles'] ?? 0) }}</strong></div>
+            <div><span>Permission Groups</span><strong>{{ number_format($userGroupDiagramData['summary']['groups'] ?? 0) }}</strong></div>
+            <div><span>Active Users</span><strong>{{ number_format($userGroupDiagramData['summary']['users'] ?? 0) }}</strong></div>
+            <div><span>Possible Approvers</span><strong>{{ number_format($userGroupDiagramData['summary']['approvers'] ?? 0) }}</strong></div>
+        </div>
+    </section>
+
+    <section class="smartflow-group-concepts">
+        @foreach($userGroupDiagramData['concepts'] as $concept)
+            <article class="smartflow-group-concept">
+                <span class="smartflow-group-dot"></span>
+                <div>
+                    <h3>{{ $concept['title'] }}</h3>
+                    <p>{{ $concept['body'] }}</p>
+                </div>
+            </article>
+        @endforeach
+    </section>
+
+    <div class="smartflow-group-layout">
+        <section class="panel smartflow-group-panel">
+            <div class="section-title">
+                <h2>Permission groups</h2>
+                <span class="status-pill">Role to access map</span>
+            </div>
+            <div class="smartflow-group-node-list">
+                @foreach($userGroupDiagramData['permissionGroups'] as $group)
+                    <article class="smartflow-group-node">
+                        <div class="smartflow-group-node-head">
+                            <div>
+                                <h3>{{ $group['name'] }}</h3>
+                                <small>{{ $group['permission_count'] }} permissions · {{ $group['user_count'] }} users</small>
+                            </div>
+                            <span>{{ $group['roles']->count() }} roles</span>
+                        </div>
+                        <div class="smartflow-role-chip-list">
+                            @foreach($group['roles']->take(8) as $roleName)
+                                <span>{{ $roleName }}</span>
+                            @endforeach
+                        </div>
+                        <div class="smartflow-group-permissions">
+                            @foreach($group['permissions']->take(5) as $permissionName)
+                                <span>{{ $permissionName }}</span>
+                            @endforeach
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="panel smartflow-group-panel">
+            <div class="section-title">
+                <h2>Possible approvers</h2>
+                <span class="status-pill">{{ $userGroupDiagramData['approverUsers']->count() }} shown</span>
+            </div>
+            <div class="smartflow-approver-list">
+                @forelse($userGroupDiagramData['approverUsers'] as $approver)
+                    <div class="smartflow-approver-row">
+                        <span class="smartflow-avatar">{{ mb_substr($approver['name'] ?: 'U', 0, 1) }}</span>
+                        <div>
+                            <strong>{{ $approver['name'] }}</strong>
+                            <small>{{ $approver['employee_code'] ?? '-' }} · {{ $approver['role'] }} · {{ $approver['department'] }}</small>
+                        </div>
+                        <span class="status-pill">{{ $approver['scope'] }}</span>
+                    </div>
+                @empty
+                    <div class="empty-state">No approver users found.</div>
+                @endforelse
+            </div>
+        </section>
+    </div>
+
+    <section class="panel smartflow-group-panel">
+        <div class="section-title">
+            <h2>Workflow approver groups</h2>
+            <span class="status-pill">{{ $userGroupDiagramData['workflowGroups']->count() }} workflows</span>
+        </div>
+        <div class="smartflow-workflow-group-grid">
+            @foreach($userGroupDiagramData['workflowGroups'] as $workflow)
+                <article class="smartflow-workflow-group-card">
+                    <div>
+                        <h3>{{ $workflow['workflow'] }}</h3>
+                        <small>Workflow #{{ $workflow['legacy_workflow_id'] ?? '-' }} · {{ $workflow['step_count'] }} steps</small>
+                    </div>
+                    <div class="smartflow-role-chip-list">
+                        @forelse($workflow['approver_groups']->take(8) as $approverGroup)
+                            <span>{{ $approverGroup }}</span>
+                        @empty
+                            <span>No approver group</span>
+                        @endforelse
                     </div>
                 </article>
             @endforeach
