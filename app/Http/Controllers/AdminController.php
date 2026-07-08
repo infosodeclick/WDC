@@ -191,7 +191,7 @@ class AdminController extends Controller
         $passwordConfigured = filled(config('mail.mailers.smtp.password'));
         $fromAddress = (string) config('mail.from.address');
         $notificationsEnabled = (bool) config('wdc.mail_notifications_enabled');
-        $schemeConfigured = in_array($scheme, ['tls', 'ssl'], true);
+        $schemeConfigured = in_array($scheme, ['smtp', 'smtps', 'tls', 'ssl'], true);
 
         return [
             'enabled' => $notificationsEnabled,

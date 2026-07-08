@@ -12,10 +12,11 @@ Set these values in Railway service variables or the target host environment:
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.zoho.com
 MAIL_PORT=587
-MAIL_USERNAME=it-notify@wdc.co.th
+MAIL_USERNAME=itsupport@wdc.co.th
 MAIL_PASSWORD=<zoho-app-password>
+MAIL_SCHEME=smtp
 MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=it-notify@wdc.co.th
+MAIL_FROM_ADDRESS=itsupport@wdc.co.th
 MAIL_FROM_NAME="WDC Portal"
 WDC_MAIL_NOTIFICATIONS_ENABLED=true
 ```
@@ -25,7 +26,7 @@ and do not commit real credentials to Git.
 
 ## Recommended Mailboxes
 
-- `it-notify@wdc.co.th`: IT onboarding, IT tickets, access requests, asset alerts.
+- `itsupport@wdc.co.th`: IT onboarding, IT tickets, access requests, asset alerts, and password reset links.
 - `hr-notify@wdc.co.th`: HR onboarding, profile change approvals, announcements.
 - `no-reply@wdc.co.th`: password reset and system messages.
 
@@ -43,10 +44,10 @@ mail service:
 - Employee profile phone-change request sent to HR.
 - IT Helpdesk workflow request created.
 - Ticket replied or status changed.
+- Password reset links.
 
 Next mail events to add after SMTP is confirmed:
 
-- Password reset requested.
 - Asset warranty or license expiry alerts.
 - SLA overdue alerts.
 
@@ -61,5 +62,5 @@ After changing production variables:
 
 Common Zoho ports:
 
-- `587` with `tls` for normal SMTP submission.
-- `465` with `ssl` only if the organization requires implicit SSL.
+- `587` with `MAIL_SCHEME=smtp` for normal SMTP submission.
+- `465` with `MAIL_SCHEME=smtps` only if the organization requires implicit SSL.
