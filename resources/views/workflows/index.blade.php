@@ -65,10 +65,29 @@
         <i class="bi bi-files"></i>
         <span>All Documents</span>
     </a>
-    <a class="smartflow-command-link" href="{{ route('workflows.index', ['view' => 'workflows']) }}#smartflow-diagrams">
-        <i class="bi bi-diagram-3"></i>
-        <span>Diagrams</span>
-    </a>
+    <details class="smartflow-new-document">
+        <summary>
+            <i class="bi bi-diagram-3"></i>
+            <span>Diagrams</span>
+        </summary>
+        <div class="smartflow-new-document-menu">
+            <div class="smartflow-menu-heading">
+                <strong>Workflow Flow</strong>
+                <small>เปิดแผนผังขั้นตอนอนุมัติตาม SmartFlow เดิม</small>
+            </div>
+            @foreach($templateCatalog as $template)
+                <a href="{{ route('workflows.index', ['view' => 'workflows']) }}#smartflow-workflow-{{ $template->legacy_workflow_id ?? $template->id }}">
+                    <span>{{ $template->name }} Flow</span>
+                    <small>
+                        Workflow #{{ $template->legacy_workflow_id ?? '-' }}
+                        @if($template->service_team)
+                            · {{ $template->service_team }}
+                        @endif
+                    </small>
+                </a>
+            @endforeach
+        </div>
+    </details>
     <a class="smartflow-command-link {{ $activeView === 'favorites' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'favorites']) }}">
         <i class="bi bi-star"></i>
         <span>Favorites</span>

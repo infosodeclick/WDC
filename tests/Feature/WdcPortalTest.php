@@ -2240,6 +2240,15 @@ class WdcPortalTest extends TestCase
         $this->get('/document/submit/7')->assertRedirect(route('workflows.index', ['template' => $template->id]).'#workflow-create-form');
         $this->get('/document/workflow/7/steps')->assertRedirect(route('workflows.index', ['view' => 'workflows']).'#smartflow-workflow-7');
         $this->get('/document/submit/999999')->assertRedirect(route('workflows.index', ['view' => 'workflows']));
+
+        $this->get('/document/export')
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        $this->get(route('workflows.index'))
+            ->assertOk()
+            ->assertSee('Developer/IT support Flow')
+            ->assertSee('#smartflow-workflow-13', false);
     }
 
     public function test_regular_employee_does_not_see_smartflow_admin_menus(): void

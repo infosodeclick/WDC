@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/document/workflows', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.workflows');
     Route::get('/document/fields', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.fields');
     Route::get('/document/user-group-diagram', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.user-group-diagram');
+    Route::get('/document/export', [WorkflowController::class, 'export'])->name('workflows.legacy.export');
     Route::get('/document/submit/{legacyWorkflowId}', [WorkflowController::class, 'redirectLegacySubmit'])->name('workflows.legacy.submit');
     Route::get('/document/workflow/{legacyWorkflowId}/steps', [WorkflowController::class, 'redirectLegacyWorkflowSteps'])->name('workflows.legacy.steps');
     Route::get('/accounts/users', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.users');
