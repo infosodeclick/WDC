@@ -1777,7 +1777,7 @@ class WdcPortalTest extends TestCase
             ],
             'priority' => 'high',
             'legacy_reference' => 'REF: #2606815',
-        ])->assertRedirect(route('workflows.index'));
+        ])->assertRedirect(route('workflows.index', ['status' => 'submitted']));
 
         $workflowRequest = WorkflowRequest::where('title', 'ขออนุมัติ Remote Access')->firstOrFail();
 
@@ -1787,6 +1787,51 @@ class WdcPortalTest extends TestCase
         $this->assertSame('SAP B1', $workflowRequest->form_payload['ระบบที่เกี่ยวข้อง']);
         $this->assertNotNull($workflowRequest->current_step_id);
         Mail::assertSent(PortalNotificationMail::class, fn (PortalNotificationMail $mail) => $mail->notification->type === 'workflow');
+    }
+
+    public function test_employee_can_save_and_submit_smartflow_draft(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        $this->post(route('login.store'), [
+            'employee_code' => $employee->employee_code,
+            'password' => 'password123',
+        ]);
+
+        $notificationCount = \DB::table('notifications')->count();
+
+        $this->post(route('workflows.store'), [
+            'workflow_template_id' => $template->id,
+            'title' => 'Draft VPN request',
+            'details' => '',
+            'priority' => 'normal',
+            'submit_action' => 'draft',
+        ])->assertRedirect(route('workflows.index', ['status' => 'draft']));
+
+        $draft = WorkflowRequest::where('title', 'Draft VPN request')->firstOrFail();
+        $this->assertSame('draft', $draft->status);
+        $this->assertNull($draft->submitted_at);
+        $this->assertNull($draft->due_at);
+        $this->assertNull($draft->current_step_id);
+        $this->assertSame($notificationCount, \DB::table('notifications')->count());
+
+        $this->get(route('workflows.index', ['status' => 'draft']))
+            ->assertOk()
+            ->assertSee('Draft VPN request')
+            ->assertSee('Submit Draft');
+
+        $this->patch(route('workflows.drafts.submit', $draft))
+            ->assertRedirect(route('workflows.index', ['status' => 'submitted']));
+
+        $draft->refresh();
+        $this->assertSame('submitted', $draft->status);
+        $this->assertNotNull($draft->submitted_at);
+        $this->assertNotNull($draft->due_at);
+        $this->assertNotNull($draft->current_step_id);
+        $this->assertGreaterThan($notificationCount, \DB::table('notifications')->count());
     }
 
     public function test_workflow_request_can_store_and_download_uploaded_attachment(): void
@@ -1810,7 +1855,7 @@ class WdcPortalTest extends TestCase
             'workflow_files' => [
                 UploadedFile::fake()->create('smartflow-evidence.pdf', 128, 'application/pdf'),
             ],
-        ])->assertRedirect(route('workflows.index'));
+        ])->assertRedirect(route('workflows.index', ['status' => 'submitted']));
 
         $workflowRequest = WorkflowRequest::where('title', 'Upload evidence from WDC')->firstOrFail();
         $attachment = $workflowRequest->attachments()->firstOrFail();

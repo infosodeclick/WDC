@@ -604,7 +604,14 @@
                 <input class="form-control" name="workflow_files[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip">
                 <em>รองรับรูป, PDF, Word, Excel, CSV, TXT, ZIP สูงสุด 5 ไฟล์ / 10 MB ต่อไฟล์</em>
             </label>
-            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> ส่งเข้า Workflow</button>
+            <div class="workflow-submit-actions span-3">
+                <button class="btn btn-outline-primary" type="submit" name="submit_action" value="draft">
+                    <i class="bi bi-file-earmark"></i> Save Draft
+                </button>
+                <button class="btn btn-primary" type="submit" name="submit_action" value="submit">
+                    <i class="bi bi-send"></i> Submit Document
+                </button>
+            </div>
         </form>
     </section>
 @endif
@@ -1026,12 +1033,21 @@ Reference
                 </div>
             @endif
 
+            @if($requestItem->status === 'draft' && ($requestItem->requester_id === auth()->id() || $canManage))
+                <form class="workflow-draft-actions" method="post" action="{{ route('workflows.drafts.submit', $requestItem) }}">
+                    @csrf
+                    @method('PATCH')
+                    <span><i class="bi bi-file-earmark"></i> Draft is visible here until it is submitted into the workflow.</span>
+                    <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-send"></i> Submit Draft</button>
+                </form>
+            @endif
+
             @if($canManage)
                 <form class="inline-form" method="post" action="{{ route('workflows.status', $requestItem) }}">
                     @csrf
                     @method('PATCH')
                     <select class="form-select form-select-sm" name="status">
-                        @foreach($statusLabels as $key => $label)
+                        @foreach(collect($statusLabels)->except('draft') as $key => $label)
                             <option value="{{ $key }}" @selected($requestItem->status === $key)>{{ $label }}</option>
                         @endforeach
                     </select>

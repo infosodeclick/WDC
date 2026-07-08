@@ -145,10 +145,12 @@ class WorkflowController extends Controller
     {
         abort_unless($request->user()->canAccess('workflows.create'), 403);
 
+        $saveAsDraft = $request->input('submit_action') === 'draft';
+
         $data = $request->validate([
             'workflow_template_id' => ['required', 'exists:workflow_templates,id'],
             'title' => ['required', 'string', 'max:255'],
-            'details' => ['required', 'string', 'max:5000'],
+            'details' => [$saveAsDraft ? 'nullable' : 'required', 'string', 'max:5000'],
             'form_payload' => ['nullable', 'array'],
             'form_payload.*' => ['nullable', 'string', 'max:5000'],
             'attachment_links' => ['nullable', 'string', 'max:5000'],
@@ -156,10 +158,11 @@ class WorkflowController extends Controller
             'workflow_files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,csv,txt,zip'],
             'priority' => ['required', 'in:low,normal,high,critical'],
             'legacy_reference' => ['nullable', 'string', 'max:120'],
+            'submit_action' => ['nullable', Rule::in(['draft', 'submit'])],
         ]);
         $attachmentLinks = $data['attachment_links'] ?? '';
         $uploadedFiles = $data['workflow_files'] ?? [];
-        unset($data['attachment_links'], $data['workflow_files']);
+        unset($data['attachment_links'], $data['workflow_files'], $data['submit_action']);
 
         $template = WorkflowTemplate::with('steps')->findOrFail($data['workflow_template_id']);
         $firstStep = $template->steps->first();
@@ -167,13 +170,14 @@ class WorkflowController extends Controller
         $workflowRequest = WorkflowRequest::create([
             ...$data,
             'requester_id' => $request->user()->id,
-            'current_step_id' => $firstStep?->id,
+            'details' => $data['details'] ?? '',
+            'current_step_id' => $saveAsDraft ? null : $firstStep?->id,
             'smartflow_menu' => $template->smartflow_menu ?: 'All Documents',
             'form_payload' => $this->cleanPayload($data['form_payload'] ?? []),
-            'assigned_group' => $firstStep?->approver_group ?: $template->service_team,
-            'status' => 'submitted',
-            'due_at' => $template->sla_hours ? now()->addHours($template->sla_hours) : null,
-            'submitted_at' => now(),
+            'assigned_group' => $saveAsDraft ? null : ($firstStep?->approver_group ?: $template->service_team),
+            'status' => $saveAsDraft ? 'draft' : 'submitted',
+            'due_at' => (! $saveAsDraft && $template->sla_hours) ? now()->addHours($template->sla_hours) : null,
+            'submitted_at' => $saveAsDraft ? null : now(),
         ]);
 
         $this->storeAttachmentLinks($workflowRequest, $attachmentLinks, $request->user(), 'wdc');
@@ -186,26 +190,55 @@ class WorkflowController extends Controller
         WorkflowRequestEvent::create([
             'workflow_request_id' => $workflowRequest->id,
             'user_id' => $request->user()->id,
-            'action' => 'create',
-            'to_status' => 'submitted',
-            'comment' => "Created {$template->name} request {$workflowRequest->document_number}",
+            'action' => $saveAsDraft ? 'create_draft' : 'create',
+            'to_status' => $workflowRequest->status,
+            'comment' => ($saveAsDraft ? 'Saved draft' : 'Created')." {$template->name} request {$workflowRequest->document_number}",
         ]);
 
-        $this->log($request, 'create_workflow_request', WorkflowRequest::class, $workflowRequest->id, "Created {$workflowRequest->title}");
+        $this->log($request, $saveAsDraft ? 'save_workflow_draft' : 'create_workflow_request', WorkflowRequest::class, $workflowRequest->id, ($saveAsDraft ? 'Saved draft ' : 'Created ').$workflowRequest->title);
 
-        User::with('role.permissions', 'permissionOverrides')
-            ->where('is_active', true)
-            ->get()
-            ->filter(fn (User $user) => $user->canAccess('workflows.manage'))
-            ->each(fn (User $user) => $this->createWorkflowNotification([
-                'user_id' => $user->id,
-                'type' => 'workflow',
-                'title' => 'มีคำขออนุมัติใหม่',
-                'body' => "{$template->name}: {$workflowRequest->title}",
-                'url' => route('workflows.index'),
-            ]));
+        if (! $saveAsDraft) {
+            $this->notifyWorkflowManagers($workflowRequest, $template);
+        }
 
-        return redirect()->route('workflows.index')->with('status', 'ส่งคำขอเข้าศูนย์อนุมัติเรียบร้อยแล้ว');
+        return redirect()
+            ->route('workflows.index', ['status' => $workflowRequest->status])
+            ->with('status', $saveAsDraft ? 'บันทึกฉบับร่างแล้ว' : 'ส่งคำขอเข้าศูนย์อนุมัติเรียบร้อยแล้ว');
+    }
+
+    public function submitDraft(WorkflowRequest $workflowRequest, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+
+        abort_unless($workflowRequest->status === 'draft', 404);
+        abort_unless($workflowRequest->requester_id === $user->id || $this->canManageWorkflows($user), 403);
+
+        $template = $workflowRequest->template()->with('steps')->firstOrFail();
+        $firstStep = $template->steps->first();
+
+        $workflowRequest->update([
+            'current_step_id' => $firstStep?->id,
+            'assigned_group' => $firstStep?->approver_group ?: $template->service_team,
+            'status' => 'submitted',
+            'due_at' => $template->sla_hours ? now()->addHours($template->sla_hours) : null,
+            'submitted_at' => now(),
+        ]);
+
+        WorkflowRequestEvent::create([
+            'workflow_request_id' => $workflowRequest->id,
+            'user_id' => $user->id,
+            'action' => 'submit_draft',
+            'from_status' => 'draft',
+            'to_status' => 'submitted',
+            'comment' => "Submitted draft {$workflowRequest->document_number}",
+        ]);
+
+        $this->notifyWorkflowManagers($workflowRequest->fresh('template'), $template);
+        $this->log($request, 'submit_workflow_draft', WorkflowRequest::class, $workflowRequest->id, "Submitted draft {$workflowRequest->title}");
+
+        return redirect()
+            ->route('workflows.index', ['status' => 'submitted'])
+            ->with('status', 'ส่งฉบับร่างเข้า Workflow แล้ว');
     }
 
     public function updateStatus(WorkflowRequest $workflowRequest, Request $request): RedirectResponse
@@ -215,7 +248,7 @@ class WorkflowController extends Controller
         abort_unless($this->canActOnWorkflow($user, $workflowRequest->load('requester.employee.department')), 403);
 
         $data = $request->validate([
-            'status' => ['required', Rule::in(array_keys(WorkflowRequest::statusLabels()))],
+            'status' => ['required', Rule::in(array_values(array_diff(array_keys(WorkflowRequest::statusLabels()), ['draft'])))],
             'assigned_to' => ['nullable', 'exists:users,id'],
             'due_at' => ['nullable', 'date'],
             'comment' => ['nullable', 'string', 'max:2000'],
@@ -739,6 +772,21 @@ class WorkflowController extends Controller
         unset($payload['user_id']);
 
         app(PortalNotificationService::class)->createForUser($user, $payload);
+    }
+
+    private function notifyWorkflowManagers(WorkflowRequest $workflowRequest, WorkflowTemplate $template): void
+    {
+        User::with('role.permissions', 'permissionOverrides')
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $user) => $user->canAccess('workflows.manage'))
+            ->each(fn (User $user) => $this->createWorkflowNotification([
+                'user_id' => $user->id,
+                'type' => 'workflow',
+                'title' => 'มีคำขออนุมัติใหม่',
+                'body' => "{$template->name}: {$workflowRequest->title}",
+                'url' => route('workflows.index', ['status' => 'submitted']),
+            ]));
     }
 
     private function notifyWorkflowParticipants(WorkflowRequest $workflowRequest, User $actor, string $title, string $body): void

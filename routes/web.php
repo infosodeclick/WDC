@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/workflows/templates/{template}', [WorkflowController::class, 'updateTemplate'])->name('workflows.templates.update');
     Route::post('/workflows/authorizations', [WorkflowController::class, 'storeAuthorization'])->name('workflows.authorizations.store');
     Route::delete('/workflows/authorizations/{authorization}', [WorkflowController::class, 'revokeAuthorization'])->name('workflows.authorizations.revoke');
+    Route::patch('/workflows/{workflowRequest}/submit-draft', [WorkflowController::class, 'submitDraft'])->name('workflows.drafts.submit');
     Route::post('/workflows/{workflowRequest}/comments', [WorkflowController::class, 'comment'])->name('workflows.comments.store');
     Route::patch('/workflows/{workflowRequest}/status', [WorkflowController::class, 'updateStatus'])->name('workflows.status');
 

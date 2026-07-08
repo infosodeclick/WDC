@@ -98,6 +98,7 @@ class WorkflowRequest extends Model
     public static function statusLabels(): array
     {
         return [
+            'draft' => 'ฉบับร่าง',
             'submitted' => 'ส่งคำขอแล้ว',
             'in_review' => 'อยู่ระหว่างตรวจสอบ',
             'accepted' => 'รับเรื่องแล้ว',
