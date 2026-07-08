@@ -1869,6 +1869,44 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('Hidden marketing request');
     }
 
+    public function test_workflow_work_center_shows_smartflow_navigation_and_document_summary(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+
+        WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $employee->id,
+            'document_number' => 'WDC-SF-NAV-00001',
+            'title' => 'SmartFlow navigation parity',
+            'details' => 'Verify command bar and document summary in WDC.',
+            'priority' => 'high',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+            'due_at' => now()->addDay(),
+        ]);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP00125',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index'))
+            ->assertOk()
+            ->assertSee('smartflow-command-bar', false)
+            ->assertSee('New Document')
+            ->assertSee('Your Tasks')
+            ->assertSee('All Documents')
+            ->assertSee('Favorites')
+            ->assertSee('workflow-create-form', false)
+            ->assertSee('Document No.')
+            ->assertSee('Current Step')
+            ->assertSee('WDC-SF-NAV-00001')
+            ->assertSee('SmartFlow navigation parity');
+    }
+
     public function test_smartflow_catalog_syncs_live_workflow_fields_and_branches(): void
     {
         $this->seed(DatabaseSeeder::class);

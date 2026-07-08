@@ -28,6 +28,52 @@
     @endforeach
 </div>
 
+<section class="smartflow-command-bar" aria-label="SmartFlow actions">
+    @if($canCreate)
+        <details class="smartflow-new-document">
+            <summary>
+                <i class="bi bi-plus-circle"></i>
+                <span>New Document</span>
+            </summary>
+            <div class="smartflow-new-document-menu">
+                <div class="smartflow-menu-heading">
+                    <strong>เลือก Workflow</strong>
+                    <small>สร้างเอกสารใหม่ใน WDC โดยอ้างอิงแบบ SmartFlow เดิม</small>
+                </div>
+                @foreach($templateCatalog as $template)
+                    <a href="{{ route('workflows.index', ['view' => $activeView, 'template' => $template->id]) }}#workflow-create-form">
+                        <span>{{ $template->name }}</span>
+                        <small>
+                            Workflow #{{ $template->legacy_workflow_id ?? '-' }}
+                            @if($template->service_team)
+                                · {{ $template->service_team }}
+                            @endif
+                        </small>
+                    </a>
+                @endforeach
+            </div>
+        </details>
+    @endif
+    <a class="smartflow-command-link {{ $activeView === 'tasks' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'tasks']) }}">
+        <i class="bi bi-inbox"></i>
+        <span>Your Tasks</span>
+    </a>
+    <a class="smartflow-command-link {{ $activeView === 'all' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'all']) }}">
+        <i class="bi bi-files"></i>
+        <span>All Documents</span>
+    </a>
+    <a class="smartflow-command-link {{ $activeView === 'favorites' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'favorites']) }}">
+        <i class="bi bi-star"></i>
+        <span>Favorites</span>
+    </a>
+    @if($canManage)
+        <a class="smartflow-command-link" href="{{ route('workflows.export') }}">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
+            <span>Export Excel/CSV</span>
+        </a>
+    @endif
+</section>
+
 <div class="metric-grid">
     <div class="metric-card"><span>Submitted</span><strong>{{ $metrics['submitted'] }}</strong><small>รอรับเรื่อง</small></div>
     <div class="metric-card"><span>In Workflow</span><strong>{{ $metrics['in_review'] }}</strong><small>ตรวจสอบ/รับเรื่อง/ดำเนินการ</small></div>
@@ -71,7 +117,7 @@
 @endif
 
 @if($canCreate)
-    <section class="panel">
+    <section class="panel" id="workflow-create-form">
         <div class="section-title">
             <h2>สร้างเอกสารใหม่</h2>
             <span class="status-pill">WDC จะออกเลข WDC-SF ให้อัตโนมัติ</span>
@@ -430,6 +476,32 @@ Reference
             <div class="meta-row">
                 <span>{{ $requestItem->template->name }} · {{ $requestItem->smartflow_menu }}</span>
                 <span>ผู้ขอ: {{ $requestItem->requester->name }} · {{ $requestItem->created_at->format('d/m/Y H:i') }}</span>
+            </div>
+            <div class="smartflow-document-grid">
+                <div>
+                    <span>Document No.</span>
+                    <strong>{{ $requestItem->document_number ?? '-' }}</strong>
+                </div>
+                <div>
+                    <span>Workflow</span>
+                    <strong>{{ $requestItem->template->name }}</strong>
+                </div>
+                <div>
+                    <span>Current Step</span>
+                    <strong>{{ $requestItem->currentStep?->name ?? $requestItem->statusLabel() }}</strong>
+                </div>
+                <div>
+                    <span>Requester</span>
+                    <strong>{{ $requestItem->requester->name }}</strong>
+                </div>
+                <div>
+                    <span>Priority</span>
+                    <strong>{{ $requestItem->priorityLabel() }}</strong>
+                </div>
+                <div>
+                    <span>Due</span>
+                    <strong>{{ $requestItem->due_at?->format('d/m/Y H:i') ?? '-' }}</strong>
+                </div>
             </div>
             <div class="workflow-current-step">
                 <strong>ขั้นตอนปัจจุบัน</strong>

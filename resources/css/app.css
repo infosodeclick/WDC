@@ -826,6 +826,108 @@ a {
     background: var(--wdc-yellow-2);
 }
 
+.smartflow-command-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: -4px 0 18px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .84);
+    box-shadow: 0 10px 26px rgba(34, 31, 32, .05);
+}
+
+.smartflow-new-document {
+    position: relative;
+}
+
+.smartflow-new-document > summary,
+.smartflow-command-link {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid var(--wdc-yellow-3);
+    border-radius: 8px;
+    color: var(--wdc-black);
+    background: #ffffff;
+    font-size: .9rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.smartflow-new-document > summary {
+    cursor: pointer;
+    list-style: none;
+    background: var(--wdc-yellow-2);
+}
+
+.smartflow-new-document > summary::-webkit-details-marker {
+    display: none;
+}
+
+.smartflow-command-link.active,
+.smartflow-command-link:hover,
+.smartflow-new-document > summary:hover {
+    color: var(--wdc-black);
+    background: var(--wdc-yellow-2);
+    text-decoration: none;
+}
+
+.smartflow-new-document-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 20;
+    display: grid;
+    width: min(420px, calc(100vw - 48px));
+    max-height: min(520px, 70vh);
+    overflow: auto;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 24px 50px rgba(34, 31, 32, .18);
+}
+
+.smartflow-menu-heading {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px 12px;
+    color: var(--ink);
+}
+
+.smartflow-menu-heading small {
+    color: var(--muted);
+    font-size: .78rem;
+}
+
+.smartflow-new-document-menu a {
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--ink);
+}
+
+.smartflow-new-document-menu a:hover {
+    background: #fff8d0;
+    text-decoration: none;
+}
+
+.smartflow-new-document-menu a span {
+    font-weight: 800;
+}
+
+.smartflow-new-document-menu a small {
+    color: var(--muted);
+    font-size: .76rem;
+}
+
 .workflow-filter-panel {
     margin-bottom: 16px;
 }
@@ -1701,6 +1803,39 @@ body.directory-modal-open {
 
 .workflow-current-step small {
     color: var(--muted);
+}
+
+.smartflow-document-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.smartflow-document-grid div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf2;
+}
+
+.smartflow-document-grid span {
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.smartflow-document-grid strong {
+    overflow: hidden;
+    color: var(--ink);
+    font-size: .88rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .workflow-payload {
@@ -3875,6 +4010,7 @@ body.directory-modal-open {
     .permission-matrix,
     .smartflow-filter-form,
     .smartflow-tabs,
+    .smartflow-document-grid,
     .system-mini-grid,
     .system-grid,
     .directory-grid,
@@ -3939,6 +4075,16 @@ body.directory-modal-open {
         flex: 0 0 auto;
         min-width: 148px;
         scroll-snap-align: start;
+    }
+
+    .smartflow-command-bar {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .smartflow-command-link,
+    .smartflow-new-document > summary {
+        min-width: max-content;
     }
 
     .mobile-topbar-brand {
@@ -4055,6 +4201,7 @@ body.directory-modal-open {
     .sync-stats-grid,
     .smartflow-filter-form,
     .smartflow-tabs,
+    .smartflow-document-grid,
     .workflow-payload,
     .document-upload-form,
     .comment-form {
@@ -4086,6 +4233,23 @@ body.directory-modal-open {
 
     .asset-status-form {
         min-width: 0;
+    }
+
+    .smartflow-command-bar {
+        margin-right: -8px;
+        margin-left: -8px;
+        border-right: 0;
+        border-left: 0;
+        border-radius: 0;
+    }
+
+    .smartflow-new-document {
+        position: static;
+    }
+
+    .smartflow-new-document-menu {
+        left: 12px;
+        width: calc(100vw - 24px);
     }
 
     .admin-sync-panel > summary {
