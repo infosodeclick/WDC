@@ -2156,6 +2156,33 @@ class WdcPortalTest extends TestCase
         $this->assertNotEmpty($template->routingRules());
         $this->assertTrue($template->steps()->where('external_step_id', '67')->where('name', 'AI-CRM Accept Case')->exists());
         $this->assertTrue($template->steps()->where('external_step_id', '68')->where('name', 'Softpowerit Accept Case')->exists());
+
+        $pricingTemplate = WorkflowTemplate::where('legacy_workflow_id', '10')->firstOrFail();
+        $this->assertSame(3, $pricingTemplate->steps()
+            ->whereIn('external_step_id', ['37', '38', '39'])
+            ->where('mode', 'all_required')
+            ->count());
+
+        $goodsTemplate = WorkflowTemplate::where('legacy_workflow_id', '2')->firstOrFail();
+        $this->assertSame('any_one', $goodsTemplate->steps()->where('external_step_id', '72')->value('mode'));
+    }
+
+    public function test_workflow_diagram_shows_smartflow_step_modes_and_conditions(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $this->get(route('workflows.index', ['view' => 'workflows']))
+            ->assertOk()
+            ->assertSee('MODE: ALL REQUIRED')
+            ->assertSee('MODE: ANY ONE')
+            ->assertSee('APPROVERS')
+            ->assertSee('CONDITION')
+            ->assertSee('INPUT REQUIRED');
     }
 
     public function test_super_admin_can_resync_smartflow_catalog_from_backend(): void

@@ -1827,6 +1827,10 @@ body.directory-modal-open {
     gap: 6px;
 }
 
+.workflow-visualizer-steps {
+    gap: 10px;
+}
+
 .workflow-steps span {
     display: grid;
     gap: 3px;
@@ -1843,6 +1847,43 @@ body.directory-modal-open {
 
 .workflow-steps small {
     overflow-wrap: anywhere;
+}
+
+.workflow-steps .workflow-step-card {
+    gap: 7px;
+    padding: 12px;
+    border: 1px solid #f0de9a;
+    background: #fffdf1;
+}
+
+.workflow-step-mode {
+    color: #806100;
+    font-weight: 850;
+    letter-spacing: .01em;
+}
+
+.workflow-step-chip-list,
+.workflow-step-condition-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.workflow-step-chip-list em,
+.workflow-step-condition-list em {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: var(--ink);
+    font-size: .74rem;
+    font-style: normal;
+    font-weight: 800;
+}
+
+.workflow-step-condition-list em {
+    border-radius: 8px;
+    background: #fff7cc;
+    color: #5f4a00;
 }
 
 .workflow-current-step {

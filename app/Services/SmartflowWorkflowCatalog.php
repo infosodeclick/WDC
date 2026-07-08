@@ -318,11 +318,13 @@ class SmartflowWorkflowCatalog
 
     private static function step(int $id, int $order, string $name, array $approvers, array $conditions = [], bool $requiresInput = false, bool $userSelectable = false, ?string $actionLabel = null): array
     {
+        $allRequiredStepIds = ['14', '16', '17', '2', '4', '5', '6', '37', '38', '39'];
+
         return [
             'id' => (string) $id,
             'order' => $order,
             'name' => $name,
-            'mode' => 'any_one',
+            'mode' => in_array((string) $id, $allRequiredStepIds, true) ? 'all_required' : 'any_one',
             'approvers' => $approvers,
             'conditions' => $conditions,
             'requires_input' => $requiresInput,

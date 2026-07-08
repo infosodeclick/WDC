@@ -654,18 +654,36 @@
                         @endforeach
                     </div>
                 @endif
-                <div class="workflow-steps">
+                <div class="workflow-steps workflow-visualizer-steps">
                     @foreach($template->steps as $step)
-                        <span>
-                            <strong>{{ $step->step_order }}. {{ $step->name }}</strong>
+                        @php($stepApprovers = collect($step->smartflowApprovers())->filter())
+                        @php($stepConditions = collect($step->smartflowConditions())->filter())
+                        <span class="workflow-step-card">
+                            <strong>Order {{ $step->step_order }} · {{ $step->name }}</strong>
+                            <small class="workflow-step-mode">
+                                MODE: {{ strtoupper(str_replace('_', ' ', $step->mode ?: 'any_one')) }}
+                                @if($step->requires_input)
+                                    · INPUT REQUIRED
+                                @endif
+                            </small>
                             @if($step->action_label)
                                 <small>Action: {{ $step->action_label }}</small>
                             @endif
-                            @if($step->approver_hint || $step->condition_label)
-                                <small>{{ collect([$step->approver_hint, $step->condition_label])->filter()->join(' · ') }}</small>
+                            @if($stepApprovers->isNotEmpty())
+                                <small>APPROVERS</small>
+                                <div class="workflow-step-chip-list">
+                                    @foreach($stepApprovers as $approver)
+                                        <em>{{ $approver }}</em>
+                                    @endforeach
+                                </div>
                             @endif
-                            @if($step->requires_input)
-                                <small>Input required</small>
+                            @if($stepConditions->isNotEmpty())
+                                <small>CONDITION</small>
+                                <div class="workflow-step-condition-list">
+                                    @foreach($stepConditions as $condition)
+                                        <em>{{ $condition }}</em>
+                                    @endforeach
+                                </div>
                             @endif
                         </span>
                     @endforeach
