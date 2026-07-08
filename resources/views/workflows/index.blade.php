@@ -3,7 +3,12 @@
 @section('title', 'SmartFlow Work Center | WDC Portal')
 
 @section('content')
-@php($documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'user_group_diagram', 'password'], true) ? 'all' : $activeView)
+@php
+    $documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'user_group_diagram', 'password'], true) ? 'all' : $activeView;
+    $createPanelOpen = $canCreate && ((int) $activeTemplateId > 0 || $errors->any());
+    $diagramPanelOpen = $activeView === 'workflows';
+    $backendPanelOpen = $diagramPanelOpen && $canManageSystem;
+@endphp
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
@@ -653,7 +658,16 @@
 @endif
 
 @if($canManage)
-    <section class="panel">
+    <details class="panel smartflow-workspace-panel smartflow-import-panel">
+        <summary class="smartflow-panel-summary">
+            <span class="smartflow-panel-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+            <span>
+                <strong>SmartFlow Import</strong>
+                <small>Import CSV from the old SmartFlow only when needed.</small>
+            </span>
+            <i class="bi bi-chevron-down smartflow-panel-chevron"></i>
+        </summary>
+        <div class="smartflow-panel-body">
         <div class="section-title">
             <h2>นำเข้าข้อมูลจาก SmartFlow เดิม</h2>
             <a class="btn btn-sm btn-outline-primary" href="{{ route('workflows.import-template') }}"><i class="bi bi-download"></i> ดาวน์โหลด CSV Template</a>
@@ -670,11 +684,22 @@
             </div>
             <button class="btn btn-primary" type="submit"><i class="bi bi-cloud-upload"></i> Import เข้า WDC</button>
         </form>
-    </section>
+        </div>
+    </details>
 @endif
 
 @if($canCreate)
-    <section class="panel" id="workflow-create-form">
+    <details class="panel smartflow-workspace-panel smartflow-create-panel" id="workflow-create-form" @if($createPanelOpen) open @endif>
+        <summary class="smartflow-panel-summary">
+            <span class="smartflow-panel-icon"><i class="bi bi-file-earmark-plus"></i></span>
+            <span>
+                <strong>New Document</strong>
+                <small>Create a request with the same workflow fields as SmartFlow.</small>
+            </span>
+            <span class="status-pill">WDC-SF Auto No.</span>
+            <i class="bi bi-chevron-down smartflow-panel-chevron"></i>
+        </summary>
+        <div class="smartflow-panel-body">
         <div class="section-title">
             <h2>สร้างเอกสารใหม่</h2>
             <span class="status-pill">WDC จะออกเลข WDC-SF ให้อัตโนมัติ</span>
@@ -778,10 +803,21 @@
                 </button>
             </div>
         </form>
-    </section>
+        </div>
+    </details>
 @endif
 
-<section class="panel" id="smartflow-diagrams">
+<details class="panel smartflow-workspace-panel smartflow-diagram-panel" id="smartflow-diagrams" @if($diagramPanelOpen) open @endif>
+    <summary class="smartflow-panel-summary">
+        <span class="smartflow-panel-icon"><i class="bi bi-diagram-3"></i></span>
+        <span>
+            <strong>Workflow Diagrams</strong>
+            <small>View approval steps, routing, conditions, and SmartFlow field maps.</small>
+        </span>
+        <span class="status-pill">{{ $templates->count() }} workflow</span>
+        <i class="bi bi-chevron-down smartflow-panel-chevron"></i>
+    </summary>
+    <div class="smartflow-panel-body">
     <div class="section-title">
         <h2>Workflows จาก SmartFlow</h2>
         <span class="muted">{{ $templates->count() }} workflow</span>
@@ -870,10 +906,21 @@
             </article>
         @endforeach
     </div>
-</section>
+</div>
+</details>
 
 @if($canManageSystem)
-    <section class="panel" id="workflow-backend">
+    <details class="panel smartflow-workspace-panel smartflow-backend-panel" id="workflow-backend" @if($backendPanelOpen) open @endif>
+        <summary class="smartflow-panel-summary">
+            <span class="smartflow-panel-icon"><i class="bi bi-sliders"></i></span>
+            <span>
+                <strong>Workflow Backend</strong>
+                <small>Super Admin tools for catalog sync and workflow template maintenance.</small>
+            </span>
+            <span class="status-pill">Super Admin</span>
+            <i class="bi bi-chevron-down smartflow-panel-chevron"></i>
+        </summary>
+        <div class="smartflow-panel-body">
         <div class="section-title">
             <h2>Workflow Backend</h2>
             <div class="button-row">
@@ -1005,7 +1052,8 @@ Reference
                 </details>
             @endforeach
         </div>
-    </section>
+        </div>
+    </details>
 @endif
 
 <section class="panel workflow-filter-panel">
