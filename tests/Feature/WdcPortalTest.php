@@ -2646,8 +2646,12 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertSee('INVENTORY')
             ->assertSee('WDC-NB-0001')
-            ->assertSee('asset-action-details', false)
-            ->assertSee('id="new-asset"', false)
+            ->assertSee('asset-page-toolbar', false)
+            ->assertSee('id="newAssetModal"', false)
+            ->assertSee('id="softwareLicenseModal"', false)
+            ->assertSee('id="assetStatusModal"', false)
+            ->assertSee('data-asset-status-form', false)
+            ->assertDontSee('asset-action-details', false)
             ->assertSee('Software License');
 
         $this->post(route('assets.store'), [

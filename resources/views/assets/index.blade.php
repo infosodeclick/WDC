@@ -3,29 +3,55 @@
 @section('title', 'INVENTORY | WDC Portal')
 
 @section('content')
-<div class="button-row mb-3">
-    @if($canExportAssets)
-        <a class="btn btn-outline-primary" href="{{ route('assets.export') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a>
-        <a class="btn btn-outline-primary" href="{{ route('assets.master-data') }}"><i class="bi bi-download"></i> Master Data</a>
-    @endif
+<div class="asset-page-toolbar mb-3">
+    <div class="asset-page-title">
+        <h1>INVENTORY</h1>
+        <span>{{ number_format($assets->total()) }} รายการ</span>
+    </div>
+    <div class="asset-toolbar-actions">
     @if($canManageAssets)
-        <a class="btn btn-primary" href="#new-asset"><i class="bi bi-plus-circle"></i> เพิ่มทรัพย์สิน</a>
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newAssetModal"><i class="bi bi-plus-circle"></i> เพิ่มทรัพย์สิน</button>
     @endif
+        <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#softwareLicenseModal"><i class="bi bi-key"></i> License</button>
+        <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-tools"></i> เครื่องมือ</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @if($canManageAssetSettings)
+                    <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#assetCategoryModal"><i class="bi bi-layers"></i> หมวดหมู่</button></li>
+                    <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#assetLocationModal"><i class="bi bi-geo-alt"></i> สถานที่ / GPS</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                @endif
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#assetInspectionModal"><i class="bi bi-clipboard-check"></i> เอกสารตรวจนับ</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#assetQrModal"><i class="bi bi-qr-code"></i> QR / พิมพ์</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#assetMapModal"><i class="bi bi-map"></i> แผนที่สถานที่</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#assetAuditModal"><i class="bi bi-clock-history"></i> ประวัติล่าสุด</button></li>
+            </ul>
+        </div>
+        @if($canExportAssets)
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download"></i> ส่งออก</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ route('assets.export') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a></li>
+                    <li><a class="dropdown-item" href="{{ route('assets.master-data') }}"><i class="bi bi-database-down"></i> Master Data</a></li>
+                </ul>
+            </div>
+        @endif
+    </div>
 </div>
 
 @if($canManageAssets)
-    <section class="panel asset-action-panel">
-        <details class="asset-action-details" id="new-asset">
-            <summary>
-                <div class="section-title">
-                    <div>
-                        <h2>เพิ่มรายการ Inventory</h2>
-                        <small>กรอกเมื่อมีทรัพย์สินใหม่หรือรับอุปกรณ์เข้าคลัง</small>
-                    </div>
-                    <span class="tag">Asset Registry</span>
+<div class="modal fade" id="newAssetModal" tabindex="-1" aria-labelledby="newAssetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow mb-1">Asset Registry</p>
+                    <h2 class="modal-title" id="newAssetModalLabel">เพิ่มทรัพย์สิน</h2>
                 </div>
-            </summary>
-        <form class="form-grid" method="post" action="{{ route('assets.store') }}">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
+        <form class="form-grid" id="newAssetForm" method="post" action="{{ route('assets.store') }}">
             @csrf
             <label>รหัสทรัพย์สิน
                 <input class="form-control" name="code" required placeholder="เช่น WDC-NB-0004">
@@ -98,28 +124,30 @@
             <label class="span-3">หมายเหตุ
                 <textarea class="form-control" name="notes" rows="3" placeholder="ข้อมูลการใช้งาน การซ่อม หรือการโอนย้าย"></textarea>
             </label>
-            <div class="span-3 button-row">
-                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> บันทึกทรัพย์สิน</button>
-            </div>
         </form>
-        </details>
-    </section>
-
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">ยกเลิก</button>
+                <button class="btn btn-primary" type="submit" form="newAssetForm"><i class="bi bi-save"></i> บันทึกทรัพย์สิน</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endif
 
-<section class="panel asset-action-panel" id="software-licenses">
-    <details class="asset-action-details">
-        <summary>
-            <div class="section-title">
+<div class="modal fade" id="softwareLicenseModal" tabindex="-1" aria-labelledby="softwareLicenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
                 <div>
-                    <h2>Software License</h2>
-                    <small>ติดตามจำนวนสิทธิ์ ผู้ดูแล ค่าใช้จ่าย และวันหมดอายุ</small>
+                    <p class="eyebrow mb-1">{{ number_format($softwareLicenses->count()) }} รายการ</p>
+                    <h2 class="modal-title" id="softwareLicenseModalLabel">Software License</h2>
                 </div>
-                <span class="tag">{{ number_format($softwareLicenses->count()) }} รายการล่าสุด</span>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
             </div>
-        </summary>
+            <div class="modal-body">
     @if($canManageAssets)
-        <form class="form-grid compact-form-grid mb-3" method="post" action="{{ route('assets.licenses.store') }}">
+        <form class="form-grid compact-form-grid mb-4" method="post" action="{{ route('assets.licenses.store') }}">
             @csrf
             <label>รหัส License
                 <input class="form-control" name="code" required placeholder="LIC-M365-001">
@@ -167,8 +195,8 @@
             <label class="span-3">หมายเหตุ
                 <textarea class="form-control" name="notes" rows="2" placeholder="เลขสัญญา ผู้ดูแล หรือเงื่อนไขการต่ออายุ"></textarea>
             </label>
-            <div class="span-3 button-row">
-                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> บันทึก License</button>
+            <div class="span-3 modal-inline-actions">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> เพิ่ม License</button>
             </div>
         </form>
     @endif
@@ -204,22 +232,23 @@
             </tbody>
         </table>
     </div>
-    </details>
-</section>
+            </div>
+        </div>
+    </div>
+</div>
 
 @if($canManageAssetSettings)
-    <div class="content-grid asset-admin-grid" id="asset-settings">
-        <section class="panel asset-action-panel" id="asset-categories">
-            <details class="asset-action-details">
-                <summary>
-                    <div class="section-title">
-                        <div>
-                            <h2>หมวดหมู่ทรัพย์สิน</h2>
-                            <small>ใช้แยกประเภทอุปกรณ์เพื่อรายงานและตรวจนับ</small>
-                        </div>
-                        <span class="tag">{{ number_format($categories->count()) }} หมวด</span>
-                    </div>
-                </summary>
+<div class="modal fade" id="assetCategoryModal" tabindex="-1" aria-labelledby="assetCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow mb-1">{{ number_format($categories->count()) }} หมวด</p>
+                    <h2 class="modal-title" id="assetCategoryModalLabel">หมวดหมู่ทรัพย์สิน</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
             <form class="form-grid compact-form-grid" method="post" action="{{ route('assets.categories.store') }}">
                 @csrf
                 <label>Code
@@ -231,8 +260,8 @@
                 <label class="span-3">คำอธิบาย
                     <input class="form-control" name="description" placeholder="ใช้จัดกลุ่มอุปกรณ์และรายงาน">
                 </label>
-                <div class="span-3 button-row">
-                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-layers"></i> เพิ่มหมวดหมู่</button>
+                <div class="span-3 modal-inline-actions">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-layers"></i> เพิ่มหมวดหมู่</button>
                 </div>
             </form>
             <div class="asset-chip-list">
@@ -240,20 +269,22 @@
                     <span><strong>{{ $category->code }}</strong> {{ $category->name }} <small>{{ $category->assets_count }} รายการ</small></span>
                 @endforeach
             </div>
-            </details>
-        </section>
+            </div>
+        </div>
+    </div>
+</div>
 
-        <section class="panel asset-action-panel" id="asset-locations">
-            <details class="asset-action-details">
-                <summary>
-                    <div class="section-title">
-                        <div>
-                            <h2>สถานที่ / GPS</h2>
-                            <small>กำหนดคลัง สำนักงาน หรือจุดติดตั้งที่ใช้กับ Inventory</small>
-                        </div>
-                        <span class="tag">{{ number_format($locations->count()) }} สถานที่</span>
-                    </div>
-                </summary>
+<div class="modal fade" id="assetLocationModal" tabindex="-1" aria-labelledby="assetLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow mb-1">{{ number_format($locations->count()) }} สถานที่</p>
+                    <h2 class="modal-title" id="assetLocationModalLabel">สถานที่ / GPS</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
             <form class="form-grid compact-form-grid" method="post" action="{{ route('assets.locations.store') }}">
                 @csrf
                 <label>Code
@@ -278,13 +309,14 @@
                     <input name="has_gps" type="checkbox" value="1">
                     ใช้พิกัด GPS
                 </label>
-                <div class="button-row">
-                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-geo-alt"></i> เพิ่มสถานที่</button>
+                <div class="modal-inline-actions">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-geo-alt"></i> เพิ่มสถานที่</button>
                 </div>
             </form>
-            </details>
-        </section>
+            </div>
+        </div>
     </div>
+</div>
 @endif
 
 <section class="panel" id="asset-registry">
@@ -293,7 +325,7 @@
         <span class="tag">{{ number_format($assets->total()) }} รายการ</span>
     </div>
     <div class="table-responsive">
-        <table class="table align-middle asset-table">
+        <table class="table align-middle asset-table asset-registry-table">
             <thead>
                 <tr>
                     <th>รหัส</th>
@@ -302,7 +334,7 @@
                     <th>ผู้ถือครอง</th>
                     <th>มูลค่า</th>
                     <th>สถานะ</th>
-                    @if($canManageAssets || $canDeleteAssets)<th>จัดการ</th>@endif
+                    @if($canManageAssets || $canDeleteAssets)<th><span class="visually-hidden">จัดการ</span></th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -312,34 +344,44 @@
                         <td>
                             <strong>{{ $asset->name }}</strong>
                             <small class="d-block muted">{{ $asset->category?->name ?? 'ไม่ระบุหมวด' }} · {{ trim(($asset->brand ?? '').' '.($asset->model ?? '')) ?: 'ไม่ระบุรุ่น' }}</small>
-                            @if($asset->notes)<small class="d-block muted">{{ $asset->notes }}</small>@endif
                         </td>
                         <td>{{ $asset->location?->code ?? '-' }}<small class="d-block muted">{{ $asset->location?->name ?? $asset->company }}</small></td>
                         <td>{{ $asset->owner_name ?: '-' }}<small class="d-block muted">{{ $asset->department ?: '-' }}</small></td>
-                        <td>{{ number_format((float) $asset->price, 0) }}<small class="d-block muted">Book {{ number_format((float) $asset->book_value, 0) }}</small></td>
+                        <td>{{ number_format((float) $asset->price, 0) }}@if((float) $asset->book_value !== (float) $asset->price)<small class="d-block muted">Book {{ number_format((float) $asset->book_value, 0) }}</small>@endif</td>
                         <td><span class="status-pill status-{{ $asset->status }}">{{ $asset->statusLabel() }}</span></td>
                         @if($canManageAssets || $canDeleteAssets)
-                            <td>
-                                @if($canManageAssets)
-                                    <form class="asset-status-form" method="post" action="{{ route('assets.status', $asset) }}">
-                                        @csrf
-                                        @method('patch')
-                                        <select class="form-select form-select-sm" name="status" aria-label="อัปเดตสถานะ {{ $asset->code }}">
-                                            @foreach(['active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
-                                                <option value="{{ $key }}" @selected($asset->status === $key)>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                        <input class="form-control form-control-sm" name="notes" value="{{ $asset->notes }}" placeholder="หมายเหตุ">
-                                        <button class="btn btn-outline-primary btn-sm" type="submit">บันทึก</button>
-                                    </form>
-                                @endif
-                                @if($canDeleteAssets)
-                                    <form class="asset-status-form mt-2" method="post" action="{{ route('assets.destroy', $asset) }}" onsubmit="return confirm('ยืนยันเก็บประวัติ/จำหน่ายทรัพย์สิน {{ $asset->code }} ? รายการจะไม่ถูกลบออกจากฐานข้อมูล')">
-                                        @csrf
-                                        @method('delete')
-                                        <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-archive"></i> เก็บประวัติ</button>
-                                    </form>
-                                @endif
+                            <td class="asset-row-action-cell">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm asset-row-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="จัดการ {{ $asset->code }}" aria-label="จัดการ {{ $asset->code }}">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end asset-row-menu">
+                                        @if($canManageAssets)
+                                            <li>
+                                                <button
+                                                    class="dropdown-item"
+                                                    type="button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#assetStatusModal"
+                                                    data-asset-action="{{ route('assets.status', $asset) }}"
+                                                    data-asset-code="{{ $asset->code }}"
+                                                    data-asset-status="{{ $asset->status }}"
+                                                    data-asset-notes="{{ $asset->notes }}"
+                                                ><i class="bi bi-pencil-square"></i> แก้ไขสถานะ</button>
+                                            </li>
+                                        @endif
+                                        @if($canDeleteAssets)
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="post" action="{{ route('assets.destroy', $asset) }}" onsubmit="return confirm('ยืนยันเก็บประวัติ/จำหน่ายทรัพย์สิน {{ $asset->code }} ? รายการจะไม่ถูกลบออกจากฐานข้อมูล')">
+                                                    @csrf
+                                                    @method('delete')
+                                                    <button class="dropdown-item text-danger" type="submit"><i class="bi bi-archive"></i> เก็บประวัติ</button>
+                                                </form>
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
                             </td>
                         @endif
                     </tr>
@@ -352,12 +394,50 @@
     {{ $assets->links() }}
 </section>
 
-<div class="content-grid" id="asset-inspections">
-    <section class="panel">
-        <div class="section-title">
-            <h2>เอกสารตรวจนับ</h2>
-            @if($canManageAssets)<span class="tag">Inspection</span>@endif
+@if($canManageAssets)
+<div class="modal fade" id="assetStatusModal" tabindex="-1" aria-labelledby="assetStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow mb-1">แก้ไขทรัพย์สิน</p>
+                    <h2 class="modal-title" id="assetStatusModalLabel" data-asset-status-title>สถานะทรัพย์สิน</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <form method="post" data-asset-status-form>
+                @csrf
+                @method('patch')
+                <div class="modal-body stack-form">
+                    <label>สถานะ
+                        <select class="form-select" name="status" data-asset-status-select>
+                            @foreach(['active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>หมายเหตุ
+                        <textarea class="form-control" name="notes" rows="3" data-asset-status-notes></textarea>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-primary" type="button" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> บันทึก</button>
+                </div>
+            </form>
         </div>
+    </div>
+</div>
+@endif
+
+<div class="modal fade" id="assetInspectionModal" tabindex="-1" aria-labelledby="assetInspectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="assetInspectionModalLabel">เอกสารตรวจนับ</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
         @if($canManageAssets)
             <form class="stack-form" method="post" action="{{ route('assets.inspections.store') }}">
                 @csrf
@@ -405,13 +485,22 @@
                 <div class="empty-state">ยังไม่มีเอกสารตรวจนับ</div>
             @endforelse
         </div>
-    </section>
-
-    <section class="panel">
-        <div class="section-title">
-            <h2>QR / Print Preview</h2>
-            <button class="btn btn-outline-primary btn-sm" type="button" onclick="window.print()"><i class="bi bi-printer"></i> พิมพ์</button>
+            </div>
         </div>
+    </div>
+</div>
+
+<div class="modal fade" id="assetQrModal" tabindex="-1" aria-labelledby="assetQrModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="assetQrModalLabel">QR / Print Preview</h2>
+                <div class="modal-header-actions-inline">
+            <button class="btn btn-outline-primary btn-sm" type="button" onclick="window.print()"><i class="bi bi-printer"></i> พิมพ์</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                </div>
+            </div>
+            <div class="modal-body">
         <div class="asset-qr-grid">
             @foreach($assets->getCollection()->take(6) as $asset)
                 <div class="asset-qr-card">
@@ -421,14 +510,19 @@
                 </div>
             @endforeach
         </div>
-    </section>
+            </div>
+        </div>
+    </div>
 </div>
 
-<section class="panel">
-    <div class="section-title">
-        <h2>แผนที่สถานที่จัดเก็บ</h2>
-        <span class="tag">Location Map</span>
-    </div>
+<div class="modal fade" id="assetMapModal" tabindex="-1" aria-labelledby="assetMapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="assetMapModalLabel">แผนที่สถานที่จัดเก็บ</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
     <div class="asset-location-grid">
         @foreach($locations as $location)
             <article class="asset-location-card">
@@ -446,13 +540,19 @@
             </article>
         @endforeach
     </div>
-</section>
-
-<section class="panel">
-    <div class="section-title">
-        <h2>ประวัติการเปลี่ยนแปลงล่าสุด</h2>
-        <span class="tag">Audit</span>
+            </div>
+        </div>
     </div>
+</div>
+
+<div class="modal fade" id="assetAuditModal" tabindex="-1" aria-labelledby="assetAuditModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content inventory-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="assetAuditModalLabel">ประวัติการเปลี่ยนแปลงล่าสุด</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
     <div class="item-list">
         @forelse($auditLogs as $log)
             <article class="list-card compact">
@@ -468,5 +568,8 @@
             <div class="empty-state">ยังไม่มีประวัติการเปลี่ยนแปลง</div>
         @endforelse
     </div>
-</section>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection

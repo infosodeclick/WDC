@@ -1,5 +1,73 @@
 import './bootstrap';
 
+const assetStatusModal = document.querySelector('#assetStatusModal');
+
+if (assetStatusModal) {
+    const statusForm = assetStatusModal.querySelector('[data-asset-status-form]');
+    const title = assetStatusModal.querySelector('[data-asset-status-title]');
+    const statusSelect = assetStatusModal.querySelector('[data-asset-status-select]');
+    const notesInput = assetStatusModal.querySelector('[data-asset-status-notes]');
+
+    assetStatusModal.addEventListener('show.bs.modal', (event) => {
+        const trigger = event.relatedTarget;
+
+        if (! trigger || ! statusForm || ! statusSelect || ! notesInput) {
+            return;
+        }
+
+        statusForm.action = trigger.dataset.assetAction || '';
+        statusSelect.value = trigger.dataset.assetStatus || 'active';
+        notesInput.value = trigger.dataset.assetNotes || '';
+
+        if (title) {
+            title.textContent = trigger.dataset.assetCode || 'สถานะทรัพย์สิน';
+        }
+    });
+}
+
+const bindInventoryModalClose = () => {
+    document.querySelectorAll('.inventory-modal').forEach((modalContent) => {
+        const modal = modalContent.closest('.modal');
+
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+
+    document.querySelectorAll('.inventory-modal [data-bs-dismiss="modal"]').forEach((closeButton) => {
+        closeButton.addEventListener('click', (event) => {
+            const modal = closeButton.closest('.modal');
+
+            if (! modal) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('aria-modal');
+        modal.removeAttribute('role');
+
+        if (! document.querySelector('.modal.show')) {
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+        }
+
+        document.querySelector(`[data-bs-target="#${modal.id}"]`)?.focus();
+        }, { capture: true });
+    });
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindInventoryModalClose);
+} else {
+    bindInventoryModalClose();
+}
+
 const copyText = async (text) => {
     if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
