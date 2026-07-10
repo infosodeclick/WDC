@@ -452,7 +452,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('hr-dashboard-grid', false)
             ->assertSee('แดชบอร์ด')
             ->assertSee('พนักงานทั้งหมด')
-            ->assertSee('คำขอแก้โปรไฟล์')
+            ->assertSee('แก้ไขโปรไฟล์')
             ->assertDontSee('ระบบที่ให้ IT เปิด')
             ->assertDontSee('เลขที่ประกาศ');
 
@@ -999,6 +999,11 @@ class WdcPortalTest extends TestCase
             ->assertSee('new.starter@wdc.co.th')
             ->assertSee($asset->code)
             ->assertSee($itUser->name);
+
+        $this->get(route('it.index', ['section' => 'access']))
+            ->assertOk()
+            ->assertSee('it-access-registry')
+            ->assertSee('EMP77777');
 
         $this->patch(route('it.onboarding.complete', $onboarding))->assertRedirect();
 
@@ -2937,7 +2942,7 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('reports.index'))
             ->assertOk()
-            ->assertSee('License ใกล้หมดอายุ')
+            ->assertSee('ใกล้หมดอายุ')
             ->assertSee('Software License')
             ->assertSee('ใกล้หมดอายุ');
     }

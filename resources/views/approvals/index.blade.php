@@ -5,25 +5,14 @@
 @section('content')
 <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
     <div>
-        <p class="eyebrow mb-1">ACTION CENTER</p>
         <h1 class="page-title mb-1">งานรอดำเนินการ</h1>
-        <p class="text-muted mb-0">รวมเฉพาะคิวงานที่คุณหรือทีมตามสิทธิ์ต้องรับงาน ตรวจสอบ หรืออนุมัติ</p>
+        <p class="text-muted mb-0">คิวงานของคุณและทีมตามสิทธิ์</p>
     </div>
     <div class="approval-total-card">
         <span>ค้างดำเนินการ</span>
         <strong>{{ number_format($totalPending) }}</strong>
-        <small>รายการตามสิทธิ์ของคุณ</small>
+        <small>รายการ</small>
     </div>
-</div>
-
-<div class="metric-grid mb-4">
-    @foreach($sections as $section)
-        <div class="metric-card">
-            <span><i class="bi {{ $section['icon'] }} me-1"></i>{{ $section['title'] }}</span>
-            <strong>{{ number_format($section['items']->count()) }}</strong>
-            <small>{{ $section['subtitle'] }}</small>
-        </div>
-    @endforeach
 </div>
 
 <div class="approval-section-grid">
@@ -31,7 +20,6 @@
         <section class="approval-panel">
             <div class="approval-panel-header">
                 <div>
-                    <p class="eyebrow mb-1">{{ $section['key'] }}</p>
                     <h2><i class="bi {{ $section['icon'] }}"></i>{{ $section['title'] }}</h2>
                     <p>{{ $section['subtitle'] }}</p>
                 </div>

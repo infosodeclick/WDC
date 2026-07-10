@@ -6,9 +6,8 @@
 <div class="reports-page">
     <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
         <div>
-            <p class="eyebrow mb-1">REPORTS</p>
             <h1 class="page-title mb-1">รายงานภาพรวม</h1>
-            <p class="text-muted mb-0">สรุปงาน HR, IT Helpdesk, INVENTORY และงานรอดำเนินการจากข้อมูลจริงใน WDC</p>
+            <p class="text-muted mb-0">HR, IT Helpdesk และ INVENTORY</p>
         </div>
         @if(count($exportLinks) > 0)
             <div class="reports-export-bar">
@@ -110,25 +109,5 @@
         </section>
     </div>
 
-    <div class="reports-action-grid">
-        @foreach($actionRows as $section)
-            <section class="report-panel">
-                <div class="report-panel-head">
-                    <h2>{{ $section['label'] }}</h2>
-                    <span>{{ number_format($section['items']->count()) }}</span>
-                </div>
-                <div class="report-action-list">
-                    @forelse($section['items'] as $item)
-                        <a class="report-action-item" href="{{ $item['url'] }}">
-                            <strong>{{ $item['title'] }}</strong>
-                            <small>{{ $item['meta'] }}</small>
-                        </a>
-                    @empty
-                        <div class="empty-state">ยังไม่มีรายการค้าง</div>
-                    @endforelse
-                </div>
-            </section>
-        @endforeach
-    </div>
 </div>
 @endsection

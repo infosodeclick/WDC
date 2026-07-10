@@ -3,23 +3,26 @@
 @section('title', 'IT | WDC Portal')
 
 @section('content')
+@php
+    $activeItSection = request()->string('section')->toString();
+    $activeItSection = in_array($activeItSection, ['onboarding', 'access', 'offboarding', 'helpdesk'], true) ? $activeItSection : 'onboarding';
+@endphp
 <div class="page-heading">
     <div>
-        <p class="eyebrow">IT</p>
         <h1>IT</h1>
-        <p>คิวเปิดระบบพนักงานใหม่, Helpdesk และงานที่ทีม IT ต้องดำเนินการ</p>
+        <p>งานพนักงานและ Helpdesk ของทีม IT</p>
     </div>
     <a class="btn btn-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-plus-circle"></i> เปิดคำขอ IT</a>
 </div>
 
 <nav class="it-section-tabs" aria-label="เมนูงาน IT">
-    <a class="btn btn-outline-primary" href="#it-onboarding"><i class="bi bi-person-plus"></i> พนักงานใหม่</a>
-    <a class="btn btn-outline-primary" href="#it-access-registry"><i class="bi bi-key"></i> ทะเบียนสิทธิ์</a>
-    <a class="btn btn-outline-primary" href="#it-offboarding"><i class="bi bi-person-dash"></i> พนักงานลาออก</a>
-    <a class="btn btn-outline-primary" href="#it-helpdesk"><i class="bi bi-life-preserver"></i> Helpdesk</a>
+    <a class="btn {{ $activeItSection === 'onboarding' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('it.index', ['section' => 'onboarding']) }}"><i class="bi bi-person-plus"></i> พนักงานใหม่</a>
+    <a class="btn {{ $activeItSection === 'access' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('it.index', ['section' => 'access']) }}"><i class="bi bi-key"></i> ทะเบียนสิทธิ์</a>
+    <a class="btn {{ $activeItSection === 'offboarding' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('it.index', ['section' => 'offboarding']) }}"><i class="bi bi-person-dash"></i> พนักงานลาออก</a>
+    <a class="btn {{ $activeItSection === 'helpdesk' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('it.index', ['section' => 'helpdesk']) }}"><i class="bi bi-life-preserver"></i> Helpdesk</a>
 </nav>
 
-<section class="panel" id="it-onboarding">
+<section class="panel" id="it-onboarding" @if($activeItSection !== 'onboarding') hidden @endif>
     <div class="section-title">
         <div>
             <h2>คิวพนักงานเริ่มงานใหม่</h2>
@@ -200,7 +203,7 @@
     </div>
 </section>
 
-<section class="panel" id="it-access-registry">
+<section class="panel" id="it-access-registry" @if($activeItSection !== 'access') hidden @endif>
     <div class="section-title">
         <div>
             <h2>ทะเบียนสิทธิ์พนักงาน</h2>
@@ -300,7 +303,7 @@
     @endif
 </section>
 
-<section class="panel" id="it-offboarding">
+<section class="panel" id="it-offboarding" @if($activeItSection !== 'offboarding') hidden @endif>
     <div class="section-title">
         <div>
             <h2>คิวพนักงานลาออก</h2>
@@ -356,7 +359,8 @@
     </div>
 </section>
 
-<div class="metric-grid" id="it-helpdesk">
+<section class="it-helpdesk-section" id="it-helpdesk" @if($activeItSection !== 'helpdesk') hidden @endif>
+<div class="metric-grid">
     <div class="metric-card"><span>งานใหม่</span><strong>{{ $newTickets }}</strong><small>ส่งคำขอแล้ว</small></div>
     <div class="metric-card"><span>งานค้าง</span><strong>{{ $pendingTickets }}</strong><small>ตรวจสอบ/รับเรื่อง/ดำเนินการ</small></div>
     <div class="metric-card"><span>งานเสร็จ</span><strong>{{ $doneTickets }}</strong><small>อนุมัติหรือปิดงานแล้ว</small></div>
@@ -386,4 +390,5 @@
 </div>
 
 {{ $requests->links() }}
+</section>
 @endsection

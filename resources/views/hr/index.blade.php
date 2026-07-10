@@ -13,16 +13,32 @@
         ['section' => 'announcements', 'label' => 'จัดการประกาศ', 'icon' => 'bi-megaphone', 'show' => $canManageAnnouncements],
         ['section' => 'complaints', 'label' => 'จัดการเรื่องร้องเรียน', 'icon' => 'bi-shield-check', 'show' => $canReviewComplaints],
     ];
+    $primaryHrSections = collect($hrMenu)->whereIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
+    $moreHrSections = collect($hrMenu)->whereNotIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
 @endphp
 
-<div class="hr-section-tabs mb-3">
-    @foreach($hrMenu as $item)
+<div class="hr-section-tabs portal-section-tabs mb-3">
+    @foreach($primaryHrSections as $item)
         @if($item['show'])
             <a class="btn {{ $activeSection === $item['section'] ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('hr.index', ['section' => $item['section']]) }}">
                 <i class="bi {{ $item['icon'] }}"></i> {{ $item['label'] }}
             </a>
         @endif
     @endforeach
+    @if($moreHrSections->where('show', true)->isNotEmpty())
+        <div class="dropdown">
+            <button class="btn {{ $moreHrSections->where('show', true)->contains('section', $activeSection) ? 'btn-primary' : 'btn-outline-primary' }} dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i> เพิ่มเติม
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @foreach($moreHrSections as $item)
+                    @if($item['show'])
+                        <li><a class="dropdown-item {{ $activeSection === $item['section'] ? 'active' : '' }}" href="{{ route('hr.index', ['section' => $item['section']]) }}"><i class="bi {{ $item['icon'] }}"></i> {{ $item['label'] }}</a></li>
+                    @endif
+                @endforeach
+            </ul>
+        </div>
+    @endif
 </div>
 
 @if($activeSection === 'dashboard')
@@ -31,42 +47,21 @@
             <div class="hr-summary-card primary">
                 <span>พนักงานทั้งหมด</span>
                 <strong>{{ number_format($employeeCount) }}</strong>
-                <small>ตามสิทธิ์ข้อมูลที่เข้าถึงได้</small>
             </div>
             <div class="hr-summary-card">
                 <span>ใช้งานอยู่</span>
                 <strong>{{ number_format($activeEmployeeCount) }}</strong>
-                <small>แสดงในระบบ</small>
-            </div>
-            <div class="hr-summary-card">
-                <span>พนักงานลาออก/ไม่แสดง</span>
-                <strong>{{ number_format($inactiveEmployeeCount) }}</strong>
-                <small>ถูกปิดการใช้งาน</small>
             </div>
             @if($canManageOnboarding)
                 <div class="hr-summary-card attention">
                     <span>พนักงานใหม่รอดำเนินการ</span>
                     <strong>{{ number_format($pendingOnboardingCount) }}</strong>
-                    <small>รอ IT หรือ HR อนุมัติ</small>
                 </div>
             @endif
             @if($canManageEmployees)
                 <div class="hr-summary-card">
-                    <span>คำขอแก้โปรไฟล์</span>
-                    <strong>{{ number_format($pendingProfileChangeCount) }}</strong>
-                    <small>รอ HR ตรวจสอบ</small>
-                </div>
-                <div class="hr-summary-card">
                     <span>พนักงานลาออกรอดำเนินการ</span>
                     <strong>{{ number_format($pendingOffboardingCount) }}</strong>
-                    <small>รอ IT หรือ HR ปิดบัญชี</small>
-                </div>
-            @endif
-            @if($canReviewComplaints)
-                <div class="hr-summary-card attention">
-                    <span>เรื่องร้องเรียน</span>
-                    <strong>{{ number_format($complaintCount) }}</strong>
-                    <small>รายการล่าสุดที่เกี่ยวข้อง</small>
                 </div>
             @endif
         </section>

@@ -30,7 +30,6 @@ class ReportController extends Controller
             'assetRows' => $this->assetRows(),
             'licenseRows' => $this->licenseRows(),
             'onboardingRows' => $this->onboardingRows(),
-            'actionRows' => $this->actionRows(),
             'exportLinks' => $this->exportLinks($user),
         ]);
     }
@@ -79,10 +78,8 @@ class ReportController extends Controller
             ['label' => 'พนักงานใหม่รอดำเนินการ', 'value' => $pendingOnboarding, 'note' => 'HR/IT ยังไม่ครบขั้นตอน', 'icon' => 'bi-person-plus'],
             ['label' => 'พนักงานลาออกรอดำเนินการ', 'value' => $pendingOffboarding, 'note' => 'รอปิดระบบ/รับคืนอุปกรณ์', 'icon' => 'bi-person-dash'],
             ['label' => 'ทรัพย์สินทั้งหมด', 'value' => ItAsset::count(), 'note' => 'ในทะเบียน INVENTORY', 'icon' => 'bi-box-seam'],
-            ['label' => 'ใกล้หมดประกัน', 'value' => $warrantyExpiring, 'note' => 'ภายใน 90 วัน', 'icon' => 'bi-shield-exclamation'],
-            ['label' => 'License ใกล้หมดอายุ', 'value' => $licenseExpiring, 'note' => 'ภายใน 90 วัน', 'icon' => 'bi-key'],
+            ['label' => 'ใกล้หมดอายุ', 'value' => $warrantyExpiring + $licenseExpiring, 'note' => "ประกัน {$warrantyExpiring} / License {$licenseExpiring}", 'icon' => 'bi-shield-exclamation'],
             ['label' => 'รายการรออนุมัติ', 'value' => $pendingApprovals, 'note' => 'จาก HR, IT และเรื่องร้องเรียน', 'icon' => 'bi-check2-square'],
-            ['label' => 'พนักงานใช้งานอยู่', 'value' => EmployeeDirectoryEntry::where('is_active', true)->count(), 'note' => 'แสดงในรายชื่อพนักงาน', 'icon' => 'bi-people'],
         ];
     }
 

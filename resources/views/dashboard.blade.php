@@ -13,23 +13,14 @@
 </div>
 
 <div class="quick-actions">
+    @if($user->canAccessAny(['workflows.create', 'workflows.manage']))
+        <a class="btn btn-primary" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i> ศูนย์คำขอ</a>
+    @endif
     @if($user->canAccess('announcements.view'))
-        <a class="btn btn-primary" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i> ดูประกาศ</a>
+        <a class="btn btn-outline-primary" href="{{ route('announcements.index') }}"><i class="bi bi-megaphone"></i> ประกาศ</a>
     @endif
     @if($user->canAccess('directory.view'))
-        <a class="btn btn-outline-primary" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i> ค้นหาพนักงาน</a>
-    @endif
-    @if($user->canAccessAny(['workflows.create', 'workflows.manage']))
-        <a class="btn btn-outline-primary" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i> ศูนย์คำขอ</a>
-    @endif
-    @if($user->canAccessAny(['complaints.create', 'complaints.review']))
-        <a class="btn btn-outline-primary" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i> ร้องเรียน</a>
-    @endif
-    @if($user->canAccess('knowledge.view'))
-        <a class="btn btn-outline-primary" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i> เทรนนิ่ง</a>
-    @endif
-    @if($user->canAccessItAssets())
-        <a class="btn btn-outline-primary" href="{{ route('assets.index') }}"><i class="bi bi-box-seam"></i> INVENTORY</a>
+        <a class="btn btn-outline-primary" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i> รายชื่อพนักงาน</a>
     @endif
 </div>
 

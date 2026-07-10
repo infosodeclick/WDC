@@ -3,28 +3,49 @@
 @section('title', 'Admin | WDC Portal')
 
 @section('content')
-<div class="button-row mb-3">
-    @foreach($adminSections as $section)
+@php
+    $primaryAdminSections = collect($adminSections)->whereIn('key', ['system', 'permissions', 'create-user']);
+    $moreAdminSections = collect($adminSections)->whereNotIn('key', ['system', 'permissions', 'create-user']);
+@endphp
+<div class="button-row portal-section-tabs mb-3">
+    @foreach($primaryAdminSections as $section)
         <a class="btn {{ $activeSection === $section['key'] ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('admin.index', ['section' => $section['key']]) }}">
             <i class="bi {{ $section['icon'] }}"></i> {{ $section['label'] }}
         </a>
     @endforeach
+    @if($moreAdminSections->isNotEmpty())
+        <div class="dropdown">
+            <button class="btn {{ $moreAdminSections->contains('key', $activeSection) ? 'btn-primary' : 'btn-outline-primary' }} dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-three-dots"></i> เพิ่มเติม
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @foreach($moreAdminSections as $section)
+                    <li><a class="dropdown-item {{ $activeSection === $section['key'] ? 'active' : '' }}" href="{{ route('admin.index', ['section' => $section['key']]) }}"><i class="bi {{ $section['icon'] }}"></i> {{ $section['label'] }}</a></li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 </div>
 
 @if($activeSection === 'system')
 <section class="panel">
     <div class="section-title">
-        <h2>เมนูด้านซ้ายหน้าบ้าน</h2>
-        <span class="status-pill">ผูกกับ Permission</span>
+        <div>
+            <h2>ระบบ</h2>
+            <p class="muted mb-0">เมนูหน้าบ้านใช้สิทธิ์เดียวกับ Role และสิทธิ์รายคน</p>
+        </div>
     </div>
-    <div class="menu-permission-grid">
-        @foreach($menuPermissions as $menuPermission)
-            <div class="menu-permission-card">
-                <strong>{{ $menuPermission['label'] }}</strong>
-                <small>{{ collect($menuPermission['permissions'])->join(' / ') }}</small>
-            </div>
-        @endforeach
-    </div>
+    <details class="admin-system-details">
+        <summary><i class="bi bi-layout-sidebar"></i> เมนูด้านซ้ายหน้าบ้าน <span>{{ count($menuPermissions) }} เมนู</span></summary>
+        <div class="menu-permission-grid">
+            @foreach($menuPermissions as $menuPermission)
+                <div class="menu-permission-card">
+                    <strong>{{ $menuPermission['label'] }}</strong>
+                    <small>{{ collect($menuPermission['permissions'])->join(' / ') }}</small>
+                </div>
+            @endforeach
+        </div>
+    </details>
 </section>
 @endif
 

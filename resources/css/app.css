@@ -3875,6 +3875,28 @@ body.directory-modal-open {
     font-weight: 800;
 }
 
+.portal-section-tabs .dropdown-menu {
+    min-width: 210px;
+    padding: 6px;
+    border-color: var(--line);
+    border-radius: 8px;
+    box-shadow: 0 14px 30px rgba(34, 31, 32, .12);
+}
+
+.portal-section-tabs .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.portal-section-tabs .dropdown-item.active {
+    background: var(--wdc-yellow-2);
+    color: var(--ink);
+}
+
 .hr-dashboard-shell {
     margin-bottom: 18px;
 }
@@ -5207,6 +5229,41 @@ body.directory-modal-open {
 .menu-permission-card small {
     color: var(--muted);
     overflow-wrap: anywhere;
+}
+
+.admin-system-details {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf7;
+}
+
+.admin-system-details > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    padding: 12px 14px;
+    cursor: pointer;
+    font-weight: 800;
+    list-style: none;
+}
+
+.admin-system-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.admin-system-details > summary span {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: .8rem;
+}
+
+.admin-system-details[open] > summary {
+    border-bottom: 1px solid var(--line);
+}
+
+.admin-system-details .menu-permission-grid {
+    padding: 12px;
 }
 
 .role-template-grid {
