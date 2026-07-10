@@ -126,7 +126,75 @@
         </div>
     @endif
 
+    @php
+        $activeEquipment = $onboarding->equipmentAssignments->where('status', '!=', 'released');
+        $activeEquipmentIds = $activeEquipment->pluck('it_asset_id');
+        $selectableEquipment = $availableAssets->reject(fn ($asset) => $activeEquipmentIds->contains($asset->id));
+        $systemReady = $onboarding->systems->whereIn('status', ['provisioned', 'skipped'])->count();
+    @endphp
+    <div class="onboarding-equipment-box">
+        <div class="section-title">
+            <div>
+                <h3><i class="bi bi-laptop"></i> อุปกรณ์สำหรับพนักงาน</h3>
+                <p>จองอุปกรณ์จาก INVENTORY ก่อนส่งมอบ เพื่อป้องกันทีม IT เลือกรายการซ้ำกัน</p>
+            </div>
+            <span class="tag">{{ $activeEquipment->count() }} รายการ</span>
+        </div>
+
+        <div class="onboarding-equipment-list">
+            @forelse($activeEquipment as $equipment)
+                <article class="onboarding-equipment-item">
+                    <div class="onboarding-equipment-main">
+                        <strong>{{ $equipment->asset?->code ?? '-' }} · {{ $equipment->asset?->name ?? 'ไม่พบข้อมูลทรัพย์สิน' }}</strong>
+                        <small>{{ $equipment->asset?->location?->code ?? 'ไม่ระบุสถานที่' }} · ผู้จัดเตรียม {{ $equipment->assignedBy?->name ?? '-' }}{{ $equipment->assigned_at ? ' · '.$equipment->assigned_at->format('d/m/Y H:i') : '' }}</small>
+                        @if($equipment->notes)<small>{{ $equipment->notes }}</small>@endif
+                    </div>
+                    <div class="onboarding-equipment-actions">
+                        <span class="status-pill status-{{ $equipment->status }}">{{ $equipment->statusLabel() }}</span>
+                        @if($canEditChecklist && $canManageOnboardingAssets && $equipment->status === 'reserved')
+                            <form method="post" action="{{ route('it.onboarding.assets.destroy', [$onboarding, $equipment]) }}" onsubmit="return confirm('ยืนยันคืนอุปกรณ์รายการนี้เข้าสต็อก?');">
+                                @csrf
+                                @method('delete')
+                                <button class="btn btn-outline-danger btn-sm" type="submit" aria-label="คืน {{ $equipment->asset?->code }} เข้าสต็อก"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        @endif
+                    </div>
+                </article>
+            @empty
+                <div class="empty-state compact-empty-state">ยังไม่ได้จองอุปกรณ์ให้พนักงานคนนี้</div>
+            @endforelse
+        </div>
+
+        @if($canEditChecklist && $canManageOnboardingAssets)
+            <form class="onboarding-equipment-picker" method="post" action="{{ route('it.onboarding.assets.store', $onboarding) }}">
+                @csrf
+                <label>
+                    <span>เลือกอุปกรณ์พร้อมใช้งาน</span>
+                    <select class="form-select" name="it_asset_id" required>
+                        <option value="">เลือกจาก INVENTORY</option>
+                        @foreach($selectableEquipment as $asset)
+                            <option value="{{ $asset->id }}">{{ $asset->code }} · {{ $asset->name }}{{ $asset->location ? ' · '.$asset->location->code : '' }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    <span>หมายเหตุ</span>
+                    <input class="form-control" name="notes" placeholder="เช่น Notebook หลัก, จอเสริม, Mouse">
+                </label>
+                <button class="btn btn-primary" type="submit" @disabled($selectableEquipment->isEmpty())><i class="bi bi-plus-circle"></i> จองอุปกรณ์</button>
+            </form>
+            @if($selectableEquipment->isEmpty())
+                <small class="muted">ยังไม่มีอุปกรณ์สถานะพร้อมใช้งาน กรุณาเพิ่มหรือเปลี่ยนสถานะที่ INVENTORY</small>
+            @endif
+        @endif
+    </div>
+
     @if($canManageItOnboarding)
+        <details class="onboarding-inline-details onboarding-detail-checklist">
+            <summary>
+                <span><i class="bi bi-list-check"></i> Checklist เปิดระบบ</span>
+                <strong>{{ $systemReady }} / {{ $onboarding->systems->count() }}</strong>
+            </summary>
         <form method="post" action="{{ route('it.onboarding.update', $onboarding) }}">
             @csrf
             @method('PATCH')
@@ -170,14 +238,11 @@
                                 <input type="hidden" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}">
                             @endif
                             @if($isAssetSystem)
-                                <label class="span-2"><span>ทรัพย์สิน</span>
-                                    <select class="form-select" name="systems[{{ $system->id }}][it_asset_id]" @disabled(! $canEditChecklist)>
-                                        <option value="">เลือกทรัพย์สิน</option>
-                                        @foreach($availableAssets as $asset)
-                                            <option value="{{ $asset->id }}" @selected($system->it_asset_id === $asset->id)>{{ $asset->code }} · {{ $asset->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
+                                <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
+                                <div class="span-2 onboarding-audit-note">
+                                    <span>อุปกรณ์ {{ $activeEquipment->count() }} รายการ</span>
+                                    <span>จัดการจากส่วนอุปกรณ์ด้านบน</span>
+                                </div>
                             @else
                                 <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
                             @endif
@@ -196,6 +261,7 @@
                 <button class="btn btn-outline-primary" type="submit" @disabled(! $canEditChecklist)><i class="bi bi-save"></i> บันทึกข้อมูล IT</button>
             </div>
         </form>
+        </details>
 
         @if($canEditChecklist)
             <form method="post" action="{{ route('it.onboarding.complete', $onboarding) }}" class="mt-3">

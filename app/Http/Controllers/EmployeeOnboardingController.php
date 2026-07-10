@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\AssetAuditLog;
 use App\Models\Department;
 use App\Models\EmployeeDirectoryEntry;
+use App\Models\EmployeeOnboardingAsset;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\EmployeeOnboardingSystem;
 use App\Models\ItAsset;
@@ -15,9 +17,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -37,10 +41,11 @@ class EmployeeOnboardingController extends Controller
         abort_unless($this->canViewOnboarding($actor), 403);
 
         return view('onboarding.show', [
-            'onboarding' => $onboarding->load('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy', 'itCompleter', 'hrApprover', 'cancelRequester', 'cancelConfirmer'),
+            'onboarding' => $onboarding->load('department', 'systems.asset', 'systems.provisioner', 'equipmentAssignments.asset.location', 'equipmentAssignments.assignedBy', 'requester', 'claimedBy', 'itCompleter', 'hrApprover', 'cancelRequester', 'cancelConfirmer'),
             'canManageItOnboarding' => $this->canManageItOnboarding($actor) && ! in_array($onboarding->status, ['hr_approved', 'cancelled'], true),
+            'canManageOnboardingAssets' => $this->canManageItOnboarding($actor) && $actor->canManageItAssets() && ! in_array($onboarding->status, ['hr_approved', 'cancelled'], true),
             'availableAssets' => $actor->canManageItAssets()
-                ? ItAsset::whereIn('status', ['active', 'repair'])->orderBy('code')->get()
+                ? $this->availableAssetsFor($onboarding)
                 : collect(),
         ]);
     }
@@ -60,6 +65,8 @@ class EmployeeOnboardingController extends Controller
                 'itCompleter',
                 'systems.asset',
                 'systems.provisioner',
+                'equipmentAssignments.asset',
+                'equipmentAssignments.assignedBy',
             ])
                 ->latest()
                 ->get()
@@ -195,6 +202,109 @@ class EmployeeOnboardingController extends Controller
         return back()->with('status', 'ปล่อยงานกลับเข้าคิว IT แล้ว');
     }
 
+    public function assignAsset(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canManageItOnboarding($actor) && $actor->canManageItAssets(), 403);
+        abort_if(in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true), 422);
+        abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
+
+        $data = $request->validate([
+            'it_asset_id' => ['required', 'exists:it_assets,id'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $assignment = DB::transaction(function () use ($onboarding, $actor, $data): EmployeeOnboardingAsset {
+            $asset = ItAsset::query()->lockForUpdate()->findOrFail($data['it_asset_id']);
+            $existingAssignment = EmployeeOnboardingAsset::query()
+                ->where('employee_onboarding_request_id', $onboarding->id)
+                ->where('it_asset_id', $asset->id)
+                ->first();
+            $reservedElsewhere = EmployeeOnboardingAsset::query()
+                ->where('it_asset_id', $asset->id)
+                ->where('employee_onboarding_request_id', '!=', $onboarding->id)
+                ->whereIn('status', ['reserved', 'delivered'])
+                ->exists();
+
+            if ($reservedElsewhere || filled($asset->owner_id) || filled($asset->owner_name)) {
+                throw ValidationException::withMessages([
+                    'it_asset_id' => 'อุปกรณ์นี้มีผู้ถือครองหรือถูกจองให้พนักงานคนอื่นแล้ว',
+                ]);
+            }
+
+            if (! in_array($asset->status, ['stock', 'reserved', 'active'], true)) {
+                throw ValidationException::withMessages([
+                    'it_asset_id' => 'อุปกรณ์นี้ยังไม่พร้อมสำหรับการส่งมอบ',
+                ]);
+            }
+
+            $assignment = EmployeeOnboardingAsset::updateOrCreate(
+                [
+                    'employee_onboarding_request_id' => $onboarding->id,
+                    'it_asset_id' => $asset->id,
+                ],
+                [
+                    'status' => 'reserved',
+                    'assigned_by_id' => $actor->id,
+                    'assigned_at' => now(),
+                    'delivered_at' => null,
+                    'notes' => $data['notes'] ?? $existingAssignment?->notes,
+                ],
+            );
+
+            $before = $asset->only(['status', 'owner_id', 'owner_name']);
+            $asset->update(['status' => 'reserved']);
+            $this->logEquipmentAsset($asset, $actor, 'reserve_onboarding_asset', "Reserved {$asset->code} for onboarding {$onboarding->employee_code}", $before);
+
+            $onboarding->systems()
+                ->where('system_name', 'ทรัพย์สิน')
+                ->whereNull('it_asset_id')
+                ->limit(1)
+                ->update(['it_asset_id' => $asset->id]);
+
+            return $assignment;
+        });
+
+        $onboarding->update(['status' => 'in_progress']);
+        $this->log($request, 'assign_employee_onboarding_asset', EmployeeOnboardingAsset::class, $assignment->id, "Assigned asset for onboarding {$onboarding->employee_code}");
+
+        return back()->with('status', 'จองอุปกรณ์ให้พนักงานใหม่แล้ว');
+    }
+
+    public function releaseAsset(EmployeeOnboardingRequest $onboarding, EmployeeOnboardingAsset $onboardingAsset, Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($this->canManageItOnboarding($actor) && $actor->canManageItAssets(), 403);
+        abort_unless($onboardingAsset->employee_onboarding_request_id === $onboarding->id, 404);
+        abort_unless($this->canWorkOnClaim($onboarding, $actor), 403);
+        abort_unless($onboardingAsset->status === 'reserved', 422);
+
+        DB::transaction(function () use ($onboarding, $onboardingAsset, $actor): void {
+            $assignment = EmployeeOnboardingAsset::query()->lockForUpdate()->findOrFail($onboardingAsset->id);
+            $asset = ItAsset::query()->lockForUpdate()->findOrFail($assignment->it_asset_id);
+            $before = $asset->only(['status', 'owner_id', 'owner_name']);
+
+            $assignment->update([
+                'status' => 'released',
+                'assigned_by_id' => $actor->id,
+                'delivered_at' => null,
+            ]);
+            $asset->update([
+                'status' => 'stock',
+                'owner_id' => null,
+                'owner_name' => null,
+            ]);
+            $onboarding->systems()->where('it_asset_id', $asset->id)->update(['it_asset_id' => null]);
+            $this->logEquipmentAsset($asset, $actor, 'release_onboarding_asset', "Released {$asset->code} from onboarding {$onboarding->employee_code}", $before);
+        });
+
+        $this->log($request, 'release_employee_onboarding_asset', EmployeeOnboardingAsset::class, $onboardingAsset->id, "Released asset from onboarding {$onboarding->employee_code}");
+
+        return back()->with('status', 'คืนอุปกรณ์เข้ารายการพร้อมใช้งานแล้ว');
+    }
+
     public function updateIt(EmployeeOnboardingRequest $onboarding, Request $request): RedirectResponse
     {
         $actor = $request->user()->load('role.permissions', 'permissionOverrides');
@@ -265,19 +375,40 @@ class EmployeeOnboardingController extends Controller
         abort_if(in_array($onboarding->status, ['hr_approved', 'cancel_requested', 'cancelled'], true), 422);
         abort_unless($this->claimIfAvailable($onboarding, $actor), 403);
 
-        $onboarding->load('systems.asset');
+        $onboarding->load('department', 'systems.asset', 'equipmentAssignments.asset');
 
-        foreach ($onboarding->systems as $system) {
-            if (! $system->asset) {
-                continue;
+        DB::transaction(function () use ($onboarding, $actor): void {
+            foreach ($onboarding->equipmentAssignments->where('status', 'reserved') as $assignment) {
+                if (! $assignment->asset) {
+                    continue;
+                }
+
+                $asset = ItAsset::query()->lockForUpdate()->findOrFail($assignment->it_asset_id);
+                $before = $asset->only(['status', 'owner_id', 'owner_name', 'department']);
+                $asset->update([
+                    'owner_name' => $onboarding->english_name,
+                    'department' => $onboarding->department?->name ?? $onboarding->business_unit,
+                    'status' => 'active',
+                ]);
+                $assignment->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                ]);
+                $this->logEquipmentAsset($asset, $actor, 'deliver_onboarding_asset', "Delivered {$asset->code} for onboarding {$onboarding->employee_code}", $before);
             }
 
-            $system->asset->update([
-                'owner_name' => $onboarding->english_name,
-                'department' => $onboarding->department?->name ?? $onboarding->business_unit,
-                'status' => 'active',
-            ]);
-        }
+            $firstAssetId = $onboarding->equipmentAssignments
+                ->firstWhere('status', '!=', 'released')?->it_asset_id;
+
+            $onboarding->systems()
+                ->where('system_name', 'ทรัพย์สิน')
+                ->update([
+                    'status' => $firstAssetId ? 'provisioned' : 'skipped',
+                    'it_asset_id' => $firstAssetId,
+                    'provisioned_by_id' => $actor->id,
+                    'provisioned_at' => now(),
+                ]);
+        });
 
         $onboarding->update([
             'status' => 'it_completed',
@@ -356,19 +487,30 @@ class EmployeeOnboardingController extends Controller
             'it_note' => ['nullable', 'string', 'max:3000'],
         ]);
 
-        $onboarding->load('systems.asset');
+        $onboarding->load('systems.asset', 'equipmentAssignments.asset');
 
-        foreach ($onboarding->systems as $system) {
-            if (! $system->asset) {
-                continue;
+        DB::transaction(function () use ($onboarding, $actor): void {
+            foreach ($onboarding->equipmentAssignments->whereIn('status', ['reserved', 'delivered']) as $assignment) {
+                if (! $assignment->asset) {
+                    continue;
+                }
+
+                $asset = ItAsset::query()->lockForUpdate()->findOrFail($assignment->it_asset_id);
+                $before = $asset->only(['status', 'owner_id', 'owner_name']);
+                $asset->update([
+                    'owner_id' => null,
+                    'owner_name' => null,
+                    'status' => 'stock',
+                ]);
+                $assignment->update([
+                    'status' => 'released',
+                    'delivered_at' => null,
+                ]);
+                $this->logEquipmentAsset($asset, $actor, 'cancel_onboarding_asset', "Returned {$asset->code} after onboarding cancellation {$onboarding->employee_code}", $before);
             }
 
-            $system->asset->update([
-                'owner_id' => null,
-                'owner_name' => null,
-                'status' => 'active',
-            ]);
-        }
+            $onboarding->systems()->whereNotNull('it_asset_id')->update(['it_asset_id' => null]);
+        });
 
         $onboarding->update([
             'status' => 'cancelled',
@@ -442,6 +584,17 @@ class EmployeeOnboardingController extends Controller
                 'start_date' => $onboarding->start_date,
             ],
         );
+
+        $onboarding->equipmentAssignments()
+            ->where('status', 'delivered')
+            ->with('asset')
+            ->get()
+            ->each(function (EmployeeOnboardingAsset $assignment) use ($user): void {
+                $assignment->asset?->update([
+                    'owner_id' => $user->id,
+                    'owner_name' => $user->name,
+                ]);
+            });
 
         $directory = EmployeeDirectoryEntry::updateOrCreate(
             ['source_system' => 'wdc', 'source_record_id' => $onboarding->employee_code],
@@ -535,6 +688,33 @@ class EmployeeOnboardingController extends Controller
             || $actor->canAccessAny(['admin.system.manage', 'admin.users.manage']);
     }
 
+    private function availableAssetsFor(EmployeeOnboardingRequest $onboarding): Collection
+    {
+        $currentAssetIds = $onboarding->equipmentAssignments()
+            ->whereIn('status', ['reserved', 'delivered'])
+            ->pluck('it_asset_id');
+        $busyAssetIds = EmployeeOnboardingAsset::query()
+            ->where('employee_onboarding_request_id', '!=', $onboarding->id)
+            ->whereIn('status', ['reserved', 'delivered'])
+            ->pluck('it_asset_id');
+
+        return ItAsset::query()
+            ->with('location')
+            ->whereNotIn('id', $busyAssetIds)
+            ->where(function ($query) use ($currentAssetIds): void {
+                $query->whereIn('id', $currentAssetIds)
+                    ->orWhere(function ($available): void {
+                        $available->where('status', 'stock')
+                            ->whereNull('owner_id')
+                            ->where(function ($owner): void {
+                                $owner->whereNull('owner_name')->orWhere('owner_name', '');
+                            });
+                    });
+            })
+            ->orderBy('code')
+            ->get();
+    }
+
     private function onboardingExportRows(Collection $requests): Collection
     {
         $systemColumns = [
@@ -606,12 +786,36 @@ class EmployeeOnboardingController extends Controller
 
     private function assetSummary(EmployeeOnboardingRequest $request): string
     {
+        $equipmentAssets = $request->equipmentAssignments
+            ->where('status', '!=', 'released')
+            ->pluck('asset')
+            ->filter()
+            ->map(fn (ItAsset $asset): string => trim("{$asset->code} {$asset->name}"))
+            ->filter()
+            ->join(', ');
+
+        if ($equipmentAssets !== '') {
+            return $equipmentAssets;
+        }
+
         return $request->systems
             ->pluck('asset')
             ->filter()
             ->map(fn (ItAsset $asset): string => trim("{$asset->code} {$asset->name}"))
             ->filter()
             ->join(', ');
+    }
+
+    private function logEquipmentAsset(ItAsset $asset, User $actor, string $action, string $summary, array $before): void
+    {
+        AssetAuditLog::create([
+            'it_asset_id' => $asset->id,
+            'user_id' => $actor->id,
+            'action' => $action,
+            'summary' => $summary,
+            'before' => $before,
+            'after' => $asset->only(['status', 'owner_id', 'owner_name', 'department']),
+        ]);
     }
 
     private function streamOnboardingCsv(Collection $rows): StreamedResponse

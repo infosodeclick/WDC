@@ -6,7 +6,7 @@
 <div class="asset-page-toolbar mb-3">
     <div class="asset-page-title">
         <h1>INVENTORY</h1>
-        <span>{{ number_format($assets->total()) }} รายการ</span>
+        <span>{{ number_format($assets->total()) }} รายการ · พร้อมใช้ {{ number_format($stockAssetCount) }} · จอง {{ number_format($reservedAssetCount) }}</span>
     </div>
     <div class="asset-toolbar-actions">
     @if($canManageAssets)
@@ -77,6 +77,8 @@
             </label>
             <label>สถานะ
                 <select class="form-select" name="status">
+                    <option value="stock">พร้อมใช้งาน</option>
+                    <option value="reserved">จองให้พนักงานใหม่</option>
                     <option value="active">ใช้งานอยู่</option>
                     <option value="repair">ส่งซ่อม</option>
                     <option value="lost">สูญหาย</option>
@@ -411,7 +413,7 @@
                 <div class="modal-body stack-form">
                     <label>สถานะ
                         <select class="form-select" name="status" data-asset-status-select>
-                            @foreach(['active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
+                            @foreach(['stock' => 'พร้อมใช้งาน', 'reserved' => 'จองให้พนักงานใหม่', 'active' => 'ใช้งานอยู่', 'repair' => 'ส่งซ่อม', 'lost' => 'สูญหาย', 'retired' => 'จำหน่าย/เลิกใช้'] as $key => $label)
                                 <option value="{{ $key }}">{{ $label }}</option>
                             @endforeach
                         </select>

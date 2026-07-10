@@ -3789,6 +3789,23 @@ body.directory-modal-open {
     margin-top: 8px;
 }
 
+.onboarding-equipment-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: .86rem;
+}
+
+.onboarding-equipment-summary .summary-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink);
+    font-weight: 800;
+}
+
 .onboarding-system-summary span {
     padding: 8px 10px;
 }
@@ -4203,6 +4220,75 @@ body.directory-modal-open {
     white-space: nowrap;
 }
 
+.onboarding-equipment-box {
+    display: grid;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.onboarding-equipment-box .section-title {
+    margin-bottom: 0;
+}
+
+.onboarding-equipment-list {
+    display: grid;
+    gap: 8px;
+}
+
+.onboarding-equipment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.onboarding-equipment-main {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+}
+
+.onboarding-equipment-main strong,
+.onboarding-equipment-main small {
+    overflow-wrap: anywhere;
+}
+
+.onboarding-equipment-main small {
+    color: var(--muted);
+}
+
+.onboarding-equipment-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.onboarding-equipment-picker {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.2fr) minmax(200px, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+}
+
+.onboarding-equipment-picker label {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.compact-empty-state {
+    min-height: 0;
+    padding: 14px;
+}
+
 .employee-registry-table-wrap,
 .it-access-table-wrap {
     border: 1px solid var(--line);
@@ -4515,12 +4601,15 @@ body.directory-modal-open {
     background: #ecfdf3;
 }
 
+.status-stock,
+.status-delivered,
 .status-active,
 .status-closed {
     color: #067647;
     background: #ecfdf3;
 }
 
+.status-reserved,
 .status-repair,
 .status-expiring,
 .status-open {
@@ -4537,6 +4626,11 @@ body.directory-modal-open {
 }
 
 .status-retired {
+    color: #344054;
+    background: #eef2f7;
+}
+
+.status-released {
     color: #344054;
     background: #eef2f7;
 }
@@ -5727,6 +5821,11 @@ body.directory-modal-open {
 
     .onboarding-queue-actions {
         justify-content: flex-start;
+    }
+
+    .onboarding-equipment-picker {
+        grid-template-columns: 1fr;
+        align-items: stretch;
     }
 }
 

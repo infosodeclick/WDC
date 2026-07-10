@@ -113,6 +113,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'show'])->name('onboarding.show');
     Route::patch('/it/onboarding/{onboarding}/claim', [EmployeeOnboardingController::class, 'claim'])->name('it.onboarding.claim');
     Route::patch('/it/onboarding/{onboarding}/release', [EmployeeOnboardingController::class, 'release'])->name('it.onboarding.release');
+    Route::post('/it/onboarding/{onboarding}/assets', [EmployeeOnboardingController::class, 'assignAsset'])->name('it.onboarding.assets.store');
+    Route::delete('/it/onboarding/{onboarding}/assets/{onboardingAsset}', [EmployeeOnboardingController::class, 'releaseAsset'])->name('it.onboarding.assets.destroy');
     Route::patch('/it/onboarding/{onboarding}', [EmployeeOnboardingController::class, 'updateIt'])->name('it.onboarding.update');
     Route::patch('/it/onboarding/{onboarding}/complete', [EmployeeOnboardingController::class, 'completeIt'])->name('it.onboarding.complete');
     Route::patch('/it/onboarding/{onboarding}/cancel', [EmployeeOnboardingController::class, 'confirmCancel'])->name('it.onboarding.cancel');

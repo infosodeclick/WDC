@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOffboardingSystem;
+use App\Models\EmployeeOnboardingAsset;
 use App\Models\ItAsset;
 use App\Models\User;
 use App\Services\PortalNotificationService;
@@ -210,8 +211,16 @@ class EmployeeOffboardingController extends Controller
                 $system->asset->update([
                     'owner_id' => null,
                     'owner_name' => null,
-                    'status' => 'active',
+                    'status' => 'stock',
                 ]);
+
+                EmployeeOnboardingAsset::query()
+                    ->where('it_asset_id', $system->asset->id)
+                    ->where('status', 'delivered')
+                    ->update([
+                        'status' => 'released',
+                        'updated_at' => now(),
+                    ]);
             }
         }
 

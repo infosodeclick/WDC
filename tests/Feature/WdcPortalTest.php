@@ -7,6 +7,7 @@ use App\Models\Complaint;
 use App\Models\EmployeeDirectoryEntry;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeOffboardingRequest;
+use App\Models\EmployeeOnboardingAsset;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\Announcement;
 use App\Models\AnnouncementFile;
@@ -860,6 +861,9 @@ class WdcPortalTest extends TestCase
         $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
         $departmentId = $hr->employee->department_id;
         $asset = ItAsset::where('code', 'WDC-NB-0001')->firstOrFail();
+        $secondAsset = ItAsset::where('code', 'WDC-RT-0001')->firstOrFail();
+        $asset->update(['status' => 'stock', 'owner_id' => null, 'owner_name' => null]);
+        $secondAsset->update(['status' => 'stock', 'owner_id' => null, 'owner_name' => null]);
 
         $this->actingAs($hr);
 
@@ -930,7 +934,6 @@ class WdcPortalTest extends TestCase
             ->assertSee('รับงาน');
 
         $emailSystem = $onboarding->systems->firstWhere('system_name', 'EMAIL');
-        $assetSystem = $onboarding->systems->firstWhere('system_name', 'ทรัพย์สิน');
 
         $this->actingAs($itUser);
 
@@ -942,9 +945,31 @@ class WdcPortalTest extends TestCase
             ->assertSee('รับงานโดย')
             ->assertSee('รหัสเข้าใช้งาน WDC')
             ->assertSee('Domain / Email อ้างอิง')
-            ->assertSee('เลือกทรัพย์สิน')
+            ->assertSee('เลือกอุปกรณ์พร้อมใช้งาน')
             ->assertSee('บันทึกข้อมูล IT')
             ->assertSee('อนุมัติเปิดระบบและส่งกลับ HR');
+
+        $this->post(route('it.onboarding.assets.store', $onboarding), [
+            'it_asset_id' => $asset->id,
+            'notes' => 'Notebook หลัก',
+        ])->assertRedirect();
+        $this->post(route('it.onboarding.assets.store', $onboarding), [
+            'it_asset_id' => $secondAsset->id,
+            'notes' => 'อุปกรณ์เครือข่าย',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('employee_onboarding_assets', [
+            'employee_onboarding_request_id' => $onboarding->id,
+            'it_asset_id' => $asset->id,
+            'status' => 'reserved',
+            'assigned_by_id' => $itUser->id,
+        ]);
+        $this->assertDatabaseHas('employee_onboarding_assets', [
+            'employee_onboarding_request_id' => $onboarding->id,
+            'it_asset_id' => $secondAsset->id,
+            'status' => 'reserved',
+        ]);
+        $this->assertSame('reserved', $asset->fresh()->status);
 
         $this->patch(route('it.onboarding.update', $onboarding), [
             'systems' => [
@@ -953,11 +978,6 @@ class WdcPortalTest extends TestCase
                     'username' => 'new.starter',
                     'email' => 'new.starter@wdc.co.th',
                     'notes' => 'เปิดอีเมลแล้ว',
-                ],
-                $assetSystem->id => [
-                    'status' => 'provisioned',
-                    'it_asset_id' => $asset->id,
-                    'notes' => 'มอบเครื่องแล้ว',
                 ],
             ],
             'it_note' => 'พร้อมให้ HR ตรวจสอบ',
@@ -987,6 +1007,8 @@ class WdcPortalTest extends TestCase
         $this->assertStringContainsString('EMP77777', $exportContent);
         $this->assertStringContainsString('E-Mail by', $exportContent);
         $this->assertStringContainsString($itUser->name, $exportContent);
+        $this->assertStringContainsString($asset->code, $exportContent);
+        $this->assertStringContainsString($secondAsset->code, $exportContent);
 
         $this->get(route('it.index'))
             ->assertOk()
@@ -1008,6 +1030,12 @@ class WdcPortalTest extends TestCase
         $this->patch(route('it.onboarding.complete', $onboarding))->assertRedirect();
 
         $this->assertSame('it_completed', $onboarding->fresh()->status);
+        $this->assertDatabaseHas('employee_onboarding_assets', [
+            'employee_onboarding_request_id' => $onboarding->id,
+            'it_asset_id' => $asset->id,
+            'status' => 'delivered',
+        ]);
+        $this->assertSame('active', $asset->fresh()->status);
 
         $this->actingAs($hr);
         $displayDate = now()->addDay()->toDateString();
@@ -1040,6 +1068,7 @@ class WdcPortalTest extends TestCase
             'is_active' => true,
         ]);
         $this->assertSame($createdUser->id, $asset->fresh()->owner_id);
+        $this->assertSame($createdUser->id, $secondAsset->fresh()->owner_id);
 
         $this->get(route('hr.index', ['section' => 'employees']))
             ->assertOk()
@@ -1073,6 +1102,64 @@ class WdcPortalTest extends TestCase
         $this->get(route('search', ['q' => 'New Starter']))
             ->assertOk()
             ->assertSee('<strong>New Starter</strong>', false);
+    }
+
+    public function test_onboarding_asset_reservation_prevents_duplicate_it_assignment_and_can_be_released(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $administrator = User::where('employee_code', 'administrator')->firstOrFail();
+        $asset = ItAsset::where('code', 'WDC-NB-0001')->firstOrFail();
+        $asset->update(['status' => 'stock', 'owner_id' => null, 'owner_name' => null]);
+
+        $first = EmployeeOnboardingRequest::create([
+            'requested_by' => $administrator->id,
+            'claimed_by_id' => $itUser->id,
+            'employee_code' => 'EMP88001',
+            'english_name' => 'First Starter',
+            'status' => 'in_progress',
+            'claimed_at' => now(),
+        ]);
+        $second = EmployeeOnboardingRequest::create([
+            'requested_by' => $administrator->id,
+            'claimed_by_id' => $administrator->id,
+            'employee_code' => 'EMP88002',
+            'english_name' => 'Second Starter',
+            'status' => 'in_progress',
+            'claimed_at' => now(),
+        ]);
+
+        $this->actingAs($itUser)
+            ->post(route('it.onboarding.assets.store', $first), ['it_asset_id' => $asset->id])
+            ->assertRedirect();
+
+        $this->actingAs($administrator)
+            ->post(route('it.onboarding.assets.store', $second), ['it_asset_id' => $asset->id])
+            ->assertSessionHasErrors('it_asset_id');
+
+        $this->assertDatabaseMissing('employee_onboarding_assets', [
+            'employee_onboarding_request_id' => $second->id,
+            'it_asset_id' => $asset->id,
+        ]);
+
+        $assignment = $first->equipmentAssignments()->firstOrFail();
+
+        $this->actingAs($itUser)
+            ->delete(route('it.onboarding.assets.destroy', [$first, $assignment]))
+            ->assertRedirect();
+
+        $this->assertSame('stock', $asset->fresh()->status);
+
+        $this->actingAs($administrator)
+            ->post(route('it.onboarding.assets.store', $second), ['it_asset_id' => $asset->id])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('employee_onboarding_assets', [
+            'employee_onboarding_request_id' => $second->id,
+            'it_asset_id' => $asset->id,
+            'status' => 'reserved',
+        ]);
     }
 
     public function test_hr_can_cancel_onboarding_before_it_starts(): void
@@ -2721,6 +2808,21 @@ class WdcPortalTest extends TestCase
             'owner_id' => $employee->id,
             'owner_name' => $employee->name,
         ]);
+        $originalOnboarding = EmployeeOnboardingRequest::create([
+            'requested_by' => $hr->id,
+            'user_id' => $employee->id,
+            'employee_code' => $employee->employee_code,
+            'english_name' => $employee->name,
+            'status' => 'hr_approved',
+        ]);
+        $originalAssignment = EmployeeOnboardingAsset::create([
+            'employee_onboarding_request_id' => $originalOnboarding->id,
+            'it_asset_id' => $asset->id,
+            'status' => 'delivered',
+            'assigned_by_id' => $itUser->id,
+            'assigned_at' => now()->subDay(),
+            'delivered_at' => now()->subDay(),
+        ]);
 
         $this->actingAs($hr);
 
@@ -2778,6 +2880,8 @@ class WdcPortalTest extends TestCase
         $this->patch(route('it.offboarding.complete', $offboarding))->assertRedirect();
         $this->assertSame('it_completed', $offboarding->fresh()->status);
         $this->assertNull($asset->fresh()->owner_id);
+        $this->assertSame('stock', $asset->fresh()->status);
+        $this->assertSame('released', $originalAssignment->fresh()->status);
 
         $this->actingAs($hr);
 

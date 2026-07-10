@@ -44,14 +44,14 @@ class TicketController extends Controller
             'doneTickets' => (clone $workflowScope)->whereIn('status', ItHelpdeskWorkflow::DONE_STATUSES)->count(),
             'requests' => (clone $workflowScope)->paginate(12),
             'onboardingRequests' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
-                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy')
+                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'equipmentAssignments.asset', 'equipmentAssignments.assignedBy', 'requester', 'claimedBy')
                     ->whereIn('status', ['pending_it', 'in_progress', 'it_completed', 'cancel_requested'])
                     ->latest()
                     ->take(12)
                     ->get()
                 : collect(),
             'itEmployeeAccessRows' => $user->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])
-                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'requester', 'claimedBy', 'itCompleter')
+                ? EmployeeOnboardingRequest::with('department', 'systems.asset', 'systems.provisioner', 'equipmentAssignments.asset', 'equipmentAssignments.assignedBy', 'requester', 'claimedBy', 'itCompleter')
                     ->whereNotIn('status', ['cancelled'])
                     ->latest('updated_at')
                     ->take(80)
@@ -65,7 +65,7 @@ class TicketController extends Controller
                     ->get()
                 : collect(),
             'availableAssets' => $user->canManageItAssets()
-                ? ItAsset::whereIn('status', ['active', 'repair'])->orderBy('code')->get()
+                ? ItAsset::where('status', 'stock')->whereNull('owner_id')->orderBy('code')->get()
                 : collect(),
             'itHelpdeskUrl' => $helpdesk->route(),
         ]);

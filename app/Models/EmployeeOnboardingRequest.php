@@ -112,6 +112,11 @@ class EmployeeOnboardingRequest extends Model
         return $this->hasMany(EmployeeOnboardingSystem::class);
     }
 
+    public function equipmentAssignments(): HasMany
+    {
+        return $this->hasMany(EmployeeOnboardingAsset::class);
+    }
+
     public function statusLabel(): string
     {
         return [

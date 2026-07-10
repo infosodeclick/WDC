@@ -11,7 +11,7 @@ class ItAsset extends Model
 {
     use HasFactory;
 
-    public const STATUSES = ['active', 'repair', 'lost', 'retired'];
+    public const STATUSES = ['stock', 'reserved', 'active', 'repair', 'lost', 'retired'];
 
     protected $fillable = [
         'asset_category_id',
@@ -63,9 +63,16 @@ class ItAsset extends Model
         return $this->hasMany(AssetAuditLog::class);
     }
 
+    public function onboardingAssignments(): HasMany
+    {
+        return $this->hasMany(EmployeeOnboardingAsset::class);
+    }
+
     public function statusLabel(): string
     {
         return [
+            'stock' => 'พร้อมใช้งาน',
+            'reserved' => 'จองให้พนักงานใหม่',
             'active' => 'ใช้งานอยู่',
             'repair' => 'ส่งซ่อม',
             'lost' => 'สูญหาย',

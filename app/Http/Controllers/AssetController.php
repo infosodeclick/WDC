@@ -27,6 +27,8 @@ class AssetController extends Controller
         $query = ItAsset::with('category', 'location', 'owner.employee.department');
         return view('assets.index', [
             'assets' => $query->latest()->paginate(12),
+            'stockAssetCount' => ItAsset::where('status', 'stock')->count(),
+            'reservedAssetCount' => ItAsset::where('status', 'reserved')->count(),
             'categories' => AssetCategory::withCount('assets')->orderBy('code')->get(),
             'locations' => AssetLocation::withCount('assets')->orderBy('code')->get(),
             'inspectionDocuments' => AssetInspectionDocument::with('location', 'creator')->latest('inspection_date')->take(8)->get(),

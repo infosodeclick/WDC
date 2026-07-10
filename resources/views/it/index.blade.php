@@ -42,6 +42,7 @@
                 $canEditChecklist = $claimedByMe && ! in_array($onboarding->status, ['it_completed', 'hr_approved', 'cancel_requested', 'cancelled'], true);
                 $systemTotal = $onboarding->systems->count();
                 $systemReady = $onboarding->systems->where('status', 'provisioned')->count();
+                $equipmentActive = $onboarding->equipmentAssignments->where('status', '!=', 'released');
             @endphp
             <article class="list-card onboarding-queue-card">
                 <div class="onboarding-queue-head">
@@ -100,6 +101,18 @@
                     @endif
                 </div>
 
+                <div class="onboarding-equipment-summary">
+                    <span class="summary-label"><i class="bi bi-laptop"></i> อุปกรณ์ {{ $equipmentActive->count() }}</span>
+                    @forelse($equipmentActive->take(3) as $equipment)
+                        <span class="status-pill status-{{ $equipment->status }}">{{ $equipment->asset?->code ?? '-' }}</span>
+                    @empty
+                        <span class="muted">ยังไม่ได้จองอุปกรณ์</span>
+                    @endforelse
+                    @if($equipmentActive->count() > 3)
+                        <span class="status-pill status-soft">+{{ $equipmentActive->count() - 3 }}</span>
+                    @endif
+                </div>
+
                 <details class="onboarding-inline-details">
                     <summary>
                         <span><i class="bi bi-list-check"></i> Checklist เปิดระบบ</span>
@@ -148,17 +161,13 @@
                                         @else
                                             <input type="hidden" name="systems[{{ $system->id }}][username]" value="{{ $system->username }}">
                                             <input type="hidden" name="systems[{{ $system->id }}][email]" value="{{ $system->email }}">
-                                            <span class="muted">เลือกทรัพย์สินด้านขวา</span>
+                                            <span class="muted">จัดการอุปกรณ์ในหน้ารายละเอียด</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($isAssetSystem)
-                                            <select class="form-select form-select-sm" name="systems[{{ $system->id }}][it_asset_id]" @disabled(! $canEditChecklist)>
-                                                <option value="">ไม่ผูกทรัพย์สิน</option>
-                                                @foreach($availableAssets as $asset)
-                                                    <option value="{{ $asset->id }}" @selected($system->it_asset_id === $asset->id)>{{ $asset->code }} · {{ $asset->name }}</option>
-                                                @endforeach
-                                            </select>
+                                            <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
+                                            <a class="text-link" href="{{ route('onboarding.show', $onboarding) }}">{{ $equipmentActive->count() }} รายการ</a>
                                         @else
                                             <input type="hidden" name="systems[{{ $system->id }}][it_asset_id]" value="{{ $system->it_asset_id }}">
                                             <span class="muted">-</span>
@@ -267,7 +276,14 @@
                             </td>
                             <td data-label="ทรัพย์สิน">
                                 @php
-                                    $assets = $accessRequest->systems->pluck('asset')->filter();
+                                    $assets = $accessRequest->equipmentAssignments
+                                        ->where('status', '!=', 'released')
+                                        ->pluck('asset')
+                                        ->filter();
+
+                                    if ($assets->isEmpty()) {
+                                        $assets = $accessRequest->systems->pluck('asset')->filter();
+                                    }
                                 @endphp
                                 @forelse($assets as $asset)
                                     <span class="status-pill status-soft">{{ $asset->code }} · {{ $asset->name }}</span>
