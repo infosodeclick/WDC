@@ -752,8 +752,8 @@
         <summary class="smartflow-panel-summary">
             <span class="smartflow-panel-icon"><i class="bi bi-file-earmark-plus"></i></span>
             <span>
-                <strong>New Document</strong>
-                <small>Create a request with the same workflow fields as SmartFlow.</small>
+                <strong>สร้างเอกสารใหม่</strong>
+                <small>ใช้แบบคำขอและขั้นตอนอนุมัติที่นำมาจาก SmartFlow</small>
             </span>
             <span class="status-pill">WDC-SF Auto No.</span>
             <i class="bi bi-chevron-down smartflow-panel-chevron"></i>
@@ -853,12 +853,23 @@
                 <input class="form-control" name="workflow_files[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip">
                 <em>รองรับรูป, PDF, Word, Excel, CSV, TXT, ZIP สูงสุด 5 ไฟล์ / 10 MB ต่อไฟล์</em>
             </label>
+            <label class="span-3">
+                <span>ผู้ติดตามเอกสาร (CC)</span>
+                <select class="form-select" name="cc_recipients[]" multiple size="4">
+                    @foreach($authorizationUsers as $ccUser)
+                        <option value="{{ $ccUser->id }}" @selected(in_array($ccUser->id, old('cc_recipients', [])))>
+                            {{ $ccUser->name }} · {{ $ccUser->employee_code }} · {{ $ccUser->employee?->department?->name ?? '-' }}
+                        </option>
+                    @endforeach
+                </select>
+                <em>ผู้ติดตามจะเห็นเอกสารและได้รับแจ้งเตือน แต่ไม่มีสิทธิ์อนุมัติโดยอัตโนมัติ</em>
+            </label>
             <div class="workflow-submit-actions span-3">
                 <button class="btn btn-outline-primary" type="submit" name="submit_action" value="draft">
-                    <i class="bi bi-file-earmark"></i> Save Draft
+                    <i class="bi bi-file-earmark"></i> บันทึกฉบับร่าง
                 </button>
                 <button class="btn btn-primary" type="submit" name="submit_action" value="submit">
-                    <i class="bi bi-send"></i> Submit Document
+                    <i class="bi bi-send"></i> ส่งเอกสาร
                 </button>
             </div>
         </form>

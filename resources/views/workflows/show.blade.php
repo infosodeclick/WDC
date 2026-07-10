@@ -160,6 +160,7 @@
                 <div><dt>Workflow</dt><dd>{{ $workflowRequest->template->name }}</dd></div>
                 <div><dt>ผู้ขอ</dt><dd>{{ $workflowRequest->requester->name }}</dd></div>
                 <div><dt>ผู้รับผิดชอบ</dt><dd>{{ $workflowRequest->assignee?->name ?? $workflowRequest->assigned_group ?? '-' }}</dd></div>
+                <div><dt>ผู้ติดตาม (CC)</dt><dd>{{ $workflowRequest->watchers->pluck('name')->join(', ') ?: '-' }}</dd></div>
                 <div><dt>ความเร่งด่วน</dt><dd>{{ $workflowRequest->priorityLabel() }}</dd></div>
                 <div><dt>กำหนดเสร็จ</dt><dd>{{ $workflowRequest->due_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
             </dl>

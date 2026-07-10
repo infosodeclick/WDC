@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkflowRequest extends Model
@@ -75,6 +76,11 @@ class WorkflowRequest extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(WorkflowRequestAttachment::class)->orderBy('sort_order');
+    }
+
+    public function watchers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'workflow_request_watchers')->withTimestamps();
     }
 
     public function statusLabel(): string

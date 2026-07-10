@@ -102,6 +102,11 @@ class User extends Authenticatable
         return $this->belongsToMany(WorkflowRequest::class, 'workflow_request_favorites')->withTimestamps();
     }
 
+    public function watchedWorkflowRequests(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkflowRequest::class, 'workflow_request_watchers')->withTimestamps();
+    }
+
     public function workflowAuthorizationsGiven(): HasMany
     {
         return $this->hasMany(WorkflowAuthorization::class, 'authorizer_id');

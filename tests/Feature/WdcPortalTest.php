@@ -1870,6 +1870,43 @@ class WdcPortalTest extends TestCase
         $this->assertGreaterThan($notificationCount, \DB::table('notifications')->count());
     }
 
+    public function test_workflow_cc_recipient_can_view_document_without_approval_access(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $requester = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $watcher = User::factory()->create([
+            'role_id' => Role::where('name', 'Employee')->firstOrFail()->id,
+            'data_scope' => 'self',
+            'employee_code' => 'EMP00888',
+            'name' => 'Workflow Watcher',
+            'email' => 'workflow.watcher@wdc.co.th',
+            'is_active' => true,
+        ]);
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        $this->actingAs($requester)->post(route('workflows.store'), [
+            'workflow_template_id' => $template->id,
+            'title' => 'CC visibility request',
+            'details' => 'The watcher should be able to follow this request.',
+            'priority' => 'normal',
+            'cc_recipients' => [$watcher->id],
+        ])->assertRedirect(route('workflows.index', ['status' => 'submitted']));
+
+        $workflowRequest = WorkflowRequest::where('title', 'CC visibility request')->firstOrFail();
+        $this->assertTrue($workflowRequest->watchers()->whereKey($watcher->id)->exists());
+
+        $this->actingAs($watcher)
+            ->get(route('workflows.show', $workflowRequest))
+            ->assertOk()
+            ->assertSee('ผู้ติดตาม (CC)')
+            ->assertDontSee('บันทึกผลดำเนินการ');
+
+        $this->get(route('workflows.index'))
+            ->assertOk()
+            ->assertSee('CC visibility request');
+    }
+
     public function test_workflow_request_can_store_and_download_uploaded_attachment(): void
     {
         $this->seed(DatabaseSeeder::class);

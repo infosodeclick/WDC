@@ -63,7 +63,8 @@ class WorkflowController extends Controller
 
         if (! $canManage) {
             $query->where(function ($query) use ($user, $delegatedAuthorizerIds) {
-                $query->where('requester_id', $user->id);
+                $query->where('requester_id', $user->id)
+                    ->orWhereHas('watchers', fn ($watcherQuery) => $watcherQuery->whereKey($user->id));
 
                 if ($delegatedAuthorizerIds->isNotEmpty()) {
                     $query->orWhereIn('assigned_to', $delegatedAuthorizerIds->all());
@@ -71,9 +72,15 @@ class WorkflowController extends Controller
             });
         } elseif (! $user->canSeeAllData()) {
             if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
-                $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
+                $query->where(function ($query) use ($user) {
+                    $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id))
+                        ->orWhereHas('watchers', fn ($watcherQuery) => $watcherQuery->whereKey($user->id));
+                });
             } else {
-                $query->where('requester_id', $user->id);
+                $query->where(function ($query) use ($user) {
+                    $query->where('requester_id', $user->id)
+                        ->orWhereHas('watchers', fn ($watcherQuery) => $watcherQuery->whereKey($user->id));
+                });
             }
         }
 
@@ -163,6 +170,7 @@ class WorkflowController extends Controller
             'currentStep',
             'events.user.employee.department',
             'attachments.uploader',
+            'watchers.employee.department',
         ]);
 
         abort_unless($this->canViewWorkflow($user, $workflowRequest), 403);
@@ -195,6 +203,7 @@ class WorkflowController extends Controller
             'currentStep',
             'events.user.employee.department',
             'attachments.uploader',
+            'watchers.employee.department',
         ]);
 
         abort_unless($this->canViewWorkflow($user, $workflowRequest), 403);
@@ -278,10 +287,13 @@ class WorkflowController extends Controller
             'priority' => ['required', 'in:low,normal,high,critical'],
             'legacy_reference' => ['nullable', 'string', 'max:120'],
             'submit_action' => ['nullable', Rule::in(['draft', 'submit'])],
+            'cc_recipients' => ['nullable', 'array'],
+            'cc_recipients.*' => ['integer', 'distinct', 'exists:users,id'],
         ]);
         $attachmentLinks = $data['attachment_links'] ?? '';
         $uploadedFiles = $data['workflow_files'] ?? [];
-        unset($data['attachment_links'], $data['workflow_files'], $data['submit_action']);
+        $ccRecipientIds = collect($data['cc_recipients'] ?? [])->map(fn ($id) => (int) $id)->reject(fn (int $id) => $id === $request->user()->id)->unique()->values();
+        unset($data['attachment_links'], $data['workflow_files'], $data['submit_action'], $data['cc_recipients']);
 
         $template = WorkflowTemplate::with('steps')->findOrFail($data['workflow_template_id']);
         $firstStep = $template->steps->first();
@@ -301,6 +313,7 @@ class WorkflowController extends Controller
 
         $this->storeAttachmentLinks($workflowRequest, $attachmentLinks, $request->user(), 'wdc');
         $this->storeUploadedAttachments($workflowRequest, $uploadedFiles, $request->user(), 'wdc-upload');
+        $workflowRequest->watchers()->sync($ccRecipientIds);
 
         $workflowRequest->update([
             'document_number' => $this->generateDocumentNumber($workflowRequest),
@@ -318,6 +331,7 @@ class WorkflowController extends Controller
 
         if (! $saveAsDraft) {
             $this->notifyWorkflowManagers($workflowRequest, $template);
+            $this->notifyWorkflowWatchers($workflowRequest, $request->user());
         }
 
         return redirect()
@@ -353,6 +367,7 @@ class WorkflowController extends Controller
         ]);
 
         $this->notifyWorkflowManagers($workflowRequest->fresh('template'), $template);
+        $this->notifyWorkflowWatchers($workflowRequest, $user);
         $this->log($request, 'submit_workflow_draft', WorkflowRequest::class, $workflowRequest->id, "Submitted draft {$workflowRequest->title}");
 
         return redirect()
@@ -1040,7 +1055,9 @@ class WorkflowController extends Controller
 
     private function notifyWorkflowParticipants(WorkflowRequest $workflowRequest, User $actor, string $title, string $body): void
     {
-        collect([$workflowRequest->requester_id, $workflowRequest->assigned_to])
+        $workflowRequest->loadMissing('watchers');
+
+        collect([$workflowRequest->requester_id, $workflowRequest->assigned_to, ...$workflowRequest->watchers->pluck('id')->all()])
             ->filter(fn (?int $userId) => $userId && $userId !== $actor->id)
             ->unique()
             ->each(fn (int $userId) => $this->createWorkflowNotification([
@@ -1048,6 +1065,21 @@ class WorkflowController extends Controller
                 'type' => 'workflow',
                 'title' => $title,
                 'body' => "{$workflowRequest->document_number}: ".((string) str($body)->limit(120)),
+                'url' => route('workflows.show', $workflowRequest),
+            ]));
+    }
+
+    private function notifyWorkflowWatchers(WorkflowRequest $workflowRequest, User $actor): void
+    {
+        $workflowRequest->loadMissing('watchers');
+
+        $workflowRequest->watchers
+            ->reject(fn (User $user) => $user->id === $actor->id)
+            ->each(fn (User $user) => $this->createWorkflowNotification([
+                'user_id' => $user->id,
+                'type' => 'workflow',
+                'title' => 'มีเอกสารที่ติดตามใหม่',
+                'body' => "{$workflowRequest->document_number}: {$workflowRequest->title}",
                 'url' => route('workflows.show', $workflowRequest),
             ]));
     }
@@ -1081,6 +1113,10 @@ class WorkflowController extends Controller
         }
 
         if ($this->hasActiveAuthorizationForWorkflow($user, $workflowRequest)) {
+            return true;
+        }
+
+        if ($workflowRequest->watchers()->whereKey($user->id)->exists()) {
             return true;
         }
 
@@ -1127,7 +1163,8 @@ class WorkflowController extends Controller
 
         if (! $this->canManageWorkflows($user)) {
             return $query->where(function ($query) use ($user, $delegatedAuthorizerIds) {
-                $query->where('requester_id', $user->id);
+                $query->where('requester_id', $user->id)
+                    ->orWhereHas('watchers', fn ($watcherQuery) => $watcherQuery->whereKey($user->id));
 
                 if ($delegatedAuthorizerIds->isNotEmpty()) {
                     $query->orWhereIn('assigned_to', $delegatedAuthorizerIds->all());
@@ -1140,10 +1177,16 @@ class WorkflowController extends Controller
         }
 
         if ($user->canSeeDepartmentData() && $user->employee?->department_id) {
-            return $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id));
+            return $query->where(function ($query) use ($user) {
+                $query->whereHas('requester.employee', fn ($employeeQuery) => $employeeQuery->where('department_id', $user->employee->department_id))
+                    ->orWhereHas('watchers', fn ($watcherQuery) => $watcherQuery->whereKey($user->id));
+            });
         }
 
-        return $query->where('requester_id', $user->id);
+        return $query->where(function ($query) use ($user) {
+            $query->where('requester_id', $user->id)
+                ->orWhereHas('watchers', fn ($watcherQuery) => $watcherQuery->whereKey($user->id));
+        });
     }
 
     private function activeDelegatedAuthorizerIds(User $user)
