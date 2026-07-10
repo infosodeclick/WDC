@@ -17,7 +17,15 @@ class WorkflowRequestEvent extends Model
         'from_status',
         'to_status',
         'comment',
+        'is_internal',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_internal' => 'boolean',
+        ];
+    }
 
     public function request(): BelongsTo
     {

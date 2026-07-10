@@ -1996,17 +1996,17 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('workflows.index'))
             ->assertOk()
-            ->assertSee('smartflow-command-bar', false)
-            ->assertSee('New Document')
-            ->assertSee('Your Tasks')
-            ->assertSee('All Documents')
-            ->assertSee('Diagrams')
-            ->assertSee('Favorites')
-            ->assertSee('smartflow-diagrams', false)
+            ->assertSee('smartflow-toolbar', false)
+            ->assertSee('สร้างคำขอ')
+            ->assertSee('งานของฉัน')
+            ->assertSee('เอกสารทั้งหมด')
+            ->assertSee('รายการโปรด')
+            ->assertSee('เครื่องมือ')
             ->assertSee('Show Advanced Filters')
-            ->assertSee('workflow-create-form', false)
+            ->assertDontSee('<details class="panel smartflow-workspace-panel smartflow-create-panel"', false)
             ->assertSee('smartflow-document-card', false)
             ->assertSee('smartflow-document-summary', false)
+            ->assertSee('เปิดรายละเอียด')
             ->assertSee('Document No.')
             ->assertSee('REF:')
             ->assertSee('Flow:')
@@ -2014,6 +2014,78 @@ class WdcPortalTest extends TestCase
             ->assertSee('Current Step')
             ->assertSee('WDC-SF-NAV-00001')
             ->assertSee('SmartFlow navigation parity');
+    }
+
+    public function test_workflow_detail_keeps_internal_approval_notes_private(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        Mail::fake();
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $manager = User::where('employee_code', 'EMP00200')->firstOrFail();
+
+        $workflowRequest = WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $employee->id,
+            'assigned_to' => $manager->id,
+            'current_step_id' => $template->steps()->first()?->id,
+            'document_number' => 'WDC-SF-DETAIL-00001',
+            'title' => 'Detailed approval request',
+            'details' => 'Show the complete request on a focused page.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        $workflowRequest->events()->create([
+            'user_id' => $manager->id,
+            'action' => 'internal_comment',
+            'comment' => 'Private approver note',
+            'is_internal' => true,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('workflows.show', $workflowRequest))
+            ->assertOk()
+            ->assertSee('Detailed approval request')
+            ->assertSee('รายงาน/พิมพ์ PDF')
+            ->assertDontSee('Private approver note');
+
+        $this->actingAs($employee)
+            ->get(route('workflows.report', $workflowRequest))
+            ->assertOk()
+            ->assertDontSee('Private approver note');
+
+        $this->actingAs($employee)
+            ->post(route('workflows.requests.favorite', $workflowRequest))
+            ->assertRedirect();
+
+        $this->actingAs($employee)
+            ->get(route('workflows.index', ['view' => 'favorites']))
+            ->assertOk()
+            ->assertSee('Detailed approval request');
+
+        $this->actingAs($manager)
+            ->get(route('workflows.show', $workflowRequest))
+            ->assertOk()
+            ->assertSee('Private approver note')
+            ->assertSee('หมายเหตุภายใน');
+
+        $this->actingAs($manager)
+            ->patch(route('workflows.status', $workflowRequest), [
+                'status' => 'in_review',
+                'comment' => 'Request accepted for review.',
+                'internal_comment' => 'Coordinate with the infrastructure team.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('workflow_request_events', [
+            'workflow_request_id' => $workflowRequest->id,
+            'action' => 'internal_comment',
+            'comment' => 'Coordinate with the infrastructure team.',
+            'is_internal' => true,
+        ]);
     }
 
     public function test_user_can_create_and_revoke_smartflow_approval_authorization(): void
@@ -2172,13 +2244,55 @@ class WdcPortalTest extends TestCase
         $this->get(route('workflows.index', ['view' => 'dynamic_fields']))
             ->assertOk()
             ->assertSee('Dynamic Fields')
-            ->assertSee('Configure workflow custom fields')
-            ->assertSee('Create New Field')
+            ->assertSee('จัดการฟิลด์ในแบบคำขอ')
+            ->assertSee('เพิ่มฟิลด์ใหม่')
             ->assertSee('IT Helpdesk')
             ->assertSee('Checkbox')
-            ->assertSee('Preview')
-            ->assertSee('Edit')
-            ->assertSee('Delete');
+            ->assertSee('แก้ไข')
+            ->assertSee('ยืนยันลบฟิลด์')
+            ->assertDontSee('type="button" disabled', false);
+    }
+
+    public function test_super_admin_can_create_update_and_delete_workflow_dynamic_field(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post(route('login.store'), [
+            'employee_code' => 'EMP09999',
+            'password' => 'password123',
+        ]);
+
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        $this->post(route('workflows.fields.store', $template), [
+            'field_key' => 'cost_center_test',
+            'field_label' => 'Cost Center',
+            'field_type' => 'select',
+            'field_help' => 'Select a cost center.',
+            'field_options' => "HQ\nBranch",
+            'field_required' => '1',
+        ])->assertRedirect(route('workflows.index', ['view' => 'dynamic_fields']));
+
+        $field = collect($template->refresh()->form_schema['fields'] ?? [])->firstWhere('key', 'cost_center_test');
+        $this->assertSame('Cost Center', $field['label']);
+        $this->assertSame(['HQ', 'Branch'], $field['options']);
+        $this->assertTrue($field['required']);
+
+        $this->patch(route('workflows.fields.update', ['template' => $template, 'fieldKey' => 'cost_center_test']), [
+            'field_label' => 'Cost Center Updated',
+            'field_type' => 'text',
+            'field_help' => 'Updated help.',
+        ])->assertRedirect(route('workflows.index', ['view' => 'dynamic_fields']));
+
+        $field = collect($template->refresh()->form_schema['fields'] ?? [])->firstWhere('key', 'cost_center_test');
+        $this->assertSame('Cost Center Updated', $field['label']);
+        $this->assertSame('text', $field['type']);
+        $this->assertFalse($field['required']);
+
+        $this->delete(route('workflows.fields.destroy', ['template' => $template, 'fieldKey' => 'cost_center_test']))
+            ->assertRedirect(route('workflows.index', ['view' => 'dynamic_fields']));
+
+        $this->assertNull(collect($template->refresh()->form_schema['fields'] ?? [])->firstWhere('key', 'cost_center_test'));
     }
 
     public function test_workflow_user_list_and_permission_map_match_smartflow_admin_menus(): void
@@ -2245,10 +2359,10 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
-        $this->get(route('workflows.index'))
+        $this->get(route('workflows.index', ['view' => 'workflows']))
             ->assertOk()
-            ->assertSee('Developer/IT support Flow')
-            ->assertSee('#smartflow-workflow-13', false);
+            ->assertSee('Developer/IT support')
+            ->assertSee('id="smartflow-workflow-13"', false);
     }
 
     public function test_regular_employee_does_not_see_smartflow_admin_menus(): void

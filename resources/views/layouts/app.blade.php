@@ -14,7 +14,7 @@
     $currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department');
     $helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0);
     $isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId;
-    $hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*') || request()->routeIs('approvals.*') || request()->routeIs('reports.*');
+    $hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('workflows.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*') || request()->routeIs('approvals.*') || request()->routeIs('reports.*');
     $canShowItNav = $currentUser?->canAccessAny(['it.portal.view', 'tickets.manage', 'it.onboarding.manage']);
     $canShowInventoryNav = $currentUser?->canAccessItAssets();
     $canShowHrNav = $currentUser?->canAccessAny(['hr.portal.view', 'hr.onboarding.manage', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']);

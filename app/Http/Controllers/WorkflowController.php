@@ -19,6 +19,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class WorkflowController extends Controller
@@ -32,8 +33,12 @@ class WorkflowController extends Controller
         $templateId = $request->integer('template');
         $search = trim($request->string('q')->toString());
         $activeView = $this->activeSmartflowView($request);
+        if (($this->smartflowMenuTabs()[$activeView]['manage_only'] ?? false) && ! $canManage) {
+            $activeView = 'all';
+        }
         $advancedFilters = $this->workflowFilterData($request);
         $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
+        $favoriteRequestIds = $user->favoriteWorkflowRequests()->pluck('workflow_requests.id');
         $delegatedAuthorizerIds = $this->activeDelegatedAuthorizerIds($user);
         $statisticsData = $activeView === 'statistics' ? $this->workflowStatisticsData($user) : [
             'summary' => [],
@@ -93,7 +98,7 @@ class WorkflowController extends Controller
         }
 
         $this->applyWorkflowFilters($query, $advancedFilters, $canManage);
-        $this->applySmartflowView($query, $activeView, $user, $favoriteTemplateIds);
+        $this->applySmartflowView($query, $activeView, $user, $favoriteRequestIds);
 
         $templates = WorkflowTemplate::with('steps')
             ->where('is_active', true)
@@ -101,9 +106,7 @@ class WorkflowController extends Controller
             ->get();
 
         return view('workflows.index', [
-            'templates' => $activeView === 'favorites'
-                ? $templates->whereIn('id', $favoriteTemplateIds)
-                : $templates,
+            'templates' => $templates,
             'templateCatalog' => $templates,
             'requests' => $query->paginate(12)->withQueryString(),
             'statusLabels' => WorkflowRequest::statusLabels(),
@@ -139,6 +142,7 @@ class WorkflowController extends Controller
             'activeRequesterId' => (int) ($advancedFilters['requester'] ?? 0),
             'activeAssigneeId' => (int) ($advancedFilters['assignee'] ?? 0),
             'favoriteTemplateIds' => $favoriteTemplateIds,
+            'favoriteRequestIds' => $favoriteRequestIds,
             'importHeaders' => $this->smartflowImportHeaders(),
             'metrics' => [
                 'submitted' => (clone $this->scopedWorkflowQuery($user))->where('status', 'submitted')->count(),
@@ -146,6 +150,62 @@ class WorkflowController extends Controller
                 'completed' => (clone $this->scopedWorkflowQuery($user))->whereIn('status', ['approved', 'completed'])->count(),
                 'overdue' => (clone $this->scopedWorkflowQuery($user))->whereNotIn('status', ['approved', 'rejected', 'completed', 'cancelled'])->whereNotNull('due_at')->where('due_at', '<', now())->count(),
             ],
+        ]);
+    }
+
+    public function show(WorkflowRequest $workflowRequest, Request $request): View
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+        $workflowRequest->load([
+            'template.steps',
+            'requester.employee.department',
+            'assignee.employee.department',
+            'currentStep',
+            'events.user.employee.department',
+            'attachments.uploader',
+        ]);
+
+        abort_unless($this->canViewWorkflow($user, $workflowRequest), 403);
+
+        $canManage = $this->canManageWorkflows($user);
+        $canAct = $this->canActOnWorkflow($user, $workflowRequest);
+
+        return view('workflows.show', [
+            'workflowRequest' => $workflowRequest,
+            'events' => $canAct
+                ? $workflowRequest->events
+                : $workflowRequest->events->where('is_internal', false),
+            'statusLabels' => WorkflowRequest::statusLabels(),
+            'canAct' => $canAct,
+            'canManage' => $canManage,
+            'manageableUsers' => $canManage
+                ? User::with('employee.department')->where('is_active', true)->orderBy('name')->get()
+                : collect(),
+            'isFavorite' => $user->favoriteWorkflowRequests()->whereKey($workflowRequest->id)->exists(),
+        ]);
+    }
+
+    public function report(WorkflowRequest $workflowRequest, Request $request): View
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+        $workflowRequest->load([
+            'template.steps',
+            'requester.employee.department',
+            'assignee.employee.department',
+            'currentStep',
+            'events.user.employee.department',
+            'attachments.uploader',
+        ]);
+
+        abort_unless($this->canViewWorkflow($user, $workflowRequest), 403);
+
+        $canAct = $this->canActOnWorkflow($user, $workflowRequest);
+
+        return view('workflows.report', [
+            'workflowRequest' => $workflowRequest,
+            'events' => $canAct
+                ? $workflowRequest->events
+                : $workflowRequest->events->where('is_internal', false),
         ]);
     }
 
@@ -311,6 +371,7 @@ class WorkflowController extends Controller
             'assigned_to' => ['nullable', 'exists:users,id'],
             'due_at' => ['nullable', 'date'],
             'comment' => ['nullable', 'string', 'max:2000'],
+            'internal_comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $fromStatus = $workflowRequest->status;
@@ -334,12 +395,24 @@ class WorkflowController extends Controller
             'comment' => $data['comment'] ?? null,
         ]);
 
+        if (! empty($data['internal_comment'])) {
+            WorkflowRequestEvent::create([
+                'workflow_request_id' => $workflowRequest->id,
+                'user_id' => $request->user()->id,
+                'action' => 'internal_comment',
+                'from_status' => $fromStatus,
+                'to_status' => $data['status'],
+                'comment' => $data['internal_comment'],
+                'is_internal' => true,
+            ]);
+        }
+
         $this->createWorkflowNotification([
             'user_id' => $workflowRequest->requester_id,
             'type' => 'workflow',
             'title' => 'สถานะคำขอเปลี่ยนแล้ว',
             'body' => "{$workflowRequest->title}: {$workflowRequest->statusLabel()}",
-            'url' => route('workflows.index'),
+            'url' => route('workflows.show', $workflowRequest),
         ]);
 
         $this->log($request, 'update_workflow_status', WorkflowRequest::class, $workflowRequest->id, "Changed workflow status to {$data['status']}");
@@ -356,6 +429,27 @@ class WorkflowController extends Controller
         $this->log($request, 'toggle_workflow_favorite', WorkflowTemplate::class, $template->id, "Toggled favorite {$template->name}");
 
         return back()->with('status', 'อัปเดตรายการโปรดแล้ว');
+    }
+
+    public function toggleRequestFavorite(WorkflowRequest $workflowRequest, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
+        $workflowRequest->loadMissing('requester.employee.department');
+
+        abort_unless($this->canViewWorkflow($user, $workflowRequest), 403);
+
+        $user->favoriteWorkflowRequests()->toggle([$workflowRequest->id]);
+        $isFavorite = $user->favoriteWorkflowRequests()->whereKey($workflowRequest->id)->exists();
+
+        $this->log(
+            $request,
+            'toggle_workflow_request_favorite',
+            WorkflowRequest::class,
+            $workflowRequest->id,
+            ($isFavorite ? 'Favorited ' : 'Unfavorited ').$workflowRequest->document_number
+        );
+
+        return back()->with('status', $isFavorite ? 'เพิ่มเอกสารในรายการโปรดแล้ว' : 'นำเอกสารออกจากรายการโปรดแล้ว');
     }
 
     public function comment(WorkflowRequest $workflowRequest, Request $request): RedirectResponse
@@ -545,6 +639,77 @@ class WorkflowController extends Controller
         return back()->with('status', 'อัปเดต workflow template แล้ว');
     }
 
+    public function storeTemplateField(WorkflowTemplate $template, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides');
+        abort_unless($user->canAccess('admin.system.manage'), 403);
+
+        $field = $this->validateWorkflowField($request, true);
+        $schema = $template->form_schema ?? [];
+        $fields = collect($schema['fields'] ?? []);
+
+        if ($fields->contains(fn (array|string $existing) => is_array($existing) && ($existing['key'] ?? '') === $field['key'])) {
+            throw ValidationException::withMessages(['field_key' => 'รหัสฟิลด์นี้มีอยู่แล้วใน Workflow']);
+        }
+
+        $schema['fields'] = $fields->push($field)->values()->all();
+        $template->update(['form_schema' => $schema]);
+
+        $this->log($request, 'create_workflow_field', WorkflowTemplate::class, $template->id, "Created field {$field['key']} on {$template->name}");
+
+        return redirect()->route('workflows.index', ['view' => 'dynamic_fields'])->with('status', 'เพิ่มฟิลด์ใน Workflow แล้ว');
+    }
+
+    public function updateTemplateField(WorkflowTemplate $template, string $fieldKey, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides');
+        abort_unless($user->canAccess('admin.system.manage'), 403);
+
+        $updatedField = $this->validateWorkflowField($request, false, $fieldKey);
+        $schema = $template->form_schema ?? [];
+        $found = false;
+
+        $schema['fields'] = collect($schema['fields'] ?? [])
+            ->map(function (array|string $field) use ($fieldKey, $updatedField, &$found) {
+                if (is_array($field) && ($field['key'] ?? '') === $fieldKey) {
+                    $found = true;
+
+                    return $updatedField;
+                }
+
+                return $field;
+            })
+            ->values()
+            ->all();
+
+        abort_unless($found, 404);
+        $template->update(['form_schema' => $schema]);
+
+        $this->log($request, 'update_workflow_field', WorkflowTemplate::class, $template->id, "Updated field {$fieldKey} on {$template->name}");
+
+        return redirect()->route('workflows.index', ['view' => 'dynamic_fields'])->with('status', 'อัปเดตฟิลด์แล้ว');
+    }
+
+    public function destroyTemplateField(WorkflowTemplate $template, string $fieldKey, Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('role.permissions', 'permissionOverrides');
+        abort_unless($user->canAccess('admin.system.manage'), 403);
+
+        $schema = $template->form_schema ?? [];
+        $fields = collect($schema['fields'] ?? []);
+        abort_unless($fields->contains(fn (array|string $field) => is_array($field) && ($field['key'] ?? '') === $fieldKey), 404);
+
+        $schema['fields'] = $fields
+            ->reject(fn (array|string $field) => is_array($field) && ($field['key'] ?? '') === $fieldKey)
+            ->values()
+            ->all();
+        $template->update(['form_schema' => $schema]);
+
+        $this->log($request, 'delete_workflow_field', WorkflowTemplate::class, $template->id, "Deleted field {$fieldKey} from {$template->name}");
+
+        return redirect()->route('workflows.index', ['view' => 'dynamic_fields'])->with('status', 'ลบฟิลด์แล้ว');
+    }
+
     public function syncSmartflowCatalog(Request $request, SmartflowWorkflowCatalog $catalog): RedirectResponse
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides');
@@ -567,7 +732,7 @@ class WorkflowController extends Controller
         $templateId = $request->integer('template');
         $search = trim($request->string('q')->toString());
         $activeView = $this->activeSmartflowView($request);
-        $favoriteTemplateIds = $user->favoriteWorkflowTemplates()->pluck('workflow_templates.id');
+        $favoriteRequestIds = $user->favoriteWorkflowRequests()->pluck('workflow_requests.id');
         $advancedFilters = $this->workflowFilterData($request);
 
         $rows = $this->scopedWorkflowQuery($user)
@@ -595,7 +760,7 @@ class WorkflowController extends Controller
         }
 
         $this->applyWorkflowFilters($rows, $advancedFilters, true);
-        $this->applySmartflowView($rows, $activeView, $user, $favoriteTemplateIds);
+        $this->applySmartflowView($rows, $activeView, $user, $favoriteRequestIds);
 
         $rows = $rows
             ->limit(2000)
@@ -645,6 +810,31 @@ class WorkflowController extends Controller
             'legacy_url' => ['nullable', 'url', 'max:1000'],
             'step_lines' => ['nullable', 'string', 'max:5000'],
         ]);
+    }
+
+    private function validateWorkflowField(Request $request, bool $requireKey, ?string $existingKey = null): array
+    {
+        $data = $request->validate([
+            'field_key' => [$requireKey ? 'required' : 'nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9_-]+$/'],
+            'field_label' => ['required', 'string', 'max:255'],
+            'field_type' => ['required', Rule::in(['text', 'textarea', 'rich_text', 'checkbox', 'select', 'file', 'date', 'number', 'tel', 'email'])],
+            'field_help' => ['nullable', 'string', 'max:500'],
+            'field_options' => ['nullable', 'string', 'max:3000'],
+        ]);
+
+        return [
+            'key' => $requireKey ? $data['field_key'] : (string) $existingKey,
+            'label' => $data['field_label'],
+            'type' => $data['field_type'],
+            'required' => $request->boolean('field_required'),
+            'help' => $data['field_help'] ?? null,
+            'options' => collect(preg_split('/[\r\n,]+/', $data['field_options'] ?? ''))
+                ->map(fn (string $option) => trim($option))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all(),
+        ];
     }
 
     private function templateAttributes(array $data, array $overrides = [], ?WorkflowTemplate $template = null): array
@@ -844,7 +1034,7 @@ class WorkflowController extends Controller
                 'type' => 'workflow',
                 'title' => 'มีคำขออนุมัติใหม่',
                 'body' => "{$template->name}: {$workflowRequest->title}",
-                'url' => route('workflows.index', ['status' => 'submitted']),
+                'url' => route('workflows.show', $workflowRequest),
             ]));
     }
 
@@ -858,7 +1048,7 @@ class WorkflowController extends Controller
                 'type' => 'workflow',
                 'title' => $title,
                 'body' => "{$workflowRequest->document_number}: ".((string) str($body)->limit(120)),
-                'url' => route('workflows.index'),
+                'url' => route('workflows.show', $workflowRequest),
             ]));
     }
 
@@ -1007,22 +1197,22 @@ class WorkflowController extends Controller
     private function smartflowMenuTabs(): array
     {
         return [
-            'all' => ['label' => 'All Documents', 'icon' => 'bi-collection'],
-            'tasks' => ['label' => 'Your Tasks', 'icon' => 'bi-inbox'],
-            'authorizations' => ['label' => 'Authorization', 'icon' => 'bi-shield-check'],
-            'statistics' => ['label' => 'Statistics', 'icon' => 'bi-bar-chart'],
-            'export' => ['label' => 'Export Excel', 'icon' => 'bi-file-earmark-spreadsheet'],
-            'favorites' => ['label' => 'Favorites', 'icon' => 'bi-star'],
-            'password' => ['label' => 'Password', 'icon' => 'bi-key'],
-            'user_list' => ['label' => 'User List', 'icon' => 'bi-people', 'manage_only' => true],
-            'permission_map' => ['label' => 'Permission Map', 'icon' => 'bi-diagram-2', 'manage_only' => true],
-            'user_group_diagram' => ['label' => 'User Group Diagram', 'icon' => 'bi-diagram-3', 'manage_only' => true],
-            'dynamic_fields' => ['label' => 'Dynamic Fields', 'icon' => 'bi-ui-checks-grid'],
-            'workflows' => ['label' => 'Workflows', 'icon' => 'bi-diagram-3'],
+            'all' => ['label' => 'เอกสารทั้งหมด', 'icon' => 'bi-collection'],
+            'tasks' => ['label' => 'งานของฉัน', 'icon' => 'bi-inbox'],
+            'favorites' => ['label' => 'รายการโปรด', 'icon' => 'bi-star'],
+            'authorizations' => ['label' => 'มอบอำนาจ', 'icon' => 'bi-shield-check'],
+            'statistics' => ['label' => 'สถิติ', 'icon' => 'bi-bar-chart', 'manage_only' => true, 'description' => 'ภาพรวมเอกสารและเวลาตอบสนอง'],
+            'export' => ['label' => 'ส่งออก Excel', 'icon' => 'bi-file-earmark-spreadsheet'],
+            'password' => ['label' => 'รหัสผ่าน', 'icon' => 'bi-key'],
+            'user_list' => ['label' => 'ผู้ใช้งาน', 'icon' => 'bi-people', 'manage_only' => true, 'description' => 'ตรวจผู้ใช้และสิทธิ์ที่เกี่ยวข้อง'],
+            'permission_map' => ['label' => 'ผังสิทธิ์', 'icon' => 'bi-diagram-2', 'manage_only' => true, 'description' => 'ดู Role และ Permission ทั้งระบบ'],
+            'user_group_diagram' => ['label' => 'กลุ่มผู้อนุมัติ', 'icon' => 'bi-diagram-3', 'manage_only' => true, 'description' => 'ตรวจกลุ่มผู้ใช้และผู้อนุมัติ'],
+            'dynamic_fields' => ['label' => 'ฟิลด์แบบฟอร์ม', 'icon' => 'bi-ui-checks-grid', 'manage_only' => true, 'description' => 'ดูฟิลด์ที่ใช้ในแต่ละ Workflow'],
+            'workflows' => ['label' => 'ตั้งค่า Workflow', 'icon' => 'bi-diagram-3', 'manage_only' => true, 'description' => 'แผนผัง ขั้นตอน และแบบคำขอ'],
         ];
     }
 
-    private function applySmartflowView($query, string $view, User $user, $favoriteTemplateIds): void
+    private function applySmartflowView($query, string $view, User $user, $favoriteRequestIds): void
     {
         if ($view === 'tasks') {
             $delegatedAuthorizerIds = $this->activeDelegatedAuthorizerIds($user);
@@ -1048,7 +1238,7 @@ class WorkflowController extends Controller
         }
 
         if ($view === 'favorites') {
-            $query->whereIn('workflow_template_id', $favoriteTemplateIds->all() ?: [0]);
+            $query->whereIn('id', $favoriteRequestIds->all() ?: [0]);
         }
     }
 
@@ -1160,6 +1350,7 @@ class WorkflowController extends Controller
                         'required' => (bool) ($field['required'] ?? false),
                         'help' => $field['help'] ?? null,
                         'options' => $options,
+                        'template_id' => $template->id,
                         'workflow' => $template->name,
                         'workflow_id' => $template->legacy_workflow_id,
                         'category' => $template->category,

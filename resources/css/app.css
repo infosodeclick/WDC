@@ -11,6 +11,497 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* SmartFlow work center: compact navigation and focused request details. */
+.smartflow-toolbar {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(34, 31, 32, .05);
+}
+
+.smartflow-primary-tabs,
+.smartflow-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.smartflow-primary-tab,
+.smartflow-tools-menu > summary {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--ink);
+    background: #fff;
+    font-size: .9rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.smartflow-primary-tab:hover,
+.smartflow-primary-tab.active {
+    color: var(--wdc-black);
+    border-color: var(--wdc-yellow-3);
+    background: #fff8d0;
+    text-decoration: none;
+}
+
+.smartflow-tools-menu {
+    position: relative;
+}
+
+.smartflow-tools-menu > summary {
+    cursor: pointer;
+    list-style: none;
+    border-color: var(--line);
+}
+
+.smartflow-tools-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.smartflow-tools-menu[open] > summary,
+.smartflow-tools-menu > summary:hover {
+    border-color: var(--wdc-yellow-3);
+    background: #fff8d0;
+}
+
+.smartflow-tools-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    display: grid;
+    width: min(390px, calc(100vw - 40px));
+    max-height: min(560px, 72vh);
+    overflow: auto;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 24px 50px rgba(34, 31, 32, .18);
+}
+
+.smartflow-tools-popover > a {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--ink);
+}
+
+.smartflow-tools-popover > a > i {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 8px;
+    background: #f5f5f5;
+}
+
+.smartflow-tools-popover > a > span {
+    display: grid;
+    min-width: 0;
+}
+
+.smartflow-tools-popover > a small {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: .76rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smartflow-tools-popover > a:hover,
+.smartflow-tools-popover > a.active {
+    background: #fff8d0;
+    text-decoration: none;
+}
+
+.smartflow-toolbar-actions .smartflow-new-document-menu {
+    right: 0;
+    left: auto;
+}
+
+.smartflow-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.smartflow-summary-strip > div {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    min-width: 0;
+    padding: 11px 14px;
+    border-right: 1px solid var(--line);
+}
+
+.smartflow-summary-strip > div:last-child {
+    border-right: 0;
+}
+
+.smartflow-summary-strip span {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.smartflow-summary-strip strong {
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.smartflow-summary-strip .warning {
+    background: #fff6e6;
+    color: #9a4c00;
+}
+
+.smartflow-open-document {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    margin-left: auto;
+    color: #6f5600;
+    font-weight: 850;
+}
+
+.workflow-detail-heading {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.workflow-detail-heading h1 {
+    max-width: 900px;
+    margin: 5px 0 8px;
+    font-size: clamp(1.45rem, 2.5vw, 2rem);
+    line-height: 1.25;
+}
+
+.workflow-back-link {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    margin-bottom: 14px;
+    color: var(--muted);
+    font-size: .86rem;
+    font-weight: 800;
+}
+
+.workflow-detail-heading-meta,
+.workflow-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.workflow-detail-heading-meta > span:not(.status-pill) {
+    color: var(--muted);
+    font-size: .86rem;
+    font-weight: 700;
+}
+
+.workflow-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(290px, 360px);
+    gap: 18px;
+    align-items: start;
+}
+
+.workflow-detail-main,
+.workflow-detail-sidebar {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+}
+
+.workflow-detail-sidebar {
+    position: sticky;
+    top: 16px;
+}
+
+.workflow-detail-section,
+.workflow-status-card,
+.workflow-action-card {
+    margin: 0;
+}
+
+.compact-section-title {
+    margin-bottom: 14px;
+}
+
+.compact-section-title h2,
+.workflow-status-card h2,
+.workflow-action-card h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.workflow-detail-description {
+    margin: 0;
+    color: var(--ink);
+    line-height: 1.7;
+    white-space: pre-line;
+}
+
+.workflow-detail-payload {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 18px 0 0;
+}
+
+.workflow-detail-payload > div {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf4;
+}
+
+.workflow-detail-payload dt,
+.workflow-status-card dt {
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 800;
+}
+
+.workflow-detail-payload dd,
+.workflow-status-card dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-weight: 750;
+}
+
+.workflow-attachment-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.workflow-attachment-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+}
+
+.workflow-attachment-card:hover {
+    border-color: var(--wdc-yellow-3);
+    background: #fffdf2;
+    text-decoration: none;
+}
+
+.workflow-attachment-card span {
+    display: grid;
+    min-width: 0;
+}
+
+.workflow-attachment-card strong,
+.workflow-attachment-card small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workflow-attachment-card small {
+    color: var(--muted);
+}
+
+.workflow-event-timeline {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.workflow-event-timeline > li {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.workflow-event-timeline > li:last-child {
+    border-bottom: 0;
+}
+
+.workflow-event-timeline > li.internal {
+    padding-right: 10px;
+    padding-left: 10px;
+    border-radius: 8px;
+    background: #fff8d0;
+}
+
+.workflow-event-icon {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: #fff;
+}
+
+.workflow-event-title {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.workflow-event-timeline p {
+    margin: 3px 0;
+    color: var(--ink);
+    line-height: 1.55;
+}
+
+.workflow-event-timeline small {
+    color: var(--muted);
+}
+
+.workflow-status-card dl,
+.workflow-action-form,
+.workflow-comment-form {
+    display: grid;
+    gap: 12px;
+    margin: 14px 0 0;
+}
+
+.workflow-status-card dl > div {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+}
+
+.workflow-status-card dl > div:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.workflow-action-card > p {
+    color: var(--muted);
+}
+
+.workflow-action-form label,
+.workflow-comment-form label {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+
+.workflow-action-form label > span,
+.workflow-comment-form label > span {
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 800;
+}
+
+.workflow-comment-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workflow-comment-form .span-2 {
+    grid-column: 1 / -1;
+}
+
+.workflow-comment-form > button {
+    justify-self: start;
+}
+
+@media (max-width: 920px) {
+    .smartflow-toolbar,
+    .workflow-detail-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-detail-sidebar {
+        position: static;
+    }
+
+    .smartflow-toolbar-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 680px) {
+    .smartflow-primary-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .smartflow-primary-tab {
+        justify-content: center;
+    }
+
+    .smartflow-toolbar-actions,
+    .smartflow-toolbar-actions > details {
+        width: 100%;
+    }
+
+    .smartflow-toolbar-actions summary {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .smartflow-summary-strip,
+    .workflow-detail-payload,
+    .workflow-comment-form {
+        grid-template-columns: 1fr;
+    }
+
+    .smartflow-summary-strip > div {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .smartflow-summary-strip > div:last-child {
+        border-bottom: 0;
+    }
+
+    .workflow-detail-heading {
+        display: grid;
+    }
+
+    .workflow-detail-actions .btn {
+        flex: 1 1 auto;
+    }
+}
+
 :root {
     --wdc-yellow-1: #ffde46;
     --wdc-yellow-2: #fbd647;
@@ -2088,6 +2579,16 @@ body.directory-modal-open {
     align-items: start;
 }
 
+.smartflow-document-title-actions {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.smartflow-favorite-mark {
+    color: #9a7600;
+}
+
 .smartflow-document-title h3 {
     display: -webkit-box;
     overflow: hidden;
@@ -2197,6 +2698,41 @@ body.directory-modal-open {
     max-width: 680px;
     margin: 4px 0 0;
     color: var(--muted);
+}
+
+.smartflow-inline-create {
+    margin-bottom: 16px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf4;
+}
+
+.smartflow-inline-create > summary {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    margin: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border: 1px solid var(--wdc-yellow-3);
+    border-radius: 8px;
+    background: #fff;
+    font-weight: 850;
+    list-style: none;
+}
+
+.smartflow-inline-create > summary::-webkit-details-marker {
+    display: none;
+}
+
+.smartflow-inline-create[open] > summary {
+    background: var(--wdc-yellow-2);
+}
+
+.smartflow-inline-create .smartflow-authorization-form {
+    padding: 14px;
+    border-top: 1px solid var(--line);
 }
 
 .smartflow-authorization-form {
@@ -2361,6 +2897,68 @@ body.directory-modal-open {
     gap: 14px;
 }
 
+.dynamic-field-create {
+    margin-bottom: 16px;
+    border: 1px solid #e3ca6b;
+    border-radius: 8px;
+    background: #fffdf4;
+}
+
+.dynamic-field-create > summary,
+.dynamic-field-edit > summary,
+.dynamic-field-delete > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--ink);
+    font-weight: 850;
+    cursor: pointer;
+    list-style: none;
+}
+
+.dynamic-field-create > summary::-webkit-details-marker,
+.dynamic-field-edit > summary::-webkit-details-marker,
+.dynamic-field-delete > summary::-webkit-details-marker {
+    display: none;
+}
+
+.dynamic-field-create > summary {
+    min-height: 44px;
+    padding: 0 14px;
+}
+
+.dynamic-field-editor {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px;
+    border-top: 1px solid var(--line);
+    background: #fff;
+}
+
+.dynamic-field-editor label {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    color: var(--ink);
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.dynamic-field-editor .field-wide {
+    grid-column: 1 / -1;
+}
+
+.dynamic-field-editor .check-row {
+    display: flex;
+    align-items: center;
+}
+
+.dynamic-field-form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .dynamic-field-card {
     display: grid;
     gap: 12px;
@@ -2417,6 +3015,79 @@ body.directory-modal-open {
 .dynamic-field-options span {
     background: #f8fafc;
     color: var(--muted);
+}
+
+.dynamic-field-actions {
+    margin-top: auto;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+}
+
+.dynamic-field-edit,
+.dynamic-field-delete {
+    position: relative;
+}
+
+.dynamic-field-edit > summary,
+.dynamic-field-delete > summary {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    font-size: .76rem;
+}
+
+.dynamic-field-delete > summary {
+    color: #a11c1c;
+}
+
+.dynamic-field-edit[open],
+.dynamic-field-delete[open] {
+    flex-basis: 100%;
+}
+
+.dynamic-field-edit .dynamic-field-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fbfcfd;
+}
+
+.dynamic-field-delete-confirm {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid #efb2b2;
+    border-radius: 8px;
+    background: #fff5f5;
+}
+
+.dynamic-field-delete-confirm p {
+    margin: 0;
+    color: #7f1d1d;
+    font-size: .78rem;
+}
+
+@media (max-width: 780px) {
+    .dynamic-field-editor,
+    .dynamic-field-edit .dynamic-field-editor {
+        grid-template-columns: 1fr;
+    }
+
+    .dynamic-field-editor .field-wide {
+        grid-column: auto;
+    }
+
+    .dynamic-field-delete-confirm {
+        align-items: stretch;
+        flex-direction: column;
+    }
 }
 
 .smartflow-user-list-panel .section-title p:not(.eyebrow),

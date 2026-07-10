@@ -6,8 +6,6 @@
 @php
     $documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'user_group_diagram', 'password'], true) ? 'all' : $activeView;
     $createPanelOpen = $canCreate && ((int) $activeTemplateId > 0 || $errors->any());
-    $diagramPanelOpen = $activeView === 'workflows';
-    $backendPanelOpen = $diagramPanelOpen && $canManageSystem;
 @endphp
 <div class="page-heading">
     <div>
@@ -18,35 +16,28 @@
     <div class="role-badge">{{ $canManage ? 'เห็นงานตามสิทธิ์' : 'เห็นงานของฉัน' }}</div>
 </div>
 
-<div class="smartflow-tabs">
-    @foreach($menuTabs as $key => $tab)
-        @if($key === 'export')
-            @if($canManage)
-                <a class="smartflow-tab {{ $activeView === $key ? 'active' : '' }}" href="{{ route('workflows.export') }}">
-                    <i class="bi {{ $tab['icon'] }}"></i><span>{{ $tab['label'] }}</span>
-                </a>
-            @endif
-        @elseif(($tab['manage_only'] ?? false) && ! $canManage)
-            @continue
-        @else
-            <a class="smartflow-tab {{ $activeView === $key ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => $key]) }}">
-                <i class="bi {{ $tab['icon'] }}"></i><span>{{ $tab['label'] }}</span>
+<section class="smartflow-toolbar" aria-label="เมนูศูนย์เอกสารและอนุมัติ">
+    <nav class="smartflow-primary-tabs" aria-label="มุมมองเอกสาร">
+        @foreach(['all', 'tasks', 'favorites', 'authorizations'] as $key)
+            @php($tab = $menuTabs[$key])
+            <a class="smartflow-primary-tab {{ $activeView === $key ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => $key]) }}" @if($activeView === $key) aria-current="page" @endif>
+                <i class="bi {{ $tab['icon'] }}" aria-hidden="true"></i>
+                <span>{{ $tab['label'] }}</span>
             </a>
-        @endif
-    @endforeach
-</div>
+        @endforeach
+    </nav>
 
-<section class="smartflow-command-bar" aria-label="SmartFlow actions">
+    <div class="smartflow-toolbar-actions">
     @if($canCreate)
         <details class="smartflow-new-document">
             <summary>
                 <i class="bi bi-plus-circle"></i>
-                <span>New Document</span>
+                <span>สร้างคำขอ</span>
             </summary>
             <div class="smartflow-new-document-menu">
                 <div class="smartflow-menu-heading">
                     <strong>เลือก Workflow</strong>
-                    <small>สร้างเอกสารใหม่ใน WDC โดยอ้างอิงแบบ SmartFlow เดิม</small>
+                    <small>เลือกแบบคำขอที่ต้องการ ระบบจะออกเลขเอกสารให้อัตโนมัติ</small>
                 </div>
                 @foreach($templateCatalog as $template)
                     <a href="{{ route('workflows.index', ['view' => $documentCreateView, 'template' => $template->id]) }}#workflow-create-form">
@@ -62,47 +53,37 @@
             </div>
         </details>
     @endif
-    <a class="smartflow-command-link {{ $activeView === 'tasks' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'tasks']) }}">
-        <i class="bi bi-inbox"></i>
-        <span>Your Tasks</span>
-    </a>
-    <a class="smartflow-command-link {{ $activeView === 'all' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'all']) }}">
-        <i class="bi bi-files"></i>
-        <span>All Documents</span>
-    </a>
-    <details class="smartflow-new-document">
+
+    <details class="smartflow-tools-menu">
         <summary>
-            <i class="bi bi-diagram-3"></i>
-            <span>Diagrams</span>
+            <i class="bi bi-three-dots" aria-hidden="true"></i>
+            <span>เครื่องมือ</span>
         </summary>
-        <div class="smartflow-new-document-menu">
+        <div class="smartflow-tools-popover">
             <div class="smartflow-menu-heading">
-                <strong>Workflow Flow</strong>
-                <small>เปิดแผนผังขั้นตอนอนุมัติตาม SmartFlow เดิม</small>
+                <strong>บัญชีและเครื่องมือระบบ</strong>
+                <small>แสดงเฉพาะเมนูที่บัญชีนี้มีสิทธิ์ใช้งาน</small>
             </div>
-            @foreach($templateCatalog as $template)
-                <a href="{{ route('workflows.index', ['view' => 'workflows']) }}#smartflow-workflow-{{ $template->legacy_workflow_id ?? $template->id }}">
-                    <span>{{ $template->name }} Flow</span>
-                    <small>
-                        Workflow #{{ $template->legacy_workflow_id ?? '-' }}
-                        @if($template->service_team)
-                            · {{ $template->service_team }}
-                        @endif
-                    </small>
+            <a class="{{ $activeView === 'password' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'password']) }}">
+                <i class="bi bi-key" aria-hidden="true"></i>
+                <span><strong>เปลี่ยนรหัสผ่าน</strong><small>จัดการรหัสผ่าน WDC</small></span>
+            </a>
+            @if($canManage)
+                @foreach(['statistics', 'user_list', 'permission_map', 'user_group_diagram', 'dynamic_fields', 'workflows'] as $key)
+                    @php($tab = $menuTabs[$key])
+                    <a class="{{ $activeView === $key ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => $key]) }}">
+                        <i class="bi {{ $tab['icon'] }}" aria-hidden="true"></i>
+                        <span><strong>{{ $tab['label'] }}</strong><small>{{ $tab['description'] ?? 'ตั้งค่าและตรวจสอบระบบ' }}</small></span>
+                    </a>
+                @endforeach
+                <a href="{{ route('workflows.export', request()->except('page')) }}">
+                    <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
+                    <span><strong>ส่งออก Excel/CSV</strong><small>ดาวน์โหลดข้อมูลตามตัวกรองปัจจุบัน</small></span>
                 </a>
-            @endforeach
+            @endif
         </div>
     </details>
-    <a class="smartflow-command-link {{ $activeView === 'favorites' ? 'active' : '' }}" href="{{ route('workflows.index', ['view' => 'favorites']) }}">
-        <i class="bi bi-star"></i>
-        <span>Favorites</span>
-    </a>
-    @if($canManage)
-        <a class="smartflow-command-link" href="{{ route('workflows.export', request()->except('page')) }}">
-            <i class="bi bi-file-earmark-spreadsheet"></i>
-            <span>Export Excel/CSV</span>
-        </a>
-    @endif
+    </div>
 </section>
 
 @if($activeView === 'authorizations')
@@ -116,6 +97,8 @@
             <span class="status-pill">{{ $authorizationsGiven->where('status', 'active')->count() }} active</span>
         </div>
 
+        <details class="smartflow-inline-create" @if($errors->any()) open @endif>
+            <summary><i class="bi bi-plus-circle" aria-hidden="true"></i> สร้างการมอบอำนาจ</summary>
         <form method="post" action="{{ route('workflows.authorizations.store') }}" class="smartflow-authorization-form">
             @csrf
             <label>
@@ -146,6 +129,7 @@
             </label>
             <button class="btn btn-primary" type="submit"><i class="bi bi-shield-check"></i> Create Authorization</button>
         </form>
+        </details>
     </section>
 
     <div class="smartflow-authorization-grid">
@@ -385,18 +369,50 @@
         <div class="section-title">
             <div>
                 <p class="eyebrow">Dynamic Fields</p>
-                <h2>Configure workflow custom fields</h2>
-                <p>รวมฟิลด์ที่ใช้ในแบบฟอร์ม SmartFlow เดิม เช่น Yes/No, Number, Multiple Choice, File Attachment และ Table List เพื่อให้ทีมหลังบ้านตรวจสอบก่อนแก้ workflow ได้ง่าย</p>
+                <h2>จัดการฟิลด์ในแบบคำขอ</h2>
+                <p>เพิ่มและแก้ไขช่องกรอกของแต่ละ Workflow ได้จากจุดเดียว โดยไม่ต้องแก้โครงสร้างแบบคำขอทั้งหมด</p>
             </div>
-            <div class="button-row">
-                @if($canManageSystem)
-                    <a class="btn btn-sm btn-primary" href="{{ route('workflows.index', ['view' => 'workflows']) }}#workflow-backend">
-                        <i class="bi bi-plus-circle"></i> Create New Field
-                    </a>
-                @endif
-                <span class="status-pill">{{ $dynamicFieldsData->count() }} fields</span>
-            </div>
+            <span class="status-pill">{{ $dynamicFieldsData->count() }} ฟิลด์</span>
         </div>
+
+        @if($canManageSystem && $templates->isNotEmpty())
+            <details class="dynamic-field-create" @if($errors->hasAny(['field_key', 'field_label', 'field_type', 'field_help', 'field_options'])) open @endif>
+                <summary><i class="bi bi-plus-circle" aria-hidden="true"></i> เพิ่มฟิลด์ใหม่</summary>
+                <form method="POST" action="{{ route('workflows.fields.store', ['template' => old('workflow_template_id', $templates->first()?->id)]) }}" class="dynamic-field-editor" data-dynamic-field-create-form>
+                    @csrf
+                    <label class="field-wide">Workflow
+                        <select name="workflow_template_id" data-dynamic-field-template required>
+                            @foreach($templates as $template)
+                                <option value="{{ $template->id }}" @selected((string) old('workflow_template_id') === (string) $template->id) data-store-url="{{ route('workflows.fields.store', $template) }}">{{ $template->name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>รหัสฟิลด์
+                        <input name="field_key" value="{{ old('field_key') }}" placeholder="เช่น cost_center" pattern="[A-Za-z0-9_-]+" required>
+                    </label>
+                    <label>ชื่อที่แสดง
+                        <input name="field_label" value="{{ old('field_label') }}" placeholder="เช่น Cost Center" required>
+                    </label>
+                    <label>ประเภทฟิลด์
+                        <select name="field_type" required>
+                            @foreach(['text' => 'ข้อความสั้น', 'textarea' => 'ข้อความหลายบรรทัด', 'rich_text' => 'ข้อความแบบจัดรูปแบบ', 'checkbox' => 'ใช่ / ไม่ใช่', 'select' => 'ตัวเลือก', 'file' => 'ไฟล์แนบ', 'date' => 'วันที่', 'number' => 'ตัวเลข', 'tel' => 'เบอร์โทร', 'email' => 'อีเมล'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('field_type', 'text') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="field-wide">คำอธิบาย
+                        <input name="field_help" value="{{ old('field_help') }}" placeholder="ข้อความช่วยอธิบายใต้ช่องกรอก">
+                    </label>
+                    <label class="field-wide">ตัวเลือก
+                        <textarea name="field_options" rows="3" placeholder="กรอกหนึ่งตัวเลือกต่อหนึ่งบรรทัด ใช้เฉพาะประเภทตัวเลือก">{{ old('field_options') }}</textarea>
+                    </label>
+                    <label class="check-row field-wide"><input type="checkbox" name="field_required" value="1" @checked(old('field_required'))> ต้องกรอกข้อมูล</label>
+                    <div class="dynamic-field-form-actions field-wide">
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-plus-lg" aria-hidden="true"></i> เพิ่มฟิลด์</button>
+                    </div>
+                </form>
+            </details>
+        @endif
 
         <div class="dynamic-field-grid">
             @forelse($dynamicFieldsData as $field)
@@ -427,22 +443,63 @@
                             @endforeach
                         </div>
                     @endif
-                    <div class="dynamic-field-actions">
-                        <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Preview</button>
-                        @if($canManageSystem)
-                            <a class="btn btn-sm btn-outline-primary" href="{{ route('workflows.index', ['view' => 'workflows']) }}#workflow-backend">Edit</a>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Delete</button>
-                        @else
-                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Edit</button>
-                            <button class="btn btn-sm btn-outline-secondary" type="button" disabled>Delete</button>
-                        @endif
-                    </div>
+                    @if($canManageSystem)
+                        <div class="dynamic-field-actions">
+                            <details class="dynamic-field-edit">
+                                <summary><i class="bi bi-pencil-square" aria-hidden="true"></i> แก้ไข</summary>
+                                <form method="POST" action="{{ route('workflows.fields.update', ['template' => $field['template_id'], 'fieldKey' => $field['key']]) }}" class="dynamic-field-editor">
+                                    @csrf
+                                    @method('PATCH')
+                                    <label>ชื่อที่แสดง
+                                        <input name="field_label" value="{{ $field['label'] }}" required>
+                                    </label>
+                                    <label>ประเภทฟิลด์
+                                        <select name="field_type" required>
+                                            @foreach(['text' => 'ข้อความสั้น', 'textarea' => 'ข้อความหลายบรรทัด', 'rich_text' => 'ข้อความแบบจัดรูปแบบ', 'checkbox' => 'ใช่ / ไม่ใช่', 'select' => 'ตัวเลือก', 'file' => 'ไฟล์แนบ', 'date' => 'วันที่', 'number' => 'ตัวเลข', 'tel' => 'เบอร์โทร', 'email' => 'อีเมล'] as $value => $label)
+                                                <option value="{{ $value }}" @selected($field['type'] === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="field-wide">คำอธิบาย
+                                        <input name="field_help" value="{{ $field['help'] }}">
+                                    </label>
+                                    <label class="field-wide">ตัวเลือก
+                                        <textarea name="field_options" rows="3">{{ $field['options']->implode("\n") }}</textarea>
+                                    </label>
+                                    <label class="check-row field-wide"><input type="checkbox" name="field_required" value="1" @checked($field['required'])> ต้องกรอกข้อมูล</label>
+                                    <div class="dynamic-field-form-actions field-wide">
+                                        <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-check-lg" aria-hidden="true"></i> บันทึก</button>
+                                    </div>
+                                </form>
+                            </details>
+                            <details class="dynamic-field-delete">
+                                <summary><i class="bi bi-trash3" aria-hidden="true"></i> ลบ</summary>
+                                <div class="dynamic-field-delete-confirm">
+                                    <p>ยืนยันลบฟิลด์ <strong>{{ $field['label'] }}</strong> ออกจาก {{ $field['workflow'] }}?</p>
+                                    <form method="POST" action="{{ route('workflows.fields.destroy', ['template' => $field['template_id'], 'fieldKey' => $field['key']]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-danger btn-sm" type="submit">ยืนยันลบฟิลด์</button>
+                                    </form>
+                                </div>
+                            </details>
+                        </div>
+                    @endif
                 </article>
             @empty
                 <div class="empty-state">No dynamic fields configured.</div>
             @endforelse
         </div>
     </section>
+    @if($canManageSystem && $templates->isNotEmpty())
+        <script>
+            document.querySelector('[data-dynamic-field-template]')?.addEventListener('change', (event) => {
+                const option = event.target.selectedOptions[0];
+                const form = event.target.closest('[data-dynamic-field-create-form]');
+                if (option?.dataset.storeUrl && form) form.action = option.dataset.storeUrl;
+            });
+        </script>
+    @endif
 @elseif($activeView === 'user_list' && $canManage)
     <section class="panel smartflow-user-list-panel">
         <div class="section-title">
@@ -636,12 +693,14 @@
     </section>
 @else
 
-<div class="metric-grid">
-    <div class="metric-card"><span>Submitted</span><strong>{{ $metrics['submitted'] }}</strong><small>รอรับเรื่อง</small></div>
-    <div class="metric-card"><span>In Workflow</span><strong>{{ $metrics['in_review'] }}</strong><small>ตรวจสอบ/รับเรื่อง/ดำเนินการ</small></div>
-    <div class="metric-card"><span>Completed</span><strong>{{ $metrics['completed'] }}</strong><small>อนุมัติหรือปิดงานแล้ว</small></div>
-    <div class="metric-card"><span>Overdue</span><strong>{{ $metrics['overdue'] }}</strong><small>เกิน SLA</small></div>
-</div>
+@if(in_array($activeView, ['all', 'tasks', 'favorites'], true))
+    <section class="smartflow-summary-strip" aria-label="สรุปสถานะเอกสาร">
+        <div><span>รอรับเรื่อง</span><strong>{{ $metrics['submitted'] }}</strong></div>
+        <div><span>กำลังดำเนินการ</span><strong>{{ $metrics['in_review'] }}</strong></div>
+        <div><span>เสร็จสิ้น</span><strong>{{ $metrics['completed'] }}</strong></div>
+        <div class="{{ $metrics['overdue'] > 0 ? 'warning' : '' }}"><span>เกิน SLA</span><strong>{{ $metrics['overdue'] }}</strong></div>
+    </section>
+@endif
 
 @if(session('import_errors'))
     <section class="panel alert-panel">
@@ -657,7 +716,7 @@
     </section>
 @endif
 
-@if($canManage)
+@if($canManage && $activeView === 'workflows')
     <details class="panel smartflow-workspace-panel smartflow-import-panel">
         <summary class="smartflow-panel-summary">
             <span class="smartflow-panel-icon"><i class="bi bi-cloud-arrow-up"></i></span>
@@ -688,7 +747,7 @@
     </details>
 @endif
 
-@if($canCreate)
+@if($createPanelOpen)
     <details class="panel smartflow-workspace-panel smartflow-create-panel" id="workflow-create-form" @if($createPanelOpen) open @endif>
         <summary class="smartflow-panel-summary">
             <span class="smartflow-panel-icon"><i class="bi bi-file-earmark-plus"></i></span>
@@ -807,7 +866,8 @@
     </details>
 @endif
 
-<details class="panel smartflow-workspace-panel smartflow-diagram-panel" id="smartflow-diagrams" @if($diagramPanelOpen) open @endif>
+@if($activeView === 'workflows')
+<details class="panel smartflow-workspace-panel smartflow-diagram-panel" id="smartflow-diagrams" open>
     <summary class="smartflow-panel-summary">
         <span class="smartflow-panel-icon"><i class="bi bi-diagram-3"></i></span>
         <span>
@@ -900,7 +960,7 @@
                     @csrf
                     <button class="btn btn-sm {{ $favoriteTemplateIds->contains($template->id) ? 'btn-primary' : 'btn-outline-secondary' }}" type="submit">
                         <i class="bi {{ $favoriteTemplateIds->contains($template->id) ? 'bi-star-fill' : 'bi-star' }}"></i>
-                        {{ $favoriteTemplateIds->contains($template->id) ? 'อยู่ใน Favorites' : 'เพิ่ม Favorites' }}
+                        {{ $favoriteTemplateIds->contains($template->id) ? 'ปักหมุดแบบคำขอแล้ว' : 'ปักหมุดแบบคำขอ' }}
                     </button>
                 </form>
             </article>
@@ -908,9 +968,10 @@
     </div>
 </div>
 </details>
+@endif
 
-@if($canManageSystem)
-    <details class="panel smartflow-workspace-panel smartflow-backend-panel" id="workflow-backend" @if($backendPanelOpen) open @endif>
+@if($canManageSystem && $activeView === 'workflows')
+    <details class="panel smartflow-workspace-panel smartflow-backend-panel" id="workflow-backend">
         <summary class="smartflow-panel-summary">
             <span class="smartflow-panel-icon"><i class="bi bi-sliders"></i></span>
             <span>
@@ -1056,6 +1117,7 @@ Reference
     </details>
 @endif
 
+@if(in_array($activeView, ['all', 'tasks', 'favorites'], true))
 <section class="panel workflow-filter-panel">
     <form method="get" action="{{ route('workflows.index') }}" class="smartflow-filter-form">
         <input type="hidden" name="view" value="{{ $activeView }}">
@@ -1154,7 +1216,12 @@ Reference
             <summary class="smartflow-document-summary">
                 <div class="smartflow-document-title">
                     <h3>{{ $requestItem->title }}</h3>
-                    <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
+                    <div class="smartflow-document-title-actions">
+                        @if($favoriteRequestIds->contains($requestItem->id))
+                            <i class="bi bi-star-fill smartflow-favorite-mark" aria-label="รายการโปรด"></i>
+                        @endif
+                        <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
+                    </div>
                 </div>
                 <div class="smartflow-document-facts">
                     <span><strong>REF:</strong> {{ $requestItem->document_number ?? $requestItem->legacy_reference ?? '-' }}</span>
@@ -1165,6 +1232,9 @@ Reference
                     <span class="smartflow-avatar">{{ mb_substr($requestItem->requester->name, 0, 1) }}</span>
                     <span>By {{ $requestItem->requester->name }}</span>
                     <span>{{ $requestItem->created_at->format('d M · H:i') }}</span>
+                    <a class="smartflow-open-document" href="{{ route('workflows.show', ['workflowRequest' => $requestItem, 'from' => $activeView]) }}">
+                        เปิดรายละเอียด <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
                 </div>
             </summary>
             <div class="smartflow-document-body">
@@ -1279,7 +1349,7 @@ Reference
             @endif
 
             <div class="comments">
-                @foreach($requestItem->events as $event)
+                @foreach($requestItem->events->filter(fn ($event) => ! $event->is_internal || $canManage) as $event)
                     <div><strong>{{ $event->user?->name ?? 'ระบบ' }}</strong> {{ $event->action }} {{ $event->to_status ? '→ '.$event->to_status : '' }} {{ $event->comment }}</div>
                 @endforeach
             </div>
@@ -1298,5 +1368,6 @@ Reference
 </div>
 
 {{ $requests->links() }}
+@endif
 @endif
 @endsection
