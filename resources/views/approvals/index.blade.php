@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Approval Center')
+@section('title', 'งานรอดำเนินการ | WDC Portal')
 
 @section('content')
 <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
     <div>
-        <p class="eyebrow mb-1">APPROVAL CENTER</p>
-        <h1 class="page-title mb-1">รายการรออนุมัติ</h1>
-        <p class="text-muted mb-0">รวมคิวงานที่ต้องตรวจสอบ รับงาน อนุมัติ หรือส่งต่อจาก HR, IT และ Workflow</p>
+        <p class="eyebrow mb-1">ACTION CENTER</p>
+        <h1 class="page-title mb-1">งานรอดำเนินการ</h1>
+        <p class="text-muted mb-0">รวมเฉพาะคิวงานที่คุณหรือทีมตามสิทธิ์ต้องรับงาน ตรวจสอบ หรืออนุมัติ</p>
     </div>
     <div class="approval-total-card">
         <span>ค้างดำเนินการ</span>

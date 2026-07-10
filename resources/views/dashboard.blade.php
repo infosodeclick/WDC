@@ -19,8 +19,8 @@
     @if($user->canAccess('directory.view'))
         <a class="btn btn-outline-primary" href="{{ route('directory.index') }}"><i class="bi bi-person-lines-fill"></i> ค้นหาพนักงาน</a>
     @endif
-    @if($user->canAccessAny(['tickets.create', 'tickets.manage', 'workflows.create', 'workflows.manage']))
-        <a class="btn btn-outline-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-life-preserver"></i> แจ้งปัญหา IT</a>
+    @if($user->canAccessAny(['workflows.create', 'workflows.manage']))
+        <a class="btn btn-outline-primary" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i> ศูนย์คำขอ</a>
     @endif
     @if($user->canAccessAny(['complaints.create', 'complaints.review']))
         <a class="btn btn-outline-primary" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i> ร้องเรียน</a>

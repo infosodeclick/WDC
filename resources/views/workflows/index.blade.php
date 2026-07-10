@@ -6,17 +6,25 @@
 @php
     $documentCreateView = in_array($activeView, ['authorizations', 'statistics', 'dynamic_fields', 'user_list', 'permission_map', 'user_group_diagram', 'password'], true) ? 'all' : $activeView;
     $createPanelOpen = $canCreate && ((int) $activeTemplateId > 0 || $errors->any());
+    $helpdeskTemplate = $templateCatalog->firstWhere('legacy_workflow_id', '7') ?? $templateCatalog->firstWhere('name', 'IT Helpdesk');
 @endphp
 <div class="page-heading">
     <div>
         <p class="eyebrow">SmartFlow Work Center</p>
-        <h1>ศูนย์เอกสารและอนุมัติ WDC</h1>
-        <p>ใช้งานแทน SmartFlow เดิมสำหรับเอกสาร คำขอ งานรออนุมัติ งาน IT และการติดตามสถานะในเว็บเดียว</p>
+        <h1>ศูนย์คำขอ</h1>
+        <p>สร้างคำขอ แจ้งปัญหา ติดตามสถานะ และดำเนินการเอกสารจากที่เดียว</p>
     </div>
-    <div class="role-badge">{{ $canManage ? 'เห็นงานตามสิทธิ์' : 'เห็นงานของฉัน' }}</div>
+    <div class="request-center-heading-actions">
+        @if($canCreate && $helpdeskTemplate)
+            <a class="btn btn-primary" href="{{ route('workflows.index', ['view' => $documentCreateView, 'template' => $helpdeskTemplate->id]) }}#workflow-create-form">
+                <i class="bi bi-life-preserver" aria-hidden="true"></i> แจ้งปัญหา IT
+            </a>
+        @endif
+        <span class="role-badge">{{ $canManage ? 'เห็นงานตามสิทธิ์' : 'เห็นงานของฉัน' }}</span>
+    </div>
 </div>
 
-<section class="smartflow-toolbar" aria-label="เมนูศูนย์เอกสารและอนุมัติ">
+<section class="smartflow-toolbar" aria-label="เมนูศูนย์คำขอ">
     <nav class="smartflow-primary-tabs" aria-label="มุมมองเอกสาร">
         @foreach(['all', 'tasks', 'favorites', 'authorizations'] as $key)
             @php($tab = $menuTabs[$key])

@@ -79,7 +79,7 @@ class AdminController extends Controller
         $adminSections = array_values(array_filter([
             ['key' => 'system', 'label' => 'ระบบ', 'icon' => 'bi-diagram-3', 'show' => true],
             ['key' => 'permissions', 'label' => 'กำหนดสิทธิ์', 'icon' => 'bi-shield-check', 'show' => $canManageUsers || $canManageRoles || $canManageDirectory],
-            ['key' => 'create-user', 'label' => 'เพิ่มผู้ใช้งาน', 'icon' => 'bi-person-plus', 'show' => $canCreateUsers],
+            ['key' => 'create-user', 'label' => 'เพิ่มบัญชีผู้ใช้', 'icon' => 'bi-person-plus', 'show' => $canCreateUsers],
             ['key' => 'notifications', 'label' => 'แจ้งเตือน', 'icon' => 'bi-bell', 'show' => true],
             ['key' => 'role-template', 'label' => 'Role Template', 'icon' => 'bi-sliders', 'show' => $canManageRoles],
             ['key' => 'activity-logs', 'label' => 'Activity Logs', 'icon' => 'bi-clock-history', 'show' => $canViewLogs],
@@ -477,8 +477,7 @@ class AdminController extends Controller
             ['label' => 'ห้องประชุม', 'permissions' => ['meeting_rooms.view']],
             ['label' => 'ประกาศ', 'permissions' => ['announcements.view']],
             ['label' => 'เทรนนิ่ง', 'permissions' => ['knowledge.view']],
-            ['label' => 'แจ้งปัญหา IT', 'permissions' => ['tickets.create', 'tickets.manage']],
-            ['label' => 'คำขอ/อนุมัติ', 'permissions' => ['workflows.create', 'workflows.manage']],
+            ['label' => 'ศูนย์คำขอ', 'permissions' => ['tickets.create', 'tickets.manage', 'workflows.create', 'workflows.manage']],
             ['label' => 'ร้องเรียน', 'permissions' => ['complaints.create', 'complaints.review']],
             ['label' => 'แบบฟอร์ม', 'permissions' => ['documents.view']],
             ['label' => 'IT', 'permissions' => ['it.portal.view', 'tickets.manage', 'it.onboarding.manage']],

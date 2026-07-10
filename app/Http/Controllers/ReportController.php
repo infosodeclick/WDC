@@ -9,9 +9,9 @@ use App\Models\EmployeeOnboardingRequest;
 use App\Models\ItAsset;
 use App\Models\ProfileChangeRequest;
 use App\Models\SoftwareLicense;
-use App\Models\Ticket;
 use App\Models\User;
 use App\Models\WorkflowRequest;
+use App\Services\ItHelpdeskWorkflow;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -52,9 +52,13 @@ class ReportController extends Controller
 
     private function summaryCards(): array
     {
-        $ticketOpen = Ticket::where('status', '!=', 'done')->count();
-        $ticketOverdue = Ticket::where('status', '!=', 'done')
-            ->where('created_at', '<', now()->subDays(3))
+        $helpdeskOpen = $this->helpdeskQuery()
+            ->whereNotIn('status', ItHelpdeskWorkflow::TERMINAL_STATUSES)
+            ->count();
+        $helpdeskOverdue = $this->helpdeskQuery()
+            ->whereNotIn('status', ItHelpdeskWorkflow::TERMINAL_STATUSES)
+            ->whereNotNull('due_at')
+            ->where('due_at', '<', now())
             ->count();
         $pendingOnboarding = EmployeeOnboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'it_completed', 'cancel_requested'])->count();
         $pendingOffboarding = EmployeeOffboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'it_completed'])->count();
@@ -70,8 +74,8 @@ class ReportController extends Controller
             + Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count();
 
         return [
-            ['label' => 'Ticket ค้าง', 'value' => $ticketOpen, 'note' => 'ยังไม่ปิดงาน', 'icon' => 'bi-life-preserver'],
-            ['label' => 'งานเกิน SLA', 'value' => $ticketOverdue, 'note' => 'เปิดเกิน 3 วัน', 'icon' => 'bi-stopwatch'],
+            ['label' => 'งาน IT ค้าง', 'value' => $helpdeskOpen, 'note' => 'จาก IT Helpdesk Workflow', 'icon' => 'bi-life-preserver'],
+            ['label' => 'งานเกิน SLA', 'value' => $helpdeskOverdue, 'note' => 'เกินกำหนดใน Workflow', 'icon' => 'bi-stopwatch'],
             ['label' => 'พนักงานใหม่รอดำเนินการ', 'value' => $pendingOnboarding, 'note' => 'HR/IT ยังไม่ครบขั้นตอน', 'icon' => 'bi-person-plus'],
             ['label' => 'พนักงานลาออกรอดำเนินการ', 'value' => $pendingOffboarding, 'note' => 'รอปิดระบบ/รับคืนอุปกรณ์', 'icon' => 'bi-person-dash'],
             ['label' => 'ทรัพย์สินทั้งหมด', 'value' => ItAsset::count(), 'note' => 'ในทะเบียน INVENTORY', 'icon' => 'bi-box-seam'],
@@ -84,11 +88,12 @@ class ReportController extends Controller
 
     private function ticketStatusRows()
     {
-        $labels = Ticket::statusLabels();
+        $labels = collect(WorkflowRequest::statusLabels())
+            ->only(['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester', 'approved', 'completed', 'rejected', 'cancelled']);
 
         return collect($labels)->map(fn (string $label, string $status): array => [
             'name' => $label,
-            'count' => Ticket::where('status', $status)->count(),
+            'count' => $this->helpdeskQuery()->where('status', $status)->count(),
         ])->values();
     }
 
@@ -153,16 +158,17 @@ class ReportController extends Controller
     {
         return collect([
             [
-                'label' => 'Ticket ค้างล่าสุด',
-                'items' => Ticket::with('reporter')
-                    ->where('status', '!=', 'done')
+                'label' => 'งาน IT ค้างล่าสุด',
+                'items' => $this->helpdeskQuery()
+                    ->with('requester')
+                    ->whereNotIn('status', ItHelpdeskWorkflow::TERMINAL_STATUSES)
                     ->latest()
                     ->take(5)
                     ->get()
-                    ->map(fn (Ticket $ticket): array => [
-                        'title' => $ticket->title,
-                        'meta' => collect([$ticket->reporter?->name, $ticket->statusLabel(), $ticket->created_at?->format('d/m/Y H:i')])->filter()->join(' · '),
-                        'url' => route('tickets.index'),
+                    ->map(fn (WorkflowRequest $workflow): array => [
+                        'title' => $workflow->title,
+                        'meta' => collect([$workflow->requester?->name, $workflow->statusLabel(), $workflow->created_at?->format('d/m/Y H:i')])->filter()->join(' · '),
+                        'url' => route('workflows.show', $workflow),
                     ]),
             ],
             [
@@ -177,9 +183,12 @@ class ReportController extends Controller
                     ]),
             ],
             [
-                'label' => 'Workflow ค้างล่าสุด',
+                'label' => 'คำขออื่นค้างล่าสุด',
                 'items' => WorkflowRequest::with('template')
-                    ->whereNotIn('status', ['completed', 'closed', 'rejected'])
+                    ->whereDoesntHave('template', fn ($query) => $query
+                        ->where('source_system', 'smartflow')
+                        ->whereIn('legacy_workflow_id', ItHelpdeskWorkflow::IT_LEGACY_IDS))
+                    ->whereNotIn('status', ItHelpdeskWorkflow::TERMINAL_STATUSES)
                     ->latest()
                     ->take(5)
                     ->get()
@@ -190,6 +199,14 @@ class ReportController extends Controller
                     ]),
             ],
         ]);
+    }
+
+    private function helpdeskQuery()
+    {
+        return WorkflowRequest::query()
+            ->whereHas('template', fn ($query) => $query
+                ->where('source_system', 'smartflow')
+                ->whereIn('legacy_workflow_id', ItHelpdeskWorkflow::IT_LEGACY_IDS));
     }
 
     private function exportLinks(User $user): array

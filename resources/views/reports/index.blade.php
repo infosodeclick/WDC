@@ -8,7 +8,7 @@
         <div>
             <p class="eyebrow mb-1">REPORTS</p>
             <h1 class="page-title mb-1">รายงานภาพรวม</h1>
-            <p class="text-muted mb-0">สรุปงาน HR, IT, Ticket, INVENTORY และรายการรออนุมัติจากข้อมูลจริงใน WDC</p>
+            <p class="text-muted mb-0">สรุปงาน HR, IT Helpdesk, INVENTORY และงานรอดำเนินการจากข้อมูลจริงใน WDC</p>
         </div>
         @if(count($exportLinks) > 0)
             <div class="reports-export-bar">
@@ -34,7 +34,7 @@
     <div class="reports-grid mb-4">
         <section class="report-panel">
             <div class="report-panel-head">
-                <h2><i class="bi bi-life-preserver"></i> Ticket ตามสถานะ</h2>
+                <h2><i class="bi bi-life-preserver"></i> IT Helpdesk ตามสถานะ</h2>
                 <span>{{ number_format($ticketStatusRows->sum('count')) }}</span>
             </div>
             <div class="report-row-list">

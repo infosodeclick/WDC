@@ -508,9 +508,9 @@ class WdcPortalTest extends TestCase
             ->assertDontSee('accountwdc@wdc.co.th')
             ->assertDontSee('Flagship Showroom')
             ->assertDontSee('เลขที่ประกาศ');
-        $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-plus'));
+        $this->assertGreaterThanOrEqual(1, substr_count($employeesResponse->getContent(), 'bi-person-plus'));
         $this->assertStringContainsString('btn btn-outline-primary', $employeesResponse->getContent());
-        $this->assertSame(1, substr_count($employeesResponse->getContent(), 'bi-person-gear'));
+        $this->assertGreaterThanOrEqual(1, substr_count($employeesResponse->getContent(), 'bi-person-gear'));
         $this->assertLessThan(
             strpos($employeesResponse->getContent(), 'bi-download'),
             strpos($employeesResponse->getContent(), 'bi-person-gear'),
@@ -616,8 +616,9 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index', ['section' => 'create-user']))
             ->assertOk()
-            ->assertSee('เพิ่มผู้ใช้งาน')
-            ->assertSee('สร้างบัญชี WDC Login')
+            ->assertSee('เพิ่มบัญชีผู้ใช้')
+            ->assertSee('บัญชี WDC Login')
+            ->assertSee('พนักงานใหม่ให้เริ่มจาก HR Onboarding')
             ->assertSee('ชื่อเล่นอังกฤษ')
             ->assertSee('ชื่อเล่นไทย')
             ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
@@ -656,7 +657,7 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index', ['section' => 'users']))
             ->assertOk()
-            ->assertSee('เพิ่มผู้ใช้งาน')
+            ->assertSee('เพิ่มบัญชีผู้ใช้')
             ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
 
         $this->get(route('admin.index', ['section' => 'roles']))
@@ -814,7 +815,7 @@ class WdcPortalTest extends TestCase
 
         $this->get(route('admin.index', ['section' => 'create-user']))
             ->assertOk()
-            ->assertSee('เพิ่มผู้ใช้งาน');
+            ->assertSee('เพิ่มบัญชีผู้ใช้');
 
         $payload = [
             'employee_code' => 'EMP07777',
@@ -2819,13 +2820,51 @@ class WdcPortalTest extends TestCase
         $this->actingAs($itUser);
         $this->get(route('approvals.index'))
             ->assertOk()
-            ->assertSee('Approval Center')
+            ->assertSee('งานรอดำเนินการ')
             ->assertSee('portal-utility-nav', false)
             ->assertSee('APP001')
             ->assertSee('Approval Tester')
             ->assertSee(route('onboarding.show', $onboarding), false)
             ->assertSee('approval-panel', false)
             ->assertSee('approval-item', false);
+    }
+
+    public function test_action_center_only_lists_unassigned_or_personally_assigned_workflows(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $itUser = User::where('employee_code', 'EMP00200')->firstOrFail();
+        $otherManager = User::where('employee_code', 'EMP09999')->firstOrFail();
+        $requester = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $template = WorkflowTemplate::where('name', 'IT Helpdesk')->firstOrFail();
+
+        WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $requester->id,
+            'assigned_to' => $itUser->id,
+            'title' => 'Assigned to current IT user',
+            'details' => 'Visible action item.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        WorkflowRequest::create([
+            'workflow_template_id' => $template->id,
+            'requester_id' => $requester->id,
+            'assigned_to' => $otherManager->id,
+            'title' => 'Assigned to another manager',
+            'details' => 'Must not appear in this action center.',
+            'priority' => 'normal',
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($itUser)
+            ->get(route('approvals.index'))
+            ->assertOk()
+            ->assertSee('Assigned to current IT user')
+            ->assertDontSee('Assigned to another manager');
     }
 
     public function test_reports_page_is_visible_to_backoffice_roles_only(): void
@@ -2845,7 +2884,9 @@ class WdcPortalTest extends TestCase
             ->assertSee('Reports')
             ->assertSee('portal-utility-nav', false)
             ->assertSee('รายงานภาพรวม')
-            ->assertSee('Ticket ค้าง')
+            ->assertSee('งาน IT ค้าง')
+            ->assertSee('จาก IT Helpdesk Workflow')
+            ->assertSee('IT Helpdesk ตามสถานะ')
             ->assertSee('Export รายชื่อพนักงาน CSV')
             ->assertDontSee('Export INVENTORY CSV');
 

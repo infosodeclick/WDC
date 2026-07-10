@@ -31,8 +31,11 @@
 @if($activeSection === 'create-user' && $canCreateUsers)
 <section class="panel" id="create-user">
     <div class="section-title">
-        <h2>เพิ่มผู้ใช้งาน</h2>
-        <span class="status-pill">สร้างบัญชี WDC Login</span>
+        <div>
+            <h2>เพิ่มบัญชีผู้ใช้</h2>
+            <p class="muted mb-0">ใช้สำหรับบัญชีผู้ดูแลหรือพนักงานเดิมที่ยังไม่มี Login เท่านั้น พนักงานใหม่ให้เริ่มจาก HR Onboarding</p>
+        </div>
+        <span class="status-pill">บัญชี WDC Login</span>
     </div>
     <form method="post" action="{{ route('admin.users.store') }}" class="form-grid">
         @csrf

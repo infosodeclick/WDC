@@ -12,6 +12,13 @@
     <a class="btn btn-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-plus-circle"></i> เปิดคำขอ IT</a>
 </div>
 
+<nav class="it-section-tabs" aria-label="เมนูงาน IT">
+    <a class="btn btn-outline-primary" href="#it-onboarding"><i class="bi bi-person-plus"></i> พนักงานใหม่</a>
+    <a class="btn btn-outline-primary" href="#it-access-registry"><i class="bi bi-key"></i> ทะเบียนสิทธิ์</a>
+    <a class="btn btn-outline-primary" href="#it-offboarding"><i class="bi bi-person-dash"></i> พนักงานลาออก</a>
+    <a class="btn btn-outline-primary" href="#it-helpdesk"><i class="bi bi-life-preserver"></i> Helpdesk</a>
+</nav>
+
 <section class="panel" id="it-onboarding">
     <div class="section-title">
         <div>

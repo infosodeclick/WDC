@@ -7,6 +7,7 @@ use App\Models\EmployeeOffboardingRequest;
 use App\Models\EmployeeOnboardingRequest;
 use App\Models\ProfileChangeRequest;
 use App\Models\User;
+use App\Models\WorkflowAuthorization;
 use App\Models\WorkflowRequest;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -46,9 +47,6 @@ class ApprovalController extends Controller
             'complaints.review',
             'it.onboarding.manage',
             'tickets.manage',
-            'admin.users.manage',
-            'admin.roles.manage',
-            'audit.logs.view',
         ]);
     }
 
@@ -191,8 +189,20 @@ class ApprovalController extends Controller
         $items = collect();
 
         if ($visible) {
+            $delegatedAuthorizerIds = WorkflowAuthorization::active()
+                ->where('authorized_user_id', $user->id)
+                ->pluck('authorizer_id');
+
             $items = WorkflowRequest::with('template', 'requester', 'assignee')
                 ->whereIn('status', ['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester'])
+                ->where(function ($query) use ($user, $delegatedAuthorizerIds) {
+                    $query->whereNull('assigned_to')
+                        ->orWhere('assigned_to', $user->id);
+
+                    if ($delegatedAuthorizerIds->isNotEmpty()) {
+                        $query->orWhereIn('assigned_to', $delegatedAuthorizerIds);
+                    }
+                })
                 ->latest()
                 ->take(30)
                 ->get()
@@ -203,15 +213,15 @@ class ApprovalController extends Controller
                     'status' => $request->statusLabel(),
                     'owner' => $request->assignee?->name ?: ($request->assigned_group ?: 'ยังไม่ระบุผู้รับผิดชอบ'),
                     'meta' => collect([$request->requester?->name, $request->due_at?->format('d/m/Y H:i')])->filter()->join(' · '),
-                    'url' => route('workflows.index'),
+                    'url' => route('workflows.show', $request),
                     'updated_at' => $request->updated_at,
                 ]);
         }
 
         return [
             'key' => 'workflow',
-            'title' => 'คำขอ/อนุมัติ',
-            'subtitle' => 'คำขอจาก Workflow ที่ยังไม่ปิดงานหรือรอผู้เกี่ยวข้องดำเนินการ',
+            'title' => 'ศูนย์คำขอ',
+            'subtitle' => 'คำขอที่ยังไม่มีผู้รับผิดชอบ มอบหมายถึงคุณ หรือมีการมอบอำนาจให้คุณดำเนินการ',
             'icon' => 'bi-kanban',
             'visible' => $visible,
             'items' => $items,

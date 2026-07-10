@@ -12,14 +12,12 @@
 <body class="portal-body">
 @php
     $currentUser = auth()->user()?->loadMissing('role.permissions', 'permissionOverrides', 'employee.department');
-    $helpdeskTemplateId = (int) ($itHelpdeskTemplateId ?? 0);
-    $isHelpdeskWorkflow = $helpdeskTemplateId > 0 && request()->routeIs('workflows.*') && (int) request('template') === $helpdeskTemplateId;
     $hideTopbarSearch = request()->routeIs('dashboard') || request()->routeIs('directory.*') || request()->routeIs('workflows.*') || request()->routeIs('it.*') || request()->routeIs('assets.*') || request()->routeIs('hr.*') || request()->routeIs('admin.*') || request()->routeIs('approvals.*') || request()->routeIs('reports.*');
     $canShowItNav = $currentUser?->canAccessAny(['it.portal.view', 'tickets.manage', 'it.onboarding.manage']);
     $canShowInventoryNav = $currentUser?->canAccessItAssets();
     $canShowHrNav = $currentUser?->canAccessAny(['hr.portal.view', 'hr.onboarding.manage', 'hr.employees.manage', 'hr.announcements.manage', 'complaints.review']);
     $canShowAdminNav = $currentUser?->canAccessAny(['admin.users.manage', 'admin.roles.manage', 'admin.activity.view', 'admin.system.manage', 'iam.users.manage', 'iam.roles.manage', 'audit.logs.view']);
-    $canShowApprovalNav = $currentUser?->canAccessAny(['workflows.manage', 'hr.onboarding.manage', 'hr.employees.manage', 'complaints.review', 'it.onboarding.manage', 'tickets.manage', 'admin.users.manage', 'admin.roles.manage', 'audit.logs.view']);
+    $canShowApprovalNav = $currentUser?->canAccessAny(['workflows.manage', 'hr.onboarding.manage', 'hr.employees.manage', 'complaints.review', 'it.onboarding.manage', 'tickets.manage']);
     $canShowReportsNav = $currentUser?->canAccessAny(['tickets.manage', 'hr.employees.manage', 'hr.onboarding.manage', 'complaints.review', 'assets.reports', 'audit.logs.view', 'admin.activity.view', 'admin.system.manage', 'workflows.manage']);
     $itQueueCount = $canShowItNav
         ? \App\Models\EmployeeOnboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'cancel_requested'])->count()
@@ -32,12 +30,37 @@
             + \App\Models\Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count()
         : 0;
     $adminQueueCount = $canShowAdminNav ? ($unreadNotificationCount ?? 0) : 0;
-    $approvalQueueCount = $canShowApprovalNav
-        ? \App\Models\EmployeeOnboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'cancel_requested', 'it_completed'])->count()
-            + \App\Models\EmployeeOffboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'it_completed'])->count()
-            + \App\Models\ProfileChangeRequest::where('status', 'pending')->count()
-            + \App\Models\Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count()
-        : 0;
+    $approvalQueueCount = 0;
+    if ($canShowApprovalNav) {
+        if ($currentUser?->canAccessAny(['it.onboarding.manage', 'it.portal.view', 'tickets.manage'])) {
+            $approvalQueueCount += \App\Models\EmployeeOnboardingRequest::whereIn('status', ['pending_it', 'in_progress', 'cancel_requested'])->count()
+                + \App\Models\EmployeeOffboardingRequest::whereIn('status', ['pending_it', 'in_progress'])->count();
+        }
+
+        if ($currentUser?->canAccessAny(['hr.onboarding.manage', 'hr.employees.manage'])) {
+            $approvalQueueCount += \App\Models\EmployeeOnboardingRequest::where('status', 'it_completed')->count()
+                + \App\Models\EmployeeOffboardingRequest::where('status', 'it_completed')->count()
+                + \App\Models\ProfileChangeRequest::where('status', 'pending')->count();
+        }
+
+        if ($currentUser?->canAccess('complaints.review')) {
+            $approvalQueueCount += \App\Models\Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count();
+        }
+
+        if ($currentUser?->canAccess('workflows.manage')) {
+            $delegatedAuthorizerIds = \App\Models\WorkflowAuthorization::active()
+                ->where('authorized_user_id', $currentUser->id)
+                ->pluck('authorizer_id');
+            $approvalQueueCount += \App\Models\WorkflowRequest::whereIn('status', ['submitted', 'in_review', 'accepted', 'in_progress', 'waiting_requester'])
+                ->where(function ($query) use ($currentUser, $delegatedAuthorizerIds) {
+                    $query->whereNull('assigned_to')->orWhere('assigned_to', $currentUser->id);
+                    if ($delegatedAuthorizerIds->isNotEmpty()) {
+                        $query->orWhereIn('assigned_to', $delegatedAuthorizerIds);
+                    }
+                })
+                ->count();
+        }
+    }
 @endphp
 <div class="portal-shell">
     <aside class="portal-sidebar">
@@ -65,11 +88,8 @@
             @if($currentUser?->canAccess('knowledge.view'))
                 <a class="nav-link {{ request()->routeIs('knowledge.*') ? 'active' : '' }}" href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>เทรนนิ่ง</span></a>
             @endif
-            @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage']))
-                <a class="nav-link {{ request()->routeIs('tickets.*') || $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ $itHelpdeskNavUrl ?? route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
-            @endif
             @if($currentUser?->canAccessAny(['workflows.create', 'workflows.manage']))
-                <a class="nav-link {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>คำขอ/อนุมัติ</span></a>
+                <a class="nav-link {{ request()->routeIs('workflows.*') || request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('workflows.index') }}"><i class="bi bi-kanban"></i><span>ศูนย์คำขอ</span></a>
             @endif
             @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
                 <a class="nav-link {{ request()->routeIs('complaints.*') ? 'active' : '' }}" href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน</span></a>
@@ -115,18 +135,18 @@
 
         @if($canShowApprovalNav || $canShowReportsNav)
             <nav class="nav flex-column portal-nav portal-utility-nav" aria-label="เมนูสรุปและอนุมัติ">
-                <span class="portal-nav-label">สรุปและอนุมัติ</span>
+                <span class="portal-nav-label">งานบริหาร</span>
                 @if($canShowApprovalNav)
                     <div class="portal-nav-group">
                         <a class="nav-link {{ request()->routeIs('approvals.*') ? 'active' : '' }}" href="{{ route('approvals.index') }}">
-                            <i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>
+                            <i class="bi bi-check2-square"></i><span>งานรอดำเนินการ</span>
                             @if($approvalQueueCount > 0)<span class="nav-badge">{{ $approvalQueueCount }}</span>@endif
                         </a>
                     </div>
                 @endif
                 @if($canShowReportsNav)
                     <div class="portal-nav-group">
-                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
+                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงาน</span></a>
                     </div>
                 @endif
             </nav>
@@ -196,16 +216,16 @@
             <span>หน้าแรก</span>
         </a>
     @endif
-    @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage']))
-        <a class="mobile-nav-item {{ request()->routeIs('tickets.*') || $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ $itHelpdeskNavUrl ?? route('tickets.index') }}">
-            <i class="bi bi-life-preserver"></i>
-            <span>แจ้ง IT</span>
+    @if($currentUser?->canAccess('directory.view'))
+        <a class="mobile-nav-item {{ request()->routeIs('directory.*') ? 'active' : '' }}" href="{{ route('directory.index') }}">
+            <i class="bi bi-person-lines-fill"></i>
+            <span>พนักงาน</span>
         </a>
     @endif
     @if($currentUser?->canAccessAny(['workflows.create', 'workflows.manage']))
-        <a class="mobile-nav-item {{ request()->routeIs('workflows.*') && ! $isHelpdeskWorkflow ? 'active' : '' }}" href="{{ route('workflows.index') }}">
+        <a class="mobile-nav-item {{ request()->routeIs('workflows.*') || request()->routeIs('tickets.*') ? 'active' : '' }}" href="{{ route('workflows.index') }}">
             <i class="bi bi-kanban"></i>
-            <span>คำขอ</span>
+            <span>ศูนย์คำขอ</span>
         </a>
     @endif
     <button class="mobile-nav-item mobile-nav-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMoreMenu" aria-controls="mobileMoreMenu">
@@ -241,6 +261,9 @@
                 @if($currentUser?->canAccess('knowledge.view'))
                     <a href="{{ route('knowledge.index') }}"><i class="bi bi-journal-richtext"></i><span>เทรนนิ่ง</span></a>
                 @endif
+                @if($currentUser?->canAccessAny(['tickets.create', 'tickets.manage', 'workflows.create', 'workflows.manage']))
+                    <a href="{{ $itHelpdeskNavUrl ?? route('tickets.index') }}"><i class="bi bi-life-preserver"></i><span>แจ้งปัญหา IT</span></a>
+                @endif
                 @if($currentUser?->canAccessAny(['complaints.create', 'complaints.review']))
                     <a href="{{ route('complaints.index') }}"><i class="bi bi-shield-check"></i><span>ร้องเรียน</span></a>
                 @endif
@@ -270,13 +293,13 @@
 
         @if($canShowApprovalNav || $canShowReportsNav)
             <div class="mobile-more-section">
-                <h3>สรุปและอนุมัติ</h3>
+                <h3>งานบริหาร</h3>
                 <div class="mobile-more-grid">
                     @if($canShowApprovalNav)
-                        <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>รายการรออนุมัติ</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
+                        <a href="{{ route('approvals.index') }}"><i class="bi bi-check2-square"></i><span>งานรอดำเนินการ</span>@if($approvalQueueCount > 0)<strong>{{ $approvalQueueCount }}</strong>@endif</a>
                     @endif
                     @if($canShowReportsNav)
-                        <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงานภาพรวม</span></a>
+                        <a href="{{ route('reports.index') }}"><i class="bi bi-graph-up-arrow"></i><span>รายงาน</span></a>
                     @endif
                 </div>
             </div>
