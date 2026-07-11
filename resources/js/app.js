@@ -25,11 +25,11 @@ if (assetStatusModal) {
     });
 }
 
-const bindInventoryModalClose = () => {
-    document.querySelectorAll('.inventory-modal').forEach((modalContent) => {
-        const modal = modalContent.closest('.modal');
-
-        if (modal && modal.parentElement !== document.body) {
+const normalizePortalModals = () => {
+    // Bootstrap backdrops are appended to <body>. Keep every Bootstrap modal
+    // there as well so the portal layout's stacking context cannot cover it.
+    document.querySelectorAll('.modal').forEach((modal) => {
+        if (modal.parentElement !== document.body) {
             document.body.appendChild(modal);
         }
     });
@@ -44,28 +44,28 @@ const bindInventoryModalClose = () => {
 
             event.preventDefault();
             event.stopPropagation();
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-        modal.removeAttribute('aria-modal');
-        modal.removeAttribute('role');
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            modal.removeAttribute('aria-modal');
+            modal.removeAttribute('role');
 
-        if (! document.querySelector('.modal.show')) {
-            document.body.classList.remove('modal-open');
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('padding-right');
-            document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
-        }
+            if (! document.querySelector('.modal.show')) {
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+            }
 
-        document.querySelector(`[data-bs-target="#${modal.id}"]`)?.focus();
+            document.querySelector(`[data-bs-target="#${modal.id}"]`)?.focus();
         }, { capture: true });
     });
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindInventoryModalClose);
+    document.addEventListener('DOMContentLoaded', normalizePortalModals);
 } else {
-    bindInventoryModalClose();
+    normalizePortalModals();
 }
 
 const copyText = async (text) => {

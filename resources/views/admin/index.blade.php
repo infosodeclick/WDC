@@ -7,6 +7,7 @@
     $primaryAdminSections = collect($adminSections)->whereIn('key', ['system', 'permissions', 'create-user']);
     $moreAdminSections = collect($adminSections)->whereNotIn('key', ['system', 'permissions', 'create-user']);
 @endphp
+<h1 class="visually-hidden">Admin</h1>
 <div class="button-row portal-section-tabs mb-3">
     @foreach($primaryAdminSections as $section)
         <a class="btn {{ $activeSection === $section['key'] ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('admin.index', ['section' => $section['key']]) }}">
@@ -32,7 +33,6 @@
     <div class="section-title">
         <div>
             <h2>ระบบ</h2>
-            <p class="muted mb-0">เมนูหน้าบ้านใช้สิทธิ์เดียวกับ Role และสิทธิ์รายคน</p>
         </div>
     </div>
     <details class="admin-system-details">

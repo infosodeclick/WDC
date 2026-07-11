@@ -1168,7 +1168,7 @@ Reference
     @php($advancedOpen = $activeDateFrom || $activeDateTo || $activeRequesterId || $activeAssigneeId)
     <details class="smartflow-advanced-filters" @if($advancedOpen) open @endif>
         <summary>
-            <span>Show Advanced Filters</span>
+            <span>ตัวกรองเพิ่มเติม</span>
             <i class="bi bi-chevron-down"></i>
         </summary>
         <form method="get" action="{{ route('workflows.index') }}" class="smartflow-advanced-filter-form">
@@ -1212,22 +1212,6 @@ Reference
         </form>
     </details>
 </section>
-
-<div class="filter-row">
-    @php($baseFilterParams = array_filter([
-        'view' => $activeView,
-        'q' => $activeSearch,
-        'template' => $activeTemplateId ?: null,
-        'date_from' => $activeDateFrom,
-        'date_to' => $activeDateTo,
-        'requester' => $activeRequesterId ?: null,
-        'assignee' => $activeAssigneeId ?: null,
-    ], fn ($value) => $value !== null && $value !== ''))
-    <a class="filter-chip {{ $activeStatus === '' ? 'active' : '' }}" href="{{ route('workflows.index', $baseFilterParams) }}">ทั้งหมด</a>
-    @foreach($statusLabels as $key => $label)
-        <a class="filter-chip {{ $activeStatus === $key ? 'active' : '' }}" href="{{ route('workflows.index', [...$baseFilterParams, 'status' => $key]) }}">{{ $label }}</a>
-    @endforeach
-</div>
 
 <div class="item-list">
     @forelse($requests as $requestItem)

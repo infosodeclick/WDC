@@ -154,7 +154,7 @@
     </aside>
 
     <main class="portal-main">
-        <header class="topbar">
+        <header class="topbar {{ $hideTopbarSearch ? 'topbar-compact' : '' }}">
             <a class="mobile-topbar-brand" href="{{ route('dashboard') }}" aria-label="WDC Portal">
                 <span class="brand-mark">WDC</span>
                 <span>
@@ -243,6 +243,11 @@
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="ปิด"></button>
     </div>
     <div class="offcanvas-body">
+        <form class="mobile-menu-search" action="{{ route('search') }}" method="get">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input name="q" value="{{ request('q') }}" placeholder="ค้นหาใน WDC" aria-label="ค้นหาใน WDC">
+            <button type="submit" aria-label="ค้นหา"><i class="bi bi-arrow-right"></i></button>
+        </form>
         <div class="mobile-more-section">
             <h3>งานประจำวัน</h3>
             <div class="mobile-more-grid">

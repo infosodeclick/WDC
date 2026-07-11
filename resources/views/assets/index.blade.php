@@ -346,6 +346,11 @@
                         <td>
                             <strong>{{ $asset->name }}</strong>
                             <small class="d-block muted">{{ $asset->category?->name ?? 'ไม่ระบุหมวด' }} · {{ trim(($asset->brand ?? '').' '.($asset->model ?? '')) ?: 'ไม่ระบุรุ่น' }}</small>
+                            <div class="asset-mobile-facts" aria-label="ข้อมูลทรัพย์สินเพิ่มเติม">
+                                <span><i class="bi bi-geo-alt" aria-hidden="true"></i>{{ $asset->location?->code ?? $asset->location?->name ?? '-' }}</span>
+                                <span><i class="bi bi-person" aria-hidden="true"></i>{{ $asset->owner_name ?: 'ยังไม่มีผู้ถือครอง' }}</span>
+                                <span><i class="bi bi-cash" aria-hidden="true"></i>{{ number_format((float) $asset->price, 0) }} บาท</span>
+                            </div>
                         </td>
                         <td>{{ $asset->location?->code ?? '-' }}<small class="d-block muted">{{ $asset->location?->name ?? $asset->company }}</small></td>
                         <td>{{ $asset->owner_name ?: '-' }}<small class="d-block muted">{{ $asset->department ?: '-' }}</small></td>

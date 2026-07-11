@@ -107,13 +107,13 @@
     @endif
 </section>
 
-<section class="panel meeting-sync-panel">
-    <div class="section-title">
-        <h2>สถานะการเชื่อมต่อ</h2>
-        @if($sheetUrl)
-            <a href="{{ $sheetUrl }}" target="_blank" rel="noopener">เปิด Google Calendar</a>
-        @endif
-    </div>
+@if(auth()->user()->canAccess('admin.system.manage'))
+<details class="panel compact-disclosure meeting-sync-panel">
+    <summary>
+        <span><i class="bi bi-gear"></i><strong>สถานะการเชื่อมต่อ</strong><small>{{ $calendarStatus['is_ready'] ? 'พร้อมใช้งาน' : 'ต้องตรวจสอบ' }}</small></span>
+        <i class="bi bi-chevron-down"></i>
+    </summary>
+    <div class="compact-disclosure-body">
     <div class="meeting-sync-grid">
         <div class="meeting-sync-card {{ $calendarStatus['can_display_calendar'] ? 'ready' : 'warning' }}">
             <i class="bi bi-calendar2-week"></i>
@@ -138,9 +138,14 @@
         </div>
     </div>
     <div class="meeting-sync-note">
-        <p>การจองจะบันทึกใน WDC เสมอ หากตั้งค่า <code>MEETING_ROOM_GOOGLE_CALENDAR_ID</code> และ <code>MEETING_ROOM_GOOGLE_SERVICE_ACCOUNT_JSON</code> ครบ ระบบจะสร้างหรือลบ event ใน Google Calendar ให้ทันที</p>
+        <p>การจองจะบันทึกใน WDC เสมอ และซิงค์ Google Calendar อัตโนมัติเมื่อการเชื่อมต่อพร้อม</p>
+        @if($sheetUrl)
+            <a class="text-link" href="{{ $sheetUrl }}" target="_blank" rel="noopener">เปิด Google Calendar</a>
+        @endif
     </div>
-</section>
+    </div>
+</details>
+@endif
 
 <div class="modal fade" id="meetingRoomBookingModal" tabindex="-1" aria-labelledby="meetingRoomBookingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">

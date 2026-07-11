@@ -3,17 +3,14 @@
 @section('title', 'แบบฟอร์ม | WDC Portal')
 
 @section('content')
+<h1 class="visually-hidden">แบบฟอร์ม</h1>
 @if($canManageDocuments)
-    <section class="panel document-admin-panel mb-3">
-        <div class="section-title">
-            <div>
-                <h2>เพิ่มแบบฟอร์ม</h2>
-                <p>อัปโหลดเอกสารจริงให้พนักงานดาวน์โหลดจาก WDC ได้ทันที</p>
-            </div>
-            <span class="status-pill"><i class="bi bi-shield-check"></i> documents.manage</span>
-        </div>
-
-        <form class="document-upload-form" method="POST" action="{{ route('documents.store') }}" enctype="multipart/form-data">
+    <details class="panel compact-disclosure document-admin-panel mb-3" @if($errors->any()) open @endif>
+        <summary>
+            <span><i class="bi bi-cloud-arrow-up"></i><strong>เพิ่มแบบฟอร์ม</strong></span>
+            <i class="bi bi-chevron-down"></i>
+        </summary>
+        <form class="document-upload-form compact-disclosure-body" method="POST" action="{{ route('documents.store') }}" enctype="multipart/form-data">
             @csrf
             <label>
                 <span>แผนก</span>
@@ -46,10 +43,10 @@
             </label>
             <button class="btn btn-primary" type="submit"><i class="bi bi-cloud-arrow-up"></i> เพิ่มแบบฟอร์ม</button>
         </form>
-    </section>
+    </details>
 @endif
 
-<div class="button-row mb-3">
+<div class="button-row portal-section-tabs document-department-tabs mb-3" aria-label="หมวดแบบฟอร์ม">
     <a class="btn {{ $activeDepartment === '' ? 'btn-primary' : 'btn-outline-primary' }}" href="{{ route('documents.index') }}">
         <i class="bi bi-folder2-open"></i> ทั้งหมด
     </a>
@@ -85,7 +82,7 @@
                             <form method="POST" action="{{ route('documents.destroy', $document) }}" onsubmit="return confirm('ลบแบบฟอร์มนี้ออกจากระบบ WDC?')">
                                 @csrf
                                 @method('DELETE')
-                                <button class="btn btn-outline-danger btn-sm" type="submit"><i class="bi bi-trash"></i> ลบ</button>
+                                <button class="btn btn-outline-danger btn-sm document-delete-button" type="submit" title="ลบ {{ $document->title }}" aria-label="ลบ {{ $document->title }}"><i class="bi bi-trash"></i></button>
                             </form>
                         @endif
                     </div>

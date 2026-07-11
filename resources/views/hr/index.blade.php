@@ -17,6 +17,7 @@
     $moreHrSections = collect($hrMenu)->whereNotIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
 @endphp
 
+<h1 class="visually-hidden">HR</h1>
 <div class="hr-section-tabs portal-section-tabs mb-3">
     @foreach($primaryHrSections as $item)
         @if($item['show'])
@@ -60,7 +61,7 @@
             @endif
             @if($canManageEmployees)
                 <div class="hr-summary-card">
-                    <span>พนักงานลาออกรอดำเนินการ</span>
+                    <span>ลาออกรอดำเนินการ</span>
                     <strong>{{ number_format($pendingOffboardingCount) }}</strong>
                 </div>
             @endif
@@ -73,9 +74,8 @@
                 <div class="section-title hr-panel-title">
                     <div>
                         <h2>คำขอพนักงานใหม่</h2>
-                        <small>ติดตามรายการที่ส่งให้ IT และรอ HR อนุมัติ</small>
                     </div>
-                    <a class="text-link" href="{{ route('hr.index', ['section' => 'onboarding']) }}">เปิดเมนู</a>
+                    <a class="icon-link" href="{{ route('hr.index', ['section' => 'onboarding']) }}" title="เปิดคำขอพนักงานใหม่" aria-label="เปิดคำขอพนักงานใหม่"><i class="bi bi-arrow-right"></i></a>
                 </div>
                 <div class="hr-list">
                     @forelse($onboardingRequests->take(5) as $onboarding)
@@ -98,9 +98,8 @@
                 <div class="section-title hr-panel-title">
                     <div>
                         <h2>คำขอแก้ข้อมูลโปรไฟล์</h2>
-                        <small>รอ HR ตรวจสอบข้อมูลพนักงาน</small>
                     </div>
-                    <a class="text-link" href="{{ route('hr.index', ['section' => 'profile-requests']) }}">เปิดเมนู</a>
+                    <a class="icon-link" href="{{ route('hr.index', ['section' => 'profile-requests']) }}" title="เปิดคำขอแก้ข้อมูลโปรไฟล์" aria-label="เปิดคำขอแก้ข้อมูลโปรไฟล์"><i class="bi bi-arrow-right"></i></a>
                 </div>
                 <div class="hr-list">
                     @forelse($profileChangeRequests->take(5) as $profileRequest)
@@ -122,9 +121,8 @@
                 <div class="section-title hr-panel-title">
                     <div>
                         <h2>เรื่องร้องเรียนล่าสุด</h2>
-                        <small>รายการล่าสุดที่ HR ต้องรับทราบ</small>
                     </div>
-                    <a class="text-link" href="{{ route('hr.index', ['section' => 'complaints']) }}">เปิดเมนู</a>
+                    <a class="icon-link" href="{{ route('hr.index', ['section' => 'complaints']) }}" title="เปิดเรื่องร้องเรียน" aria-label="เปิดเรื่องร้องเรียน"><i class="bi bi-arrow-right"></i></a>
                 </div>
                 <div class="hr-list">
                     @forelse($complaints->take(5) as $complaint)
@@ -147,9 +145,8 @@
                 <div class="section-title hr-panel-title">
                     <div>
                         <h2>ประกาศล่าสุด</h2>
-                        <small>ประกาศที่สร้างจาก HR ล่าสุด</small>
                     </div>
-                    <a class="text-link" href="{{ route('hr.index', ['section' => 'announcements']) }}">เปิดเมนู</a>
+                    <a class="icon-link" href="{{ route('hr.index', ['section' => 'announcements']) }}" title="เปิดจัดการประกาศ" aria-label="เปิดจัดการประกาศ"><i class="bi bi-arrow-right"></i></a>
                 </div>
                 <div class="hr-list">
                     @forelse($announcements->take(5) as $announcement)

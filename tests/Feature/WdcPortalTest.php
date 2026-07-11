@@ -1331,10 +1331,17 @@ class WdcPortalTest extends TestCase
             ->assertSee('end_at', false)
             ->assertSee('calendar.google.com/calendar/u/0/embed', false)
             ->assertSee('641a219d5e8a0c60b9107fff5f155eba12e1d82d03809d7df47bc8aa656ea1e6', false)
-            ->assertSee('meeting-sync-grid', false)
-            ->assertSee('MEETING_ROOM_GOOGLE_SERVICE_ACCOUNT_JSON')
-            ->assertSee('MEETING_ROOM_GOOGLE_CALENDAR_ID')
+            ->assertDontSee('meeting-sync-grid', false)
+            ->assertDontSee('MEETING_ROOM_GOOGLE_SERVICE_ACCOUNT_JSON')
+            ->assertDontSee('MEETING_ROOM_GOOGLE_CALENDAR_ID')
             ->assertDontSee('calendar.google.com/calendar/u/0/r/eventedit', false);
+
+        $administrator = User::where('employee_code', 'administrator')->firstOrFail();
+
+        $this->actingAs($administrator)
+            ->get(route('meeting-rooms.index'))
+            ->assertOk()
+            ->assertSee('meeting-sync-grid', false);
     }
 
     public function test_meeting_room_page_respects_permission_override(): void
@@ -2132,7 +2139,7 @@ class WdcPortalTest extends TestCase
             ->assertSee('เอกสารทั้งหมด')
             ->assertSee('รายการโปรด')
             ->assertSee('เครื่องมือ')
-            ->assertSee('Show Advanced Filters')
+            ->assertSee('ตัวกรองเพิ่มเติม')
             ->assertDontSee('<details class="panel smartflow-workspace-panel smartflow-create-panel"', false)
             ->assertSee('smartflow-document-card', false)
             ->assertSee('smartflow-document-summary', false)
