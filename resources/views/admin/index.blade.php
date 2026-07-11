@@ -449,52 +449,170 @@
 @endif
 
 @if($activeSection === 'role-template' && $canManageRoles)
-<section class="panel" id="role-template">
-    <div class="section-title">
-        <h2>Role Template</h2>
-        <span class="status-pill">สิทธิ์เริ่มต้นของแต่ละกลุ่ม</span>
+<?php
+    $roleIcons = [
+        'employee' => 'bi-person',
+        'hr' => 'bi-people',
+        'it_supervisor' => 'bi-pc-display',
+        'it_support' => 'bi-tools',
+        'admin' => 'bi-sliders',
+        'super_admin' => 'bi-shield-lock',
+        'auditor' => 'bi-clipboard-check',
+    ];
+    $activeRolePermissionKeys = $activeRole?->permissions->pluck('key') ?? collect();
+?>
+<section class="panel role-template-selector" id="role-template">
+    <div class="role-template-toolbar">
+        <div class="role-template-title">
+            <h2>Role Template</h2>
+            <span class="status-pill">{{ $roles->count() }} Role</span>
+        </div>
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+            <i class="bi bi-plus-circle"></i> สร้าง Role ใหม่
+        </button>
     </div>
-    <div class="role-template-grid">
+    <nav class="role-template-tabs" aria-label="เลือก Role ที่ต้องการจัดการ">
         @foreach($roles as $role)
-            <article class="role-template-card">
-                <form method="post" action="{{ route('admin.roles.permissions', $role) }}">
-                    @csrf
-                    @method('PATCH')
-                    <div class="admin-user-head">
-                        <div>
-                            <strong>{{ $role->name }}</strong>
-                            <small>{{ $role->description }} · {{ $role->users_count }} users</small>
-                        </div>
-                        @if($role->isSuperAdmin())
-                            <span class="status-pill status-primary">สูงสุด</span>
+            <a class="role-template-tab {{ $activeRole?->is($role) ? 'active' : '' }}" href="{{ route('admin.index', ['section' => 'role-template', 'role' => $role->slug]) }}" aria-current="{{ $activeRole?->is($role) ? 'page' : 'false' }}">
+                <i class="bi {{ $roleIcons[$role->slug] ?? 'bi-person-gear' }}"></i>
+                <span>
+                    <strong>{{ $role->name }}</strong>
+                    <small>{{ $role->users_count }} ผู้ใช้งาน</small>
+                </span>
+            </a>
+        @endforeach
+    </nav>
+</section>
+
+@if($activeRole)
+<section class="panel role-template-editor">
+    <form method="post" action="{{ route('admin.roles.permissions', $activeRole) }}">
+        @csrf
+        @method('PATCH')
+        <header class="role-template-editor-head">
+            <div class="role-template-identity">
+                <span class="role-template-icon"><i class="bi {{ $roleIcons[$activeRole->slug] ?? 'bi-person-gear' }}"></i></span>
+                <div>
+                    <div class="role-template-name-row">
+                        <h2>{{ $activeRole->name }}</h2>
+                        @if($activeRole->isSuperAdmin())
+                            <span class="status-pill status-primary">สิทธิ์สูงสุด</span>
                         @endif
                     </div>
-                    <label><span>ขอบเขตข้อมูลเริ่มต้น</span>
-                        <select class="form-select form-select-sm" name="default_data_scope">
-                            @foreach($scopeLabels as $key => $label)
-                                <option value="{{ $key }}" @selected($role->default_data_scope === $key)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-                    <div class="permission-matrix compact-matrix">
-                        @foreach($permissions as $group => $groupPermissions)
-                            <section>
-                                <h3>{{ $group }}</h3>
-                                @foreach($groupPermissions as $permission)
-                                    <label class="permission-check">
-                                        <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->key }}" @checked($role->isSuperAdmin() || $role->permissions->contains('key', $permission->key)) @disabled($role->isSuperAdmin())>
-                                        <span>{{ $permission->name }}</span>
-                                    </label>
-                                @endforeach
-                            </section>
+                    <span class="role-template-slug">{{ $activeRole->slug }}</span>
+                    @if($activeRole->description)
+                        <p>{{ $activeRole->description }}</p>
+                    @endif
+                </div>
+            </div>
+            <div class="role-template-stats">
+                <span><strong>{{ $activeRole->users_count }}</strong> ผู้ใช้งาน</span>
+                <span><strong>{{ $activeRole->isSuperAdmin() ? $allPermissions->count() : $activeRolePermissionKeys->count() }}</strong> สิทธิ์</span>
+            </div>
+        </header>
+
+        <div class="role-template-settings">
+            <label>
+                <span>ขอบเขตข้อมูลเริ่มต้น</span>
+                <select class="form-select" name="default_data_scope">
+                    @foreach($scopeLabels as $key => $label)
+                        <option value="{{ $key }}" @selected($activeRole->default_data_scope === $key)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <div class="role-template-scope-note">
+                <i class="bi bi-info-circle"></i>
+                <span>กำหนดสิทธิ์มาตรฐานให้ผู้ใช้ทุกคนที่เลือก Role นี้</span>
+            </div>
+        </div>
+
+        <div class="role-permission-groups">
+            @foreach($permissions as $group => $groupPermissions)
+                <?php $groupSelectedCount = $activeRole->isSuperAdmin() ? $groupPermissions->count() : $groupPermissions->whereIn('key', $activeRolePermissionKeys)->count(); ?>
+                <details class="role-permission-group" @if($loop->first) open @endif>
+                    <summary>
+                        <span><strong>{{ $group }}</strong><small>{{ $groupSelectedCount }}/{{ $groupPermissions->count() }} สิทธิ์</small></span>
+                        <i class="bi bi-chevron-down"></i>
+                    </summary>
+                    <div class="role-permission-options">
+                        @foreach($groupPermissions as $permission)
+                            <label class="permission-check">
+                                <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->key }}" @checked($activeRole->isSuperAdmin() || $activeRolePermissionKeys->contains($permission->key)) @disabled($activeRole->isSuperAdmin())>
+                                <span>
+                                    <strong>{{ $permission->name }}</strong>
+                                    <small>{{ $permission->description }}</small>
+                                </span>
+                            </label>
                         @endforeach
                     </div>
-                    <button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-save"></i> บันทึก Role</button>
-                </form>
-            </article>
-        @endforeach
-    </div>
+                </details>
+            @endforeach
+        </div>
+
+        <div class="role-template-actions">
+            <span>{{ $activeRole->users_count }} ผู้ใช้งานจะได้รับค่า Role นี้</span>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> บันทึก Role</button>
+        </div>
+    </form>
 </section>
+@endif
+
+<div class="modal fade role-create-modal" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleModalLabel" aria-hidden="true" data-auto-show="{{ $errors->createRole->any() ? 'true' : 'false' }}">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="post" action="{{ route('admin.roles.store') }}">
+            @csrf
+            <div class="modal-header">
+                <div>
+                    <p class="eyebrow mb-1">Role Template</p>
+                    <h2 class="modal-title fs-5" id="createRoleModalLabel">สร้าง Role ใหม่</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid role-create-form">
+                    <label>
+                        <span>ชื่อ Role</span>
+                        <input class="form-control @error('name', 'createRole') is-invalid @enderror" name="name" value="{{ old('name') }}" maxlength="80" required placeholder="เช่น Sales Manager">
+                        @error('name', 'createRole')<small class="invalid-feedback">{{ $message }}</small>@enderror
+                    </label>
+                    <label>
+                        <span>รหัส Role</span>
+                        <input class="form-control @error('slug', 'createRole') is-invalid @enderror" name="slug" value="{{ old('slug') }}" maxlength="80" pattern="[a-z0-9]+(?:[_-][a-z0-9]+)*" required placeholder="sales_manager">
+                        @error('slug', 'createRole')<small class="invalid-feedback">{{ $message }}</small>@enderror
+                    </label>
+                    <label>
+                        <span>ขอบเขตข้อมูลเริ่มต้น</span>
+                        <select class="form-select @error('default_data_scope', 'createRole') is-invalid @enderror" name="default_data_scope" required>
+                            @foreach($scopeLabels as $key => $label)
+                                <option value="{{ $key }}" @selected(old('default_data_scope', 'own') === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('default_data_scope', 'createRole')<small class="invalid-feedback">{{ $message }}</small>@enderror
+                    </label>
+                    <label>
+                        <span>คัดลอกสิทธิ์จาก</span>
+                        <select class="form-select @error('copy_from_role_id', 'createRole') is-invalid @enderror" name="copy_from_role_id">
+                            <option value="">เริ่มต้นโดยยังไม่เลือกสิทธิ์</option>
+                            @foreach($roles as $role)
+                                <option value="{{ $role->id }}" @selected((string) old('copy_from_role_id') === (string) $role->id)>{{ $role->name }} · {{ $role->permissions->count() }} สิทธิ์</option>
+                            @endforeach
+                        </select>
+                        @error('copy_from_role_id', 'createRole')<small class="invalid-feedback">{{ $message }}</small>@enderror
+                    </label>
+                    <label class="span-2">
+                        <span>รายละเอียด</span>
+                        <textarea class="form-control @error('description', 'createRole') is-invalid @enderror" name="description" rows="3" maxlength="500" placeholder="หน้าที่และขอบเขตของ Role นี้">{{ old('description') }}</textarea>
+                        @error('description', 'createRole')<small class="invalid-feedback">{{ $message }}</small>@enderror
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">ยกเลิก</button>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-plus-circle"></i> สร้าง Role</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endif
 
 @if($activeSection === 'activity-logs' && $canViewLogs)

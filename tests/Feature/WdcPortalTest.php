@@ -648,9 +648,24 @@ class WdcPortalTest extends TestCase
             ->assertSee('EMP00125')
             ->assertDontSee('EMP00200');
 
-        $this->get(route('admin.index', ['section' => 'role-template']))
+        $roleTemplateResponse = $this->get(route('admin.index', ['section' => 'role-template']));
+
+        $roleTemplateResponse
             ->assertOk()
-            ->assertSee('Role Template');
+            ->assertSee('Role Template')
+            ->assertSee('สร้าง Role ใหม่')
+            ->assertSee('role-template-tabs', false)
+            ->assertSee('role-template-editor', false)
+            ->assertSee('data-bs-target="#createRoleModal"', false)
+            ->assertSee(route('admin.index', ['section' => 'role-template', 'role' => 'employee']));
+
+        $this->assertSame(1, substr_count($roleTemplateResponse->getContent(), 'class="panel role-template-editor"'));
+
+        $this->get(route('admin.index', ['section' => 'role-template', 'role' => 'it_support']))
+            ->assertOk()
+            ->assertSee('IT Support')
+            ->assertSee('it_support')
+            ->assertSee('role-permission-groups', false);
 
         $this->get(route('admin.index', ['section' => 'activity-logs']))
             ->assertOk()
@@ -670,6 +685,63 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Activity Logs')
             ->assertDontSee('เมนูด้านซ้ายหน้าบ้าน');
+    }
+
+    public function test_super_admin_can_create_role_template_from_existing_role(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::where('employee_code', 'EMP09999')->firstOrFail();
+        $sourceRole = Role::where('slug', 'employee')->with('permissions')->firstOrFail();
+        $this->actingAs($admin);
+
+        $response = $this->post(route('admin.roles.store'), [
+            'name' => 'Sales Manager',
+            'slug' => 'sales_manager',
+            'description' => 'Sales team manager role',
+            'default_data_scope' => 'department',
+            'copy_from_role_id' => $sourceRole->id,
+        ]);
+
+        $role = Role::where('slug', 'sales_manager')->with('permissions')->firstOrFail();
+
+        $response->assertRedirect(route('admin.index', [
+            'section' => 'role-template',
+            'role' => 'sales_manager',
+        ]));
+        $this->assertSame('Sales Manager', $role->name);
+        $this->assertSame('department', $role->default_data_scope);
+        $this->assertEqualsCanonicalizing(
+            $sourceRole->permissions->pluck('id')->all(),
+            $role->permissions->pluck('id')->all(),
+        );
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'create_role',
+            'subject_type' => Role::class,
+            'subject_id' => $role->id,
+        ]);
+
+        $this->post(route('admin.roles.store'), [
+            'name' => 'Duplicate Role',
+            'slug' => 'sales_manager',
+            'default_data_scope' => 'own',
+        ])->assertSessionHasErrorsIn('createRole', ['slug']);
+    }
+
+    public function test_employee_cannot_create_role_template(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $employee = User::where('employee_code', 'EMP00125')->firstOrFail();
+        $this->actingAs($employee);
+
+        $this->post(route('admin.roles.store'), [
+            'name' => 'Unauthorized Role',
+            'slug' => 'unauthorized_role',
+            'default_data_scope' => 'own',
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('roles', ['slug' => 'unauthorized_role']);
     }
 
     public function test_admin_can_create_employee_with_language_specific_nicknames_for_directory(): void

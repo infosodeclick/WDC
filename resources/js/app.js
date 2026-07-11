@@ -34,6 +34,12 @@ const normalizePortalModals = () => {
         }
     });
 
+    const autoShowModal = document.querySelector('.modal[data-auto-show="true"]');
+
+    if (autoShowModal && window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getOrCreateInstance(autoShowModal).show();
+    }
+
     document.querySelectorAll('.inventory-modal [data-bs-dismiss="modal"]').forEach((closeButton) => {
         closeButton.addEventListener('click', (event) => {
             const modal = closeButton.closest('.modal');

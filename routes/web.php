@@ -142,5 +142,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/mail-test', [AdminController::class, 'sendMailTest'])->name('admin.mail-test');
     Route::patch('/admin/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::patch('/admin/users/{user}/access', [AdminController::class, 'updateUserAccess'])->name('admin.users.access');
+    Route::post('/admin/roles', [AdminController::class, 'storeRole'])->name('admin.roles.store');
     Route::patch('/admin/roles/{role}/permissions', [AdminController::class, 'updateRolePermissions'])->name('admin.roles.permissions');
 });

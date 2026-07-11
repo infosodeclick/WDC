@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\DirectoryUserSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -70,6 +71,9 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
         $allPermissions = Permission::orderBy('sort_order')->get();
+        $requestedRole = $request->string('role')->toString();
+        $activeRole = $allRoles->first(fn (Role $role) => $role->slug === $requestedRole || (string) $role->id === $requestedRole)
+            ?? $allRoles->first();
         $directoryManageKeys = ['directory.manage', 'hr.employees.manage'];
         $canManageUsers = $actor->canAccessAny(['admin.users.manage', 'iam.users.manage']);
         $canManageDirectory = $actor->canAccessAny($directoryManageKeys);
@@ -100,6 +104,7 @@ class AdminController extends Controller
             'users' => $usersQuery->get(),
             'memberSearch' => $memberSearch,
             'roles' => $allRoles,
+            'activeRole' => $activeRole,
             'permissions' => $allPermissions->groupBy('group'),
             'allPermissions' => $allPermissions,
             'menuPermissions' => $this->sidebarMenuPermissions(),
@@ -450,6 +455,43 @@ class AdminController extends Controller
         $this->log($request, 'update_role_permissions', Role::class, $role->id, "Updated role {$role->slug}");
 
         return back()->with('status', 'อัปเดต role template แล้ว');
+    }
+
+    public function storeRole(Request $request): RedirectResponse
+    {
+        $actor = $request->user()->load('role.permissions', 'permissionOverrides');
+
+        abort_unless($actor->canAccessAny(['admin.roles.manage', 'iam.roles.manage']), 403);
+
+        $data = $request->validateWithBag('createRole', [
+            'name' => ['required', 'string', 'max:80', Rule::unique('roles', 'name')],
+            'slug' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9]+(?:[_-][a-z0-9]+)*$/', Rule::unique('roles', 'slug')],
+            'description' => ['nullable', 'string', 'max:500'],
+            'default_data_scope' => ['required', Rule::in(array_keys(Permission::DATA_SCOPE_LABELS))],
+            'copy_from_role_id' => ['nullable', 'integer', 'exists:roles,id'],
+        ]);
+
+        $role = DB::transaction(function () use ($data): Role {
+            $role = Role::create([
+                'name' => $data['name'],
+                'slug' => $data['slug'],
+                'description' => $data['description'] ?? null,
+                'default_data_scope' => $data['default_data_scope'],
+            ]);
+
+            if (! empty($data['copy_from_role_id'])) {
+                $sourceRole = Role::with('permissions:id')->findOrFail($data['copy_from_role_id']);
+                $role->permissions()->sync($sourceRole->permissions->pluck('id')->all());
+            }
+
+            return $role;
+        });
+
+        $this->log($request, 'create_role', Role::class, $role->id, "Created role {$role->slug}");
+
+        return redirect()
+            ->route('admin.index', ['section' => 'role-template', 'role' => $role->slug])
+            ->with('status', 'สร้าง Role ใหม่แล้ว');
     }
 
     private function canOpenAdmin(User $user): bool
