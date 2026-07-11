@@ -10,7 +10,6 @@
 <div class="page-heading">
     <div>
         <h1>IT</h1>
-        <p>งานพนักงานและ Helpdesk ของทีม IT</p>
     </div>
     <a class="btn btn-primary" href="{{ $itHelpdeskUrl }}"><i class="bi bi-plus-circle"></i> เปิดคำขอ IT</a>
 </div>

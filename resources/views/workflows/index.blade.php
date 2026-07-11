@@ -10,18 +10,15 @@
 @endphp
 <div class="page-heading">
     <div>
-        <p class="eyebrow">SmartFlow Work Center</p>
         <h1>ศูนย์คำขอ</h1>
-        <p>สร้างคำขอ แจ้งปัญหา ติดตามสถานะ และดำเนินการเอกสารจากที่เดียว</p>
     </div>
-    <div class="request-center-heading-actions">
-        @if($canCreate && $helpdeskTemplate)
+    @if($canCreate && $helpdeskTemplate)
+        <div class="request-center-heading-actions">
             <a class="btn btn-primary" href="{{ route('workflows.index', ['view' => $documentCreateView, 'template' => $helpdeskTemplate->id]) }}#workflow-create-form">
                 <i class="bi bi-life-preserver" aria-hidden="true"></i> แจ้งปัญหา IT
             </a>
-        @endif
-        <span class="role-badge">{{ $canManage ? 'เห็นงานตามสิทธิ์' : 'เห็นงานของฉัน' }}</span>
-    </div>
+        </div>
+    @endif
 </div>
 
 <section class="smartflow-toolbar" aria-label="เมนูศูนย์คำขอ">
@@ -84,9 +81,13 @@
                         <span><strong>{{ $tab['label'] }}</strong><small>{{ $tab['description'] ?? 'ตั้งค่าและตรวจสอบระบบ' }}</small></span>
                     </a>
                 @endforeach
-                <a href="{{ route('workflows.export', request()->except('page')) }}">
+                <a href="{{ route('workflows.export', [...request()->except('page'), 'format' => 'xls']) }}">
                     <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
-                    <span><strong>ส่งออก Excel/CSV</strong><small>ดาวน์โหลดข้อมูลตามตัวกรองปัจจุบัน</small></span>
+                    <span><strong>ส่งออก Excel</strong><small>ข้อมูลตามตัวกรองปัจจุบัน</small></span>
+                </a>
+                <a href="{{ route('workflows.export', [...request()->except('page'), 'format' => 'csv']) }}">
+                    <i class="bi bi-filetype-csv" aria-hidden="true"></i>
+                    <span><strong>ส่งออก CSV</strong><small>ข้อมูลตามตัวกรองปัจจุบัน</small></span>
                 </a>
             @endif
         </div>

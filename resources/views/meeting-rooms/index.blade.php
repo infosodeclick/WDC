@@ -21,11 +21,7 @@
 
 <section class="panel" id="wdc-bookings">
     <div class="section-title">
-        <div>
-            <h2>การจองใน WDC</h2>
-            <p class="section-subtitle">แสดงเฉพาะรายการที่คุณเป็นผู้จอง เพื่อให้ตรวจสถานะและยกเลิกได้ง่าย</p>
-        </div>
-        <span class="tag">การจองของฉัน</span>
+        <h2>การจองของฉัน</h2>
     </div>
 
     <div class="table-responsive meeting-table-wrap">

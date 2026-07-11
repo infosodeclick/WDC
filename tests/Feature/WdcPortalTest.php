@@ -2568,6 +2568,11 @@ class WdcPortalTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
 
+        $workflowExcel = $this->get(route('workflows.export', ['format' => 'xls']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+        $this->assertStringContainsString('<table', $workflowExcel->streamedContent());
+
         $this->get(route('workflows.index', ['view' => 'workflows']))
             ->assertOk()
             ->assertSee('Developer/IT support')
@@ -2851,6 +2856,16 @@ class WdcPortalTest extends TestCase
 
         $this->actingAs($itUser);
 
+        $assetCsv = $this->get(route('assets.export', ['format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('WDC-NB-TEST', $assetCsv->streamedContent());
+
+        $assetExcel = $this->get(route('assets.export', ['format' => 'xls']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+        $this->assertStringContainsString('<table', $assetExcel->streamedContent());
+
         $this->delete(route('assets.destroy', $asset))->assertRedirect();
 
         $this->assertDatabaseHas('it_assets', [
@@ -3073,21 +3088,48 @@ class WdcPortalTest extends TestCase
         $this->actingAs($hr);
         $this->get(route('reports.index'))
             ->assertOk()
-            ->assertSee('Reports')
             ->assertSee('portal-utility-nav', false)
-            ->assertSee('รายงานภาพรวม')
+            ->assertSee('ส่งออกรายงาน')
+            ->assertSee('report-summary-grid', false)
             ->assertSee('งาน IT ค้าง')
-            ->assertSee('จาก IT Helpdesk Workflow')
-            ->assertSee('IT Helpdesk ตามสถานะ')
+            ->assertSee('IT Helpdesk')
+            ->assertSee('href="#report-helpdesk"', false)
             ->assertSee('Export รายชื่อพนักงาน CSV')
             ->assertDontSee('Export INVENTORY CSV');
 
         $this->actingAs($itUser);
         $this->get(route('reports.index'))
             ->assertOk()
-            ->assertSee('INVENTORY ตามสถานะ')
+            ->assertSee('INVENTORY')
+            ->assertSee('id="report-assets"', false)
             ->assertSee('Export IT Checklist CSV')
             ->assertSee('Export INVENTORY CSV');
+    }
+
+    public function test_report_overview_exports_csv_excel_and_print_view(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $hr = User::where('employee_code', 'EMP01000')->firstOrFail();
+        $this->actingAs($hr);
+
+        $csv = $this->get(route('reports.export', ['format' => 'csv']))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $csvContent = $csv->streamedContent();
+        $this->assertStringContainsString('ภาพรวม', $csvContent);
+        $this->assertStringContainsString('งาน IT ค้าง', $csvContent);
+
+        $excel = $this->get(route('reports.export', ['format' => 'xls']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.ms-excel; charset=UTF-8');
+        $this->assertStringContainsString('<table', $excel->streamedContent());
+
+        $this->get(route('reports.print'))
+            ->assertOk()
+            ->assertSee('รายงานภาพรวม WDC')
+            ->assertSee('พิมพ์ / บันทึก PDF')
+            ->assertSee('window.print()', false);
     }
 
     public function test_it_can_register_software_license_and_reports_show_license_summary(): void

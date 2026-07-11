@@ -3,12 +3,8 @@
 @section('title', 'เทรนนิ่ง | WDC Portal')
 
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="eyebrow">Training</p>
-        <h1>เทรนนิ่ง</h1>
-        <p>บทความและวิดีโอสำหรับ ERP บัญชี คลัง ฝ่ายขาย และ IT</p>
-    </div>
+<div class="page-heading compact-page-heading">
+    <h1>เทรนนิ่ง</h1>
 </div>
 
 <div class="filter-row">
@@ -23,11 +19,16 @@
         <div class="section-title"><h2>บทความเทรนนิ่ง</h2></div>
         <div class="item-list">
             @forelse($articles as $article)
-                <article class="list-card">
+                <article class="list-card compact-content-card">
                     <span class="tag">{{ $article->category }}</span>
                     <h3>{{ $article->title }}</h3>
-                    <p>{{ $article->summary }}</p>
-                    <small>{{ $article->body }}</small>
+                    <p class="line-clamp-2">{{ $article->summary }}</p>
+                    @if($article->body)
+                        <details class="inline-content-disclosure">
+                            <summary>อ่านเนื้อหา</summary>
+                            <p>{{ $article->body }}</p>
+                        </details>
+                    @endif
                 </article>
             @empty
                 <div class="empty-state">ยังไม่มีบทความในหมวดนี้</div>
@@ -44,7 +45,7 @@
                     <div>
                         <span class="tag">{{ $video->category }}</span>
                         <h3>{{ $video->title }}</h3>
-                        <p>{{ $video->summary }}</p>
+                        <p class="line-clamp-2">{{ $video->summary }}</p>
                         <a href="{{ $video->video_url }}" target="_blank" rel="noreferrer">เปิดวิดีโอ · {{ $video->duration_minutes }} นาที</a>
                     </div>
                 </article>

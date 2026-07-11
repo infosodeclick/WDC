@@ -31,7 +31,9 @@
             <div class="dropdown">
                 <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download"></i> ส่งออก</button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ route('assets.export') }}"><i class="bi bi-filetype-csv"></i> Export CSV</a></li>
+                    <li><a class="dropdown-item" href="{{ route('assets.export', ['format' => 'xls']) }}"><i class="bi bi-file-earmark-spreadsheet"></i> Excel</a></li>
+                    <li><a class="dropdown-item" href="{{ route('assets.export', ['format' => 'csv']) }}"><i class="bi bi-filetype-csv"></i> CSV</a></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item" href="{{ route('assets.master-data') }}"><i class="bi bi-database-down"></i> Master Data</a></li>
                 </ul>
             </div>

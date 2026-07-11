@@ -17,10 +17,12 @@ use App\Services\SmartflowCsvImporter;
 use App\Services\SmartflowWorkflowCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class WorkflowController extends Controller
 {
@@ -737,7 +739,7 @@ class WorkflowController extends Controller
         return back()->with('status', 'Sync SmartFlow workflow catalog เข้า WDC แล้ว');
     }
 
-    public function export(Request $request)
+    public function export(Request $request): StreamedResponse
     {
         $user = $request->user()->load('role.permissions', 'permissionOverrides', 'employee.department');
 
@@ -781,33 +783,71 @@ class WorkflowController extends Controller
             ->limit(2000)
             ->get();
 
-        return response()->streamDownload(function () use ($rows) {
+        $exportRows = $rows->map(fn (WorkflowRequest $row): array => [
+            'document_number' => $row->document_number,
+            'workflow' => $row->template?->name,
+            'requester' => $row->requester?->name,
+            'department' => $row->requester?->employee?->department?->name,
+            'status' => $row->status,
+            'priority' => $row->priority,
+            'current_step' => $row->currentStep?->name,
+            'assigned_to' => $row->assignee?->name,
+            'assigned_group' => $row->assigned_group,
+            'legacy_reference' => $row->legacy_reference,
+            'external_url' => $row->external_url,
+            'submitted_at' => $row->submitted_at?->format('Y-m-d H:i:s'),
+            'due_at' => $row->due_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        return $request->string('format')->lower()->toString() === 'xls'
+            ? $this->streamWorkflowExcel($exportRows)
+            : $this->streamWorkflowCsv($exportRows);
+    }
+
+    private function streamWorkflowCsv(Collection $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
-            echo "\xEF\xBB\xBF";
-            fputcsv($handle, ['document_number', 'workflow', 'requester', 'department', 'status', 'priority', 'current_step', 'assigned_to', 'assigned_group', 'legacy_reference', 'external_url', 'submitted_at', 'due_at']);
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, $this->workflowExportHeaders());
 
             foreach ($rows as $row) {
-                fputcsv($handle, [
-                    $row->document_number,
-                    $row->template?->name,
-                    $row->requester?->name,
-                    $row->requester?->employee?->department?->name,
-                    $row->status,
-                    $row->priority,
-                    $row->currentStep?->name,
-                    $row->assignee?->name,
-                    $row->assigned_group,
-                    $row->legacy_reference,
-                    $row->external_url,
-                    $row->submitted_at?->format('Y-m-d H:i:s'),
-                    $row->due_at?->format('Y-m-d H:i:s'),
-                ]);
+                fputcsv($handle, array_values($row));
             }
 
             fclose($handle);
         }, 'wdc-smartflow-documents-'.now()->format('Ymd-His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    private function streamWorkflowExcel(Collection $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows): void {
+            echo '<html><head><meta charset="UTF-8"></head><body><table border="1">';
+            echo '<thead><tr>';
+            foreach ($this->workflowExportHeaders() as $header) {
+                echo '<th>'.e($header).'</th>';
+            }
+            echo '</tr></thead><tbody>';
+
+            foreach ($rows as $row) {
+                echo '<tr>';
+                foreach ($row as $value) {
+                    echo '<td>'.e((string) ($value ?? '')).'</td>';
+                }
+                echo '</tr>';
+            }
+
+            echo '</tbody></table></body></html>';
+        }, 'wdc-smartflow-documents-'.now()->format('Ymd-His').'.xls', [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+        ]);
+    }
+
+    private function workflowExportHeaders(): array
+    {
+        return ['document_number', 'workflow', 'requester', 'department', 'status', 'priority', 'current_step', 'assigned_to', 'assigned_group', 'legacy_reference', 'external_url', 'submitted_at', 'due_at'];
     }
 
     private function validateTemplateData(Request $request): array

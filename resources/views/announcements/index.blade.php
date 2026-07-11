@@ -17,25 +17,33 @@
 </div>
 
 <div class="item-list">
-    @foreach($announcements as $announcement)
-        <article class="list-card">
+    @forelse($announcements as $announcement)
+        <article class="list-card compact-content-card announcement-list-card">
             <div>
                 @if($announcement->is_pinned)<span class="tag">ปักหมุด</span>@endif
                 @if($announcement->is_urgent)<span class="tag tag-danger">ด่วน</span>@endif
                 <span class="tag">{{ $announcement->category }}</span>
             </div>
             <h3><a href="{{ route('announcements.show', $announcement) }}">{{ $announcement->title }}</a></h3>
-            <p>{{ $announcement->body }}</p>
+            <p class="line-clamp-2">{{ $announcement->body }}</p>
             <div class="meta-row">
                 <span>{{ $announcement->announcement_no ?? 'ไม่ระบุเลขที่' }}</span>
                 <span>{{ $announcement->published_at?->format('d/m/Y') }}</span>
             </div>
-            @foreach($announcement->files as $file)
-                <a class="file-chip" href="{{ route('announcements.files.show', $file) }}"><i class="bi bi-paperclip"></i> {{ $file->file_name }} · {{ $file->file_size_kb }} KB</a>
-            @endforeach
-            <a class="btn btn-sm btn-outline-primary" href="{{ route('announcements.show', $announcement) }}">ดูประกาศ</a>
+            @if($announcement->files->isNotEmpty())
+                <details class="inline-file-disclosure">
+                    <summary><i class="bi bi-paperclip"></i> ไฟล์แนบ {{ $announcement->files->count() }} ไฟล์</summary>
+                    <div>
+                        @foreach($announcement->files as $file)
+                            <a class="file-chip" href="{{ route('announcements.files.show', $file) }}">{{ $file->file_name }} · {{ $file->file_size_kb }} KB</a>
+                        @endforeach
+                    </div>
+                </details>
+            @endif
         </article>
-    @endforeach
+    @empty
+        <div class="empty-state">ยังไม่มีประกาศในหมวดนี้</div>
+    @endforelse
 </div>
 
 {{ $announcements->links() }}

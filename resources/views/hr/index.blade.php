@@ -15,6 +15,12 @@
     ];
     $primaryHrSections = collect($hrMenu)->whereIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
     $moreHrSections = collect($hrMenu)->whereNotIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
+    $complaintStatusLabels = [
+        'submitted' => 'รับเรื่อง',
+        'reviewing' => 'ตรวจสอบ',
+        'resolved' => 'แก้ไขแล้ว',
+        'closed' => 'ปิดเรื่อง',
+    ];
 @endphp
 
 <h1 class="visually-hidden">HR</h1>
@@ -45,25 +51,36 @@
 @if($activeSection === 'dashboard')
     <div class="hr-dashboard-shell">
         <section class="hr-dashboard-summary">
-            <div class="hr-summary-card primary">
-                <span>พนักงานทั้งหมด</span>
-                <strong>{{ number_format($employeeCount) }}</strong>
-            </div>
-            <div class="hr-summary-card">
-                <span>ใช้งานอยู่</span>
-                <strong>{{ number_format($activeEmployeeCount) }}</strong>
-            </div>
-            @if($canManageOnboarding)
-                <div class="hr-summary-card attention">
-                    <span>พนักงานใหม่รอดำเนินการ</span>
-                    <strong>{{ number_format($pendingOnboardingCount) }}</strong>
+            @if($canManageEmployees)
+                <a class="hr-summary-card primary" href="{{ route('hr.index', ['section' => 'employees']) }}">
+                    <span>พนักงานทั้งหมด</span>
+                    <strong>{{ number_format($employeeCount) }}</strong>
+                </a>
+                <a class="hr-summary-card" href="{{ route('hr.index', ['section' => 'employees']) }}">
+                    <span>ใช้งานอยู่</span>
+                    <strong>{{ number_format($activeEmployeeCount) }}</strong>
+                </a>
+            @else
+                <div class="hr-summary-card primary">
+                    <span>พนักงานทั้งหมด</span>
+                    <strong>{{ number_format($employeeCount) }}</strong>
+                </div>
+                <div class="hr-summary-card">
+                    <span>ใช้งานอยู่</span>
+                    <strong>{{ number_format($activeEmployeeCount) }}</strong>
                 </div>
             @endif
+            @if($canManageOnboarding)
+                <a class="hr-summary-card attention" href="{{ route('hr.index', ['section' => 'onboarding']) }}">
+                    <span>พนักงานใหม่รอดำเนินการ</span>
+                    <strong>{{ number_format($pendingOnboardingCount) }}</strong>
+                </a>
+            @endif
             @if($canManageEmployees)
-                <div class="hr-summary-card">
+                <a class="hr-summary-card" href="{{ route('hr.index', ['section' => 'offboarding']) }}">
                     <span>ลาออกรอดำเนินการ</span>
                     <strong>{{ number_format($pendingOffboardingCount) }}</strong>
-                </div>
+                </a>
             @endif
         </section>
     </div>
@@ -79,13 +96,13 @@
                 </div>
                 <div class="hr-list">
                     @forelse($onboardingRequests->take(5) as $onboarding)
-                        <div class="hr-list-row">
+                        <a class="hr-list-row" href="{{ route('onboarding.show', $onboarding) }}">
                             <div>
                                 <strong>{{ $onboarding->employee_code }} · {{ $onboarding->displayName() }}</strong>
                                 <small>{{ optional($onboarding->start_date)->format('d/m/Y') ?: 'ยังไม่ระบุวันเริ่มงาน' }}</small>
                             </div>
                             <span class="status-pill">{{ $onboarding->statusLabel() }}</span>
-                        </div>
+                        </a>
                     @empty
                         <div class="empty-state">ยังไม่มีรายการพนักงานใหม่</div>
                     @endforelse
@@ -131,7 +148,7 @@
                                 <strong>{{ $complaint->subject }}</strong>
                                 <small>{{ $complaint->created_at->format('d/m/Y H:i') }}</small>
                             </div>
-                            <span class="status-pill">{{ $complaint->status }}</span>
+                            <span class="status-pill">{{ $complaintStatusLabels[$complaint->status] ?? $complaint->status }}</span>
                         </div>
                     @empty
                         <div class="empty-state">ยังไม่มีเรื่องร้องเรียนล่าสุด</div>
@@ -150,12 +167,12 @@
                 </div>
                 <div class="hr-list">
                     @forelse($announcements->take(5) as $announcement)
-                        <div class="hr-list-row">
+                        <a class="hr-list-row" href="{{ route('announcements.show', $announcement) }}">
                             <div>
                                 <strong>{{ $announcement->announcement_no }} · {{ $announcement->title }}</strong>
                                 <small>{{ $announcement->category }} · {{ $announcement->published_at?->format('d/m/Y') ?: '-' }}</small>
                             </div>
-                        </div>
+                        </a>
                     @empty
                         <div class="empty-state">ยังไม่มีประกาศล่าสุด</div>
                     @endforelse

@@ -52,6 +52,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read', [PortalController::class, 'markNotificationsRead'])->name('notifications.read');
     Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/print', [ReportController::class, 'print'])->name('reports.print');
 
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
     Route::get('/document', [WorkflowController::class, 'redirectLegacyDocument'])->name('workflows.legacy.document');

@@ -32,18 +32,19 @@
                 <a href="{{ route('announcements.index') }}">ดูทั้งหมด</a>
             </div>
             <div class="item-list">
-                @foreach($pinnedAnnouncements as $announcement)
-                    <article class="list-card">
+                @forelse($pinnedAnnouncements as $announcement)
+                    <article class="list-card compact-content-card">
                         <div>
                             <span class="tag">{{ $announcement->category }}</span>
                             @if($announcement->is_urgent)<span class="tag tag-danger">ด่วน</span>@endif
                         </div>
-                        <h3>{{ $announcement->title }}</h3>
-                        <p>{{ $announcement->body }}</p>
+                        <h3><a href="{{ route('announcements.show', $announcement) }}">{{ $announcement->title }}</a></h3>
+                        <p class="line-clamp-2">{{ $announcement->body }}</p>
                         <small>{{ $announcement->announcement_no ?? 'ไม่ระบุเลขที่' }}</small>
-                        <a class="btn btn-sm btn-outline-primary" href="{{ route('announcements.show', $announcement) }}">ดูประกาศ</a>
                     </article>
-                @endforeach
+                @empty
+                    <div class="empty-state">ยังไม่มีประกาศปักหมุด</div>
+                @endforelse
             </div>
         </section>
     @endif
@@ -56,8 +57,8 @@
             </div>
             <div class="item-list">
                 @forelse($itRequests as $requestItem)
-                    <article class="list-card compact">
-                        <h3>{{ $requestItem->title }}</h3>
+                    <article class="list-card compact compact-content-card">
+                        <h3><a href="{{ route('workflows.show', $requestItem) }}">{{ $requestItem->title }}</a></h3>
                         <p>{{ $requestItem->currentStep?->name ?? ($requestItem->assignee ? 'ผู้รับผิดชอบ: '.$requestItem->assignee->name : 'รอทีม IT รับเรื่อง') }}</p>
                         <span class="status-pill status-{{ $requestItem->status }}">{{ $requestItem->statusLabel() }}</span>
                     </article>

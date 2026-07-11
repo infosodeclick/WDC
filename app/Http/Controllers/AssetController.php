@@ -12,9 +12,11 @@ use App\Models\SoftwareLicense;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssetController extends Controller
 {
@@ -233,38 +235,32 @@ class AssetController extends Controller
         return back()->with('status', 'เก็บประวัติ/จำหน่ายรายการ INVENTORY แล้ว');
     }
 
-    public function export(Request $request)
+    public function export(Request $request): StreamedResponse
     {
         abort_unless($request->user()->canExportItAssets(), 403);
 
-        $rows = ItAsset::with('category', 'location')->orderBy('code')->get();
-        $csvRows = [
-            ['code', 'name', 'category', 'location', 'company', 'department', 'owner', 'status', 'brand', 'model', 'serial_number', 'price', 'book_value'],
-            ...$rows->map(fn (ItAsset $asset) => [
-                $asset->code,
-                $asset->name,
-                $asset->category?->name,
-                $asset->location?->code,
-                $asset->company,
-                $asset->department,
-                $asset->owner_name,
-                $asset->status,
-                $asset->brand,
-                $asset->model,
-                $asset->serial_number,
-                $asset->price,
-                $asset->book_value,
-            ])->all(),
-        ];
+        $rows = ItAsset::with('category', 'location')
+            ->orderBy('code')
+            ->get()
+            ->map(fn (ItAsset $asset): array => [
+                'code' => $asset->code,
+                'name' => $asset->name,
+                'category' => $asset->category?->name,
+                'location' => $asset->location?->code,
+                'company' => $asset->company,
+                'department' => $asset->department,
+                'owner' => $asset->owner_name,
+                'status' => $asset->status,
+                'brand' => $asset->brand,
+                'model' => $asset->model,
+                'serial_number' => $asset->serial_number,
+                'price' => $asset->price,
+                'book_value' => $asset->book_value,
+            ]);
 
-        $content = collect($csvRows)
-            ->map(fn (array $row) => collect($row)->map(fn ($value) => $this->csvEscape($value))->implode(','))
-            ->implode("\n");
-
-        return Response::make($content, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="wdc-it-assets.csv"',
-        ]);
+        return $request->string('format')->lower()->toString() === 'xls'
+            ? $this->streamAssetExcel($rows)
+            : $this->streamAssetCsv($rows);
     }
 
     public function exportMaster(Request $request)
@@ -373,13 +369,50 @@ class AssetController extends Controller
         return 'AST-CHK-'.now()->format('Ymd').'-'.str_pad((string) (AssetInspectionDocument::whereDate('created_at', today())->count() + 1), 4, '0', STR_PAD_LEFT);
     }
 
-    private function csvEscape($value): string
+    private function streamAssetCsv(Collection $rows): StreamedResponse
     {
-        $text = (string) ($value ?? '');
+        return response()->streamDownload(function () use ($rows): void {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, $this->assetExportHeaders());
 
-        return str_contains($text, ',') || str_contains($text, '"') || str_contains($text, "\n")
-            ? '"'.str_replace('"', '""', $text).'"'
-            : $text;
+            foreach ($rows as $row) {
+                fputcsv($handle, array_values($row));
+            }
+
+            fclose($handle);
+        }, 'wdc-it-assets-'.now()->format('Ymd-His').'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    private function streamAssetExcel(Collection $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows): void {
+            echo '<html><head><meta charset="UTF-8"></head><body><table border="1">';
+            echo '<thead><tr>';
+            foreach ($this->assetExportHeaders() as $header) {
+                echo '<th>'.e($header).'</th>';
+            }
+            echo '</tr></thead><tbody>';
+
+            foreach ($rows as $row) {
+                echo '<tr>';
+                foreach ($row as $value) {
+                    echo '<td>'.e((string) ($value ?? '')).'</td>';
+                }
+                echo '</tr>';
+            }
+
+            echo '</tbody></table></body></html>';
+        }, 'wdc-it-assets-'.now()->format('Ymd-His').'.xls', [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+        ]);
+    }
+
+    private function assetExportHeaders(): array
+    {
+        return ['code', 'name', 'category', 'location', 'company', 'department', 'owner', 'status', 'brand', 'model', 'serial_number', 'price', 'book_value'];
     }
 
     private function logAsset(Request $request, ItAsset $asset, string $action, string $summary, ?array $before = null, ?array $after = null): void
