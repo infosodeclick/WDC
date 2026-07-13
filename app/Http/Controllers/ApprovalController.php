@@ -156,7 +156,7 @@ class ApprovalController extends Controller
 
             if ($user->canAccess('complaints.review')) {
                 $items = $items->merge(Complaint::with('reporter')
-                    ->whereIn('status', ['submitted', 'in_review', 'pending'])
+                    ->whereIn('status', Complaint::pendingStatuses())
                     ->latest()
                     ->take(20)
                     ->get()
@@ -164,7 +164,7 @@ class ApprovalController extends Controller
                         'type' => 'เรื่องร้องเรียน',
                         'title' => $complaint->subject,
                         'code' => $complaint->is_anonymous ? 'ไม่ระบุชื่อ' : $complaint->reporter?->employee_code,
-                        'status' => $complaint->status,
+                        'status' => Complaint::statusLabels()[$complaint->status] ?? $complaint->status,
                         'owner' => 'HR',
                         'meta' => $complaint->created_at?->format('d/m/Y H:i'),
                         'url' => route('complaints.index'),

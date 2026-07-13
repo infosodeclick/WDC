@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\PortalNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ComplaintController extends Controller
@@ -88,7 +89,9 @@ class ComplaintController extends Controller
         abort_unless($actor->canAccess('complaints.review'), 403);
         abort_unless($this->canReviewComplaint($actor, $complaint->load('reporter.employee.department')), 403);
 
-        $data = $request->validate(['status' => ['required', 'in:submitted,reviewing,resolved,closed']]);
+        $data = $request->validate([
+            'status' => ['required', Rule::in(array_keys(Complaint::statusLabels()))],
+        ]);
         $complaint->update([
             'status' => $data['status'],
             'assigned_to' => $complaint->assigned_to ?: $request->user()->id,

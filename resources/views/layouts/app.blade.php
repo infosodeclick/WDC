@@ -27,7 +27,7 @@
         ? \App\Models\EmployeeOnboardingRequest::where('status', 'it_completed')->count()
             + \App\Models\EmployeeOffboardingRequest::where('status', 'it_completed')->count()
             + \App\Models\ProfileChangeRequest::where('status', 'pending')->count()
-            + \App\Models\Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count()
+            + \App\Models\Complaint::whereIn('status', \App\Models\Complaint::pendingStatuses())->count()
         : 0;
     $adminQueueCount = $canShowAdminNav ? ($unreadNotificationCount ?? 0) : 0;
     $approvalQueueCount = 0;
@@ -44,7 +44,7 @@
         }
 
         if ($currentUser?->canAccess('complaints.review')) {
-            $approvalQueueCount += \App\Models\Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count();
+            $approvalQueueCount += \App\Models\Complaint::whereIn('status', \App\Models\Complaint::pendingStatuses())->count();
         }
 
         if ($currentUser?->canAccess('workflows.manage')) {

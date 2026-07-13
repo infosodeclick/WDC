@@ -104,7 +104,7 @@ class ReportController extends Controller
         $pendingApprovals = $pendingOnboarding
             + $pendingOffboarding
             + ProfileChangeRequest::where('status', 'pending')->count()
-            + Complaint::whereIn('status', ['submitted', 'in_review', 'pending'])->count();
+            + Complaint::whereIn('status', Complaint::pendingStatuses())->count();
 
         return [
             ['label' => 'งาน IT ค้าง', 'value' => $helpdeskOpen, 'note' => 'IT Helpdesk', 'icon' => 'bi-life-preserver', 'target' => '#report-helpdesk'],

@@ -15,12 +15,7 @@
     ];
     $primaryHrSections = collect($hrMenu)->whereIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
     $moreHrSections = collect($hrMenu)->whereNotIn('section', ['dashboard', 'employees', 'onboarding', 'offboarding']);
-    $complaintStatusLabels = [
-        'submitted' => 'รับเรื่อง',
-        'reviewing' => 'ตรวจสอบ',
-        'resolved' => 'แก้ไขแล้ว',
-        'closed' => 'ปิดเรื่อง',
-    ];
+    $complaintStatusLabels = \App\Models\Complaint::statusLabels();
 @endphp
 
 <h1 class="visually-hidden">HR</h1>
@@ -592,7 +587,7 @@
         <h2>เรื่องร้องเรียนล่าสุด</h2>
         <div class="item-list">
             @forelse($complaints as $complaint)
-                <div class="result-row"><strong>{{ $complaint->subject }}</strong><small>{{ $complaint->type }} · {{ $complaint->status }}</small></div>
+                <div class="result-row"><strong>{{ $complaint->subject }}</strong><small>{{ $complaint->type }} · {{ $complaintStatusLabels[$complaint->status] ?? $complaint->status }}</small></div>
             @empty
                 <div class="empty-state">ยังไม่มีเรื่องร้องเรียนล่าสุด</div>
             @endforelse

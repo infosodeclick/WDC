@@ -3,7 +3,7 @@
 @section('title', 'ร้องเรียน | WDC Portal')
 
 @section('content')
-<?php $complaintStatusLabels = ['submitted' => 'รับเรื่อง', 'reviewing' => 'ตรวจสอบ', 'resolved' => 'แก้ไขแล้ว', 'closed' => 'ปิดเรื่อง']; ?>
+@php($complaintStatusLabels = \App\Models\Complaint::statusLabels())
 <div class="page-heading compact-page-heading">
     <h1>ร้องเรียน</h1>
 </div>
@@ -44,7 +44,7 @@
                     @csrf
                     @method('PATCH')
                     <select class="form-select form-select-sm" name="status">
-                        @foreach(['submitted' => 'รับเรื่อง', 'reviewing' => 'ตรวจสอบ', 'resolved' => 'แก้ไขแล้ว', 'closed' => 'ปิดเรื่อง'] as $key => $label)
+                        @foreach($complaintStatusLabels as $key => $label)
                             <option value="{{ $key }}" @selected($complaint->status === $key)>{{ $label }}</option>
                         @endforeach
                     </select>

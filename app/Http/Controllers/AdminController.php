@@ -360,7 +360,7 @@ class AdminController extends Controller
             }
         }
 
-        if ($canManageAccess || $canManageDirectory) {
+        if (($canManageAccess || $canManageDirectory) && $request->has('is_active')) {
             $userPayload['is_active'] = $request->boolean('is_active');
         }
 
